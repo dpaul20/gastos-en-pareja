@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, SetStateAction } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -43,20 +43,32 @@ import {
 } from "@/components/ui/select";
 import { DarkMode } from "@/components/dark-mode";
 
+// Define the type for a purchase
+type Purchase = {
+  id: number;
+  description: string;
+  amount: number;
+  installments: number;
+  buyer: string;
+  paidInstallments: number;
+  firstPaymentDate: string;
+};
+
 export default function ExpenseDistributionApp() {
   const [step, setStep] = useState(1);
   const [method, setMethod] = useState("");
   const [incomes, setIncomes] = useState({ person1: "", person2: "" });
-  const [purchases, setPurchases] = useState([]);
-  const [newPurchase, setNewPurchase] = useState({
+  const [purchases, setPurchases] = useState<Purchase[]>([]);
+  const [newPurchase, setNewPurchase] = useState<Purchase>({
+    id: 0,
     description: "",
-    amount: "",
-    installments: "1",
+    amount: 0,
+    installments: 1,
     buyer: "person1",
-    paidInstallments: "0",
+    paidInstallments: 0,
     firstPaymentDate: "",
   });
-  const [editingPurchase, setEditingPurchase] = useState(null);
+  const [editingPurchase, setEditingPurchase] = useState<number | null>(null);
   const [names, setNames] = useState({
     person1: "Persona 1",
     person2: "Persona 2",
@@ -82,20 +94,20 @@ export default function ExpenseDistributionApp() {
     localStorage.setItem("purchases", JSON.stringify(purchases));
   }, [method, incomes, names, purchases]);
 
-  const handleMethodChange = (value) => {
+  const handleMethodChange = (value: SetStateAction<string>) => {
     setMethod(value);
     triggerConfetti();
   };
 
-  const handleIncomeChange = (person, value) => {
+  const handleIncomeChange = (person: string, value: string) => {
     setIncomes({ ...incomes, [person]: value });
   };
 
-  const handleNameChange = (person, value) => {
+  const handleNameChange = (person: string, value: string) => {
     setNames({ ...names, [person]: value });
   };
 
-  const handleNewPurchaseChange = (field, value) => {
+  const handleNewPurchaseChange = (field: string, value: string) => {
     setNewPurchase({ ...newPurchase, [field]: value });
   };
 
@@ -112,25 +124,26 @@ export default function ExpenseDistributionApp() {
       setPurchases([...purchases, newPurchaseWithId]);
     }
     setNewPurchase({
+      id: 0,
       description: "",
-      amount: "",
-      installments: "1",
+      amount: 0,
+      installments: 1,
       buyer: "person1",
-      paidInstallments: "0",
+      paidInstallments: 0,
       firstPaymentDate: "",
     });
     triggerConfetti();
   };
 
-  const editPurchase = (purchase) => {
+  const editPurchase = (purchase: Purchase) => {
     setNewPurchase(purchase);
     setEditingPurchase(purchase.id);
     setStep(4);
   };
 
-  const confirmDeletePurchase = (id) => {
-    setPurchaseToDelete(id);
-  };
+  // const confirmDeletePurchase = (id) => {
+  //   setPurchaseToDelete(id);
+  // };
 
   const deletePurchase = () => {
     if (purchaseToDelete) {
@@ -139,16 +152,13 @@ export default function ExpenseDistributionApp() {
     }
   };
 
-  const incrementPaidInstallments = (id) => {
+  const incrementPaidInstallments = (id: number) => {
     setPurchases(
       purchases.map((p) => {
-        if (
-          p.id === id &&
-          parseInt(p.paidInstallments) < parseInt(p.installments)
-        ) {
+        if (p.id === id && p.paidInstallments < p.installments) {
           return {
             ...p,
-            paidInstallments: (parseInt(p.paidInstallments) + 1).toString(),
+            paidInstallments: p.paidInstallments + 1,
           };
         }
         return p;
@@ -194,13 +204,13 @@ export default function ExpenseDistributionApp() {
       (acc, purchase) => {
         const remainingInstallments = Math.max(
           0,
-          parseInt(purchase.installments) - parseInt(purchase.paidInstallments)
+          purchase.installments - purchase.paidInstallments
         );
         if (remainingInstallments > 0) {
           const monthlyPerson1 =
-            purchase.distribution.person1 / parseInt(purchase.installments);
+            purchase.distribution.person1 / purchase.installments;
           const monthlyPerson2 =
-            purchase.distribution.person2 / parseInt(purchase.installments);
+            purchase.distribution.person2 / purchase.installments;
           return {
             person1: acc.person1 + monthlyPerson1,
             person2: acc.person2 + monthlyPerson2,
@@ -224,13 +234,11 @@ export default function ExpenseDistributionApp() {
     };
   };
 
-  const calculateLastPaymentDate = (purchase) => {
+  const calculateLastPaymentDate = (purchase: Purchase) => {
     if (!purchase.firstPaymentDate) return "N/A";
     const firstDate = new Date(purchase.firstPaymentDate);
     const lastDate = new Date(
-      firstDate.setMonth(
-        firstDate.getMonth() + parseInt(purchase.installments) - 1
-      )
+      firstDate.setMonth(firstDate.getMonth() + purchase.installments - 1)
     );
     return lastDate.toLocaleDateString();
   };
@@ -243,12 +251,12 @@ export default function ExpenseDistributionApp() {
     });
   };
 
-  const sortPurchases = (purchases) => {
+  const sortPurchases = (purchases: Purchase[]) => {
     const activePurchases = purchases.filter(
-      (p) => parseInt(p.paidInstallments) < parseInt(p.installments)
+      (p) => p.paidInstallments < p.installments
     );
     const completedPurchases = purchases.filter(
-      (p) => parseInt(p.paidInstallments) >= parseInt(p.installments)
+      (p) => p.paidInstallments >= p.installments
     );
     return [...activePurchases, ...completedPurchases];
   };
@@ -438,106 +446,100 @@ export default function ExpenseDistributionApp() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {sortPurchases(calculateDistribution()).map(
-                      (purchase, index) => {
-                        const isCompleted =
-                          parseInt(purchase.paidInstallments) >=
-                          parseInt(purchase.installments);
-                        const monthlyPayment =
-                          purchase.amount / purchase.installments;
-                        return (
-                          <TableRow
-                            key={purchase.id}
-                            className={isCompleted ? "text-gray-400" : ""}
+                    {sortPurchases(calculateDistribution()).map((purchase) => {
+                      const isCompleted =
+                        purchase.paidInstallments >= purchase.installments;
+                      const monthlyPayment =
+                        purchase.amount / purchase.installments;
+                      return (
+                        <TableRow
+                          key={purchase.id}
+                          className={isCompleted ? "text-gray-400" : ""}
+                        >
+                          <TableCell
+                            className={`font-medium ${
+                              isCompleted ? "line-through" : ""
+                            }`}
                           >
-                            <TableCell
-                              className={`font-medium ${
-                                isCompleted ? "line-through" : ""
-                              }`}
-                            >
-                              {purchase.description}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              ${parseFloat(purchase.amount).toLocaleString()}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              {purchase.installments}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              {Math.max(
-                                0,
-                                purchase.installments -
-                                  purchase.paidInstallments
-                              )}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              ${monthlyPayment.toFixed(2)}
-                            </TableCell>
-                            <TableCell className="text-center">
-                              {calculateLastPaymentDate(purchase)}
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <div className="flex justify-center space-x-2">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() =>
-                                    incrementPaidInstallments(purchase.id)
-                                  }
-                                  disabled={isCompleted}
-                                >
-                                  <Plus className="h-4 w-4" />
-                                  <span className="sr-only">
-                                    Incrementar cuota pagada
-                                  </span>
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => editPurchase(purchase)}
-                                >
-                                  <Pencil className="h-4 w-4 text-purple-600" />
-                                  <span className="sr-only">Editar compra</span>
-                                </Button>
-                                <AlertDialog>
-                                  <AlertDialogTrigger asChild>
-                                    <Button variant="ghost" size="sm">
-                                      <Trash2 className="h-4 w-4 text-red-600" />
-                                      <span className="sr-only">
-                                        Eliminar compra
-                                      </span>
-                                    </Button>
-                                  </AlertDialogTrigger>
-                                  <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                      <AlertDialogTitle>
-                                        ¿Estás seguro?
-                                      </AlertDialogTitle>
-                                      <AlertDialogDescription>
-                                        Esta acción no se puede deshacer. Esto
-                                        eliminará permanentemente la compra.
-                                      </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                      <AlertDialogCancel>
-                                        Cancelar
-                                      </AlertDialogCancel>
-                                      <AlertDialogAction
-                                        onClick={() =>
-                                          deletePurchase(purchase.id)
-                                        }
-                                      >
-                                        Eliminar
-                                      </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                  </AlertDialogContent>
-                                </AlertDialog>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      }
-                    )}
+                            {purchase.description}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            ${purchase.amount.toLocaleString()}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {purchase.installments}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {Math.max(
+                              0,
+                              purchase.installments - purchase.paidInstallments
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            ${monthlyPayment.toFixed(2)}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {calculateLastPaymentDate(purchase)}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <div className="flex justify-center space-x-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() =>
+                                  incrementPaidInstallments(purchase.id)
+                                }
+                                disabled={isCompleted}
+                              >
+                                <Plus className="h-4 w-4" />
+                                <span className="sr-only">
+                                  Incrementar cuota pagada
+                                </span>
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => editPurchase(purchase)}
+                              >
+                                <Pencil className="h-4 w-4 text-purple-600" />
+                                <span className="sr-only">Editar compra</span>
+                              </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="ghost" size="sm">
+                                    <Trash2 className="h-4 w-4 text-red-600" />
+                                    <span className="sr-only">
+                                      Eliminar compra
+                                    </span>
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>
+                                      ¿Estás seguro?
+                                    </AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Esta acción no se puede deshacer. Esto
+                                      eliminará permanentemente la compra.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>
+                                      Cancelar
+                                    </AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => deletePurchase()}
+                                    >
+                                      Eliminar
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               ) : (
