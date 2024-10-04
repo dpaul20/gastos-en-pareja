@@ -73,7 +73,7 @@ export default function ExpenseDistributionApp() {
     person1: "Persona 1",
     person2: "Persona 2",
   });
-  const [purchaseToDelete, setPurchaseToDelete] = useState(null);
+  const [purchaseToDelete, setPurchaseToDelete] = useState<number | null>(null);
 
   useEffect(() => {
     const savedMethod = localStorage.getItem("method");
@@ -107,7 +107,7 @@ export default function ExpenseDistributionApp() {
     setNames({ ...names, [person]: value });
   };
 
-  const handleNewPurchaseChange = (field: string, value: string) => {
+  const handleNewPurchaseChange = (field: string, value: string | number) => {
     setNewPurchase({ ...newPurchase, [field]: value });
   };
 
@@ -140,10 +140,6 @@ export default function ExpenseDistributionApp() {
     setEditingPurchase(purchase.id);
     setStep(4);
   };
-
-  // const confirmDeletePurchase = (id) => {
-  //   setPurchaseToDelete(id);
-  // };
 
   const deletePurchase = () => {
     if (purchaseToDelete) {
@@ -241,6 +237,26 @@ export default function ExpenseDistributionApp() {
       firstDate.setMonth(firstDate.getMonth() + purchase.installments - 1)
     );
     return lastDate.toLocaleDateString();
+  };
+
+  const calculatePaymentDifference = () => {
+    const totals = calculateMonthlyPayments();
+    const difference = totals.person1 - totals.person2;
+    if (difference > 0) {
+      return {
+        payer: names.person2,
+        receiver: names.person1,
+        amount: Math.abs(difference),
+      };
+    } else if (difference < 0) {
+      return {
+        payer: names.person1,
+        receiver: names.person2,
+        amount: Math.abs(difference),
+      };
+    } else {
+      return { payer: null, receiver: null, amount: 0 };
+    }
   };
 
   const triggerConfetti = () => {
@@ -403,6 +419,26 @@ export default function ExpenseDistributionApp() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-2xl font-semibold text-purple-700">
+                  Distribución de Ingresos Mensuales
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <p className="text-lg font-semibold text-purple-700">
+                    {names.person1}: $
+                    {parseFloat(incomes.person1).toFixed(2).toLocaleString()}{" "}
+                    {calculateContributionPercentages().person1}% del total
+                  </p>
+                  <p className="text-lg font-semibold text-pink-600">
+                    {names.person2}: ${parseFloat(incomes.person2).toFixed(2)}{" "}
+                    {calculateContributionPercentages().person2}% del total
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-2xl font-semibold text-purple-700">
                   Distribución de Gastos Mensuales
                 </CardTitle>
               </CardHeader>
@@ -419,6 +455,33 @@ export default function ExpenseDistributionApp() {
                     {calculateContributionPercentages().person2}% del total)
                   </p>
                 </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-2xl font-semibold text-purple-700">
+                  Ajuste de Pagos
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {(() => {
+                  const { payer, receiver, amount } =
+                    calculatePaymentDifference();
+                  if (payer && receiver) {
+                    return (
+                      <p className="text-lg font-semibold">
+                        {payer} debe pagar ${amount.toFixed(2)} a {receiver}{" "}
+                        para igualar los gastos.
+                      </p>
+                    );
+                  } else {
+                    return (
+                      <p className="text-lg font-semibold">
+                        Los gastos están equilibrados.
+                      </p>
+                    );
+                  }
+                })()}
               </CardContent>
             </Card>
             <div className="space-y-4">
@@ -604,7 +667,10 @@ export default function ExpenseDistributionApp() {
                       placeholder="0.00"
                       value={newPurchase.amount}
                       onChange={(e) =>
-                        handleNewPurchaseChange("amount", e.target.value)
+                        handleNewPurchaseChange(
+                          "amount",
+                          parseFloat(e.target.value)
+                        )
                       }
                       className="pl-7"
                     />
@@ -639,7 +705,10 @@ export default function ExpenseDistributionApp() {
                       placeholder="1"
                       value={newPurchase.installments}
                       onChange={(e) =>
-                        handleNewPurchaseChange("installments", e.target.value)
+                        handleNewPurchaseChange(
+                          "installments",
+                          parseInt(e.target.value)
+                        )
                       }
                     />
                   </div>
@@ -674,7 +743,7 @@ export default function ExpenseDistributionApp() {
                       onChange={(e) =>
                         handleNewPurchaseChange(
                           "paidInstallments",
-                          e.target.value
+                          parseInt(e.target.value)
                         )
                       }
                     />
