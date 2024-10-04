@@ -1,101 +1,760 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Pencil, Trash2, Plus, Calendar, HelpCircle } from "lucide-react";
+import confetti from "canvas-confetti";
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { DarkMode } from "@/components/dark-mode";
+
+export default function ExpenseDistributionApp() {
+  const [step, setStep] = useState(1);
+  const [method, setMethod] = useState("");
+  const [incomes, setIncomes] = useState({ person1: "", person2: "" });
+  const [purchases, setPurchases] = useState([]);
+  const [newPurchase, setNewPurchase] = useState({
+    description: "",
+    amount: "",
+    installments: "1",
+    buyer: "person1",
+    paidInstallments: "0",
+    firstPaymentDate: "",
+  });
+  const [editingPurchase, setEditingPurchase] = useState(null);
+  const [names, setNames] = useState({
+    person1: "Persona 1",
+    person2: "Persona 2",
+  });
+  const [purchaseToDelete, setPurchaseToDelete] = useState(null);
+
+  useEffect(() => {
+    const savedMethod = localStorage.getItem("method");
+    const savedIncomes = localStorage.getItem("incomes");
+    const savedNames = localStorage.getItem("names");
+    const savedPurchases = localStorage.getItem("purchases");
+
+    if (savedMethod) setMethod(savedMethod);
+    if (savedIncomes) setIncomes(JSON.parse(savedIncomes));
+    if (savedNames) setNames(JSON.parse(savedNames));
+    if (savedPurchases) setPurchases(JSON.parse(savedPurchases));
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("method", method);
+    localStorage.setItem("incomes", JSON.stringify(incomes));
+    localStorage.setItem("names", JSON.stringify(names));
+    localStorage.setItem("purchases", JSON.stringify(purchases));
+  }, [method, incomes, names, purchases]);
+
+  const handleMethodChange = (value) => {
+    setMethod(value);
+    triggerConfetti();
+  };
+
+  const handleIncomeChange = (person, value) => {
+    setIncomes({ ...incomes, [person]: value });
+  };
+
+  const handleNameChange = (person, value) => {
+    setNames({ ...names, [person]: value });
+  };
+
+  const handleNewPurchaseChange = (field, value) => {
+    setNewPurchase({ ...newPurchase, [field]: value });
+  };
+
+  const addPurchase = () => {
+    if (editingPurchase) {
+      setPurchases(
+        purchases.map((p) =>
+          p.id === editingPurchase ? { ...newPurchase, id: editingPurchase } : p
+        )
+      );
+      setEditingPurchase(null);
+    } else {
+      const newPurchaseWithId = { ...newPurchase, id: Date.now() };
+      setPurchases([...purchases, newPurchaseWithId]);
+    }
+    setNewPurchase({
+      description: "",
+      amount: "",
+      installments: "1",
+      buyer: "person1",
+      paidInstallments: "0",
+      firstPaymentDate: "",
+    });
+    triggerConfetti();
+  };
+
+  const editPurchase = (purchase) => {
+    setNewPurchase(purchase);
+    setEditingPurchase(purchase.id);
+    setStep(4);
+  };
+
+  const confirmDeletePurchase = (id) => {
+    setPurchaseToDelete(id);
+  };
+
+  const deletePurchase = () => {
+    if (purchaseToDelete) {
+      setPurchases(purchases.filter((p) => p.id !== purchaseToDelete));
+      setPurchaseToDelete(null);
+    }
+  };
+
+  const incrementPaidInstallments = (id) => {
+    setPurchases(
+      purchases.map((p) => {
+        if (
+          p.id === id &&
+          parseInt(p.paidInstallments) < parseInt(p.installments)
+        ) {
+          return {
+            ...p,
+            paidInstallments: (parseInt(p.paidInstallments) + 1).toString(),
+          };
+        }
+        return p;
+      })
+    );
+  };
+
+  const calculateDistribution = () => {
+    const totalIncome =
+      parseFloat(incomes.person1) + parseFloat(incomes.person2);
+    const percentagePerson1 = parseFloat(incomes.person1) / totalIncome;
+    const percentagePerson2 = parseFloat(incomes.person2) / totalIncome;
+
+    return purchases.map((purchase) => ({
+      ...purchase,
+      distribution: {
+        person1:
+          method === "proporcional"
+            ? purchase.amount * percentagePerson1
+            : purchase.amount / 2,
+        person2:
+          method === "proporcional"
+            ? purchase.amount * percentagePerson2
+            : purchase.amount / 2,
+      },
+    }));
+  };
+
+  const calculateTotals = () => {
+    const distribution = calculateDistribution();
+    return distribution.reduce(
+      (acc, purchase) => ({
+        person1: acc.person1 + purchase.distribution.person1,
+        person2: acc.person2 + purchase.distribution.person2,
+      }),
+      { person1: 0, person2: 0 }
+    );
+  };
+
+  const calculateMonthlyPayments = () => {
+    const distribution = calculateDistribution();
+    return distribution.reduce(
+      (acc, purchase) => {
+        const remainingInstallments = Math.max(
+          0,
+          parseInt(purchase.installments) - parseInt(purchase.paidInstallments)
+        );
+        if (remainingInstallments > 0) {
+          const monthlyPerson1 =
+            purchase.distribution.person1 / parseInt(purchase.installments);
+          const monthlyPerson2 =
+            purchase.distribution.person2 / parseInt(purchase.installments);
+          return {
+            person1: acc.person1 + monthlyPerson1,
+            person2: acc.person2 + monthlyPerson2,
+          };
+        }
+        return acc;
+      },
+      { person1: 0, person2: 0 }
+    );
+  };
+
+  const calculateContributionPercentages = () => {
+    const totals = calculateTotals();
+    const total = totals.person1 + totals.person2;
+    if (total === 0) {
+      return { person1: "0.00", person2: "0.00" };
+    }
+    return {
+      person1: ((totals.person1 / total) * 100).toFixed(2),
+      person2: ((totals.person2 / total) * 100).toFixed(2),
+    };
+  };
+
+  const calculateLastPaymentDate = (purchase) => {
+    if (!purchase.firstPaymentDate) return "N/A";
+    const firstDate = new Date(purchase.firstPaymentDate);
+    const lastDate = new Date(
+      firstDate.setMonth(
+        firstDate.getMonth() + parseInt(purchase.installments) - 1
+      )
+    );
+    return lastDate.toLocaleDateString();
+  };
+
+  const triggerConfetti = () => {
+    confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: { y: 0.6 },
+    });
+  };
+
+  const sortPurchases = (purchases) => {
+    const activePurchases = purchases.filter(
+      (p) => parseInt(p.paidInstallments) < parseInt(p.installments)
+    );
+    const completedPurchases = purchases.filter(
+      (p) => parseInt(p.paidInstallments) >= parseInt(p.installments)
+    );
+    return [...activePurchases, ...completedPurchases];
+  };
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <div className="flex flex-col items-center justify-center min-h-screen p-4">
+      <div className="w-full max-w-4xl rounded-lg shadow-lg p-6 bg-gray-100 dark:bg-zinc-800">
+        <div className="flex justify-end">
+          <DarkMode />
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+        {step === 1 && (
+          <div className="space-y-6 text-center">
+            <h1 className="text-4xl font-bold text-purple-800 mb-4">
+              Distribuye tus Gastos en Pareja
+            </h1>
+            <p className="text-xl text-purple-600 mb-8">
+              Calcula cómo compartir los gastos de forma justa y eficiente en
+              pareja
+            </p>
+            <Button
+              onClick={() => setStep(2)}
+              className="w-full bg-purple-600 hover:bg-purple-700 font-bold py-3 px-6 rounded-full shadow-lg transform transition duration-200 hover:scale-105"
+            >
+              Comenzar la Aventura
+            </Button>
+          </div>
+        )}
+
+        {step === 2 && (
+          <div className="space-y-6">
+            <h2 className="text-3xl font-semibold text-center text-purple-800">
+              ¿Cómo prefieres compartir los gastos?
+            </h2>
+            <RadioGroup
+              value={method}
+              onValueChange={handleMethodChange}
+              className="space-y-4"
+            >
+              <Label className="flex items-center space-x-3 p-4 rounded-lg shadow-md cursor-pointer transition duration-200">
+                <RadioGroupItem value="igual" id="igual" />
+                <span>Para parejas con ingresos similares</span>
+              </Label>
+              <Label className="flex items-center space-x-3 p-4 rounded-lg shadow-md cursor-pointer transition duration-200">
+                <RadioGroupItem value="proporcional" id="proporcional" />
+                <span>
+                  Para parejas con diferencias significativas en ingresos
+                </span>
+              </Label>
+              <Label className="flex items-center space-x-3 p-4 rounded-lg shadow-md cursor-pointer transition duration-200">
+                <RadioGroupItem value="fondo-comun" id="fondo-comun" />
+                <span>Fondo común</span>
+              </Label>
+            </RadioGroup>
+            <Button
+              onClick={() => setStep(3)}
+              disabled={!method}
+              className="w-full bg-purple-600 hover:bg-purple-700 font-bold py-3 px-6 rounded-full shadow-lg transform transition duration-200 hover:scale-105"
+            >
+              Continuar
+            </Button>
+          </div>
+        )}
+
+        {step === 3 && (
+          <div className="space-y-6">
+            <h2 className="text-3xl font-semibold text-center text-purple-800">
+              Registro de Ingresos
+            </h2>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="name1" className="text-lg text-purple-700">
+                  Nombre de la Persona 1
+                </Label>
+                <Input
+                  id="name1"
+                  value={names.person1}
+                  onChange={(e) => handleNameChange("person1", e.target.value)}
+                  placeholder="Ingrese el nombre"
+                  required
+                  className="mt-1 block w-full"
+                />
+              </div>
+              <div>
+                <Label htmlFor="income1" className="text-lg text-purple-700">
+                  Ingresos de {names.person1}
+                </Label>
+                <Input
+                  type="number"
+                  id="income1"
+                  value={incomes.person1}
+                  onChange={(e) =>
+                    handleIncomeChange("person1", e.target.value)
+                  }
+                  placeholder="Ingrese el monto"
+                  required
+                  className="mt-1 block w-full"
+                />
+              </div>
+              <div>
+                <Label htmlFor="name2" className="text-lg text-purple-700">
+                  Nombre de la Persona 2
+                </Label>
+                <Input
+                  id="name2"
+                  value={names.person2}
+                  onChange={(e) => handleNameChange("person2", e.target.value)}
+                  placeholder="Ingrese el nombre"
+                  required
+                  className="mt-1 block w-full"
+                />
+              </div>
+              <div>
+                <Label htmlFor="income2" className="text-lg text-purple-700">
+                  Ingresos de {names.person2}
+                </Label>
+                <Input
+                  type="number"
+                  id="income2"
+                  value={incomes.person2}
+                  onChange={(e) =>
+                    handleIncomeChange("person2", e.target.value)
+                  }
+                  placeholder="Ingrese el monto"
+                  required
+                  className="mt-1 block w-full"
+                />
+              </div>
+            </div>
+            <Button
+              onClick={() => setStep(5)}
+              disabled={!incomes.person1 || !incomes.person2}
+              className="w-full bg-purple-600 hover:bg-purple-700 font-bold py-3 px-6 rounded-full shadow-lg transform transition duration-200 hover:scale-105"
+            >
+              Ver Resumen
+            </Button>
+          </div>
+        )}
+
+        {step === 5 && (
+          <div className="space-y-6">
+            <h2 className="text-3xl font-semibold text-center text-purple-800">
+              Resumen Financiero
+            </h2>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-2xl font-semibold text-purple-700">
+                  Distribución de Gastos Mensuales
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <p className="text-lg font-semibold text-purple-700">
+                    {names.person1}: $
+                    {calculateMonthlyPayments().person1.toFixed(2)} por mes (
+                    {calculateContributionPercentages().person1}% del total)
+                  </p>
+                  <p className="text-lg font-semibold text-pink-600">
+                    {names.person2}: $
+                    {calculateMonthlyPayments().person2.toFixed(2)} por mes (
+                    {calculateContributionPercentages().person2}% del total)
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+            <div className="space-y-4">
+              <h3 className="text-2xl font-semibold text-purple-800">
+                Lista de Compras
+              </h3>
+              {purchases.length > 0 ? (
+                <Table>
+                  <TableCaption>
+                    Lista de compras y su distribución
+                  </TableCaption>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[200px]">Compra</TableHead>
+                      <TableHead className="text-right">Monto Total</TableHead>
+                      <TableHead className="text-right">Cuotas</TableHead>
+                      <TableHead className="text-right">
+                        Cuotas Pendientes
+                      </TableHead>
+                      <TableHead className="text-right">Pago Mensual</TableHead>
+                      <TableHead className="text-center">
+                        Última Cuota
+                      </TableHead>
+                      <TableHead className="text-center">Acciones</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {sortPurchases(calculateDistribution()).map(
+                      (purchase, index) => {
+                        const isCompleted =
+                          parseInt(purchase.paidInstallments) >=
+                          parseInt(purchase.installments);
+                        const monthlyPayment =
+                          purchase.amount / purchase.installments;
+                        return (
+                          <TableRow
+                            key={purchase.id}
+                            className={isCompleted ? "text-gray-400" : ""}
+                          >
+                            <TableCell
+                              className={`font-medium ${
+                                isCompleted ? "line-through" : ""
+                              }`}
+                            >
+                              {purchase.description}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              ${parseFloat(purchase.amount).toLocaleString()}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {purchase.installments}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {Math.max(
+                                0,
+                                purchase.installments -
+                                  purchase.paidInstallments
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              ${monthlyPayment.toFixed(2)}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              {calculateLastPaymentDate(purchase)}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <div className="flex justify-center space-x-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() =>
+                                    incrementPaidInstallments(purchase.id)
+                                  }
+                                  disabled={isCompleted}
+                                >
+                                  <Plus className="h-4 w-4" />
+                                  <span className="sr-only">
+                                    Incrementar cuota pagada
+                                  </span>
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => editPurchase(purchase)}
+                                >
+                                  <Pencil className="h-4 w-4 text-purple-600" />
+                                  <span className="sr-only">Editar compra</span>
+                                </Button>
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button variant="ghost" size="sm">
+                                      <Trash2 className="h-4 w-4 text-red-600" />
+                                      <span className="sr-only">
+                                        Eliminar compra
+                                      </span>
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>
+                                        ¿Estás seguro?
+                                      </AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Esta acción no se puede deshacer. Esto
+                                        eliminará permanentemente la compra.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>
+                                        Cancelar
+                                      </AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={() =>
+                                          deletePurchase(purchase.id)
+                                        }
+                                      >
+                                        Eliminar
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      }
+                    )}
+                  </TableBody>
+                </Table>
+              ) : (
+                <p className="text-center text-gray-500">
+                  No hay compras registradas aún.
+                </p>
+              )}
+            </div>
+            <Button
+              onClick={() => setStep(4)}
+              className="w-full bg-purple-600 hover:bg-purple-700 font-bold py-3 px-6 rounded-full shadow-lg transform transition duration-200 hover:scale-105"
+            >
+              Agregar Compra
+            </Button>
+            <Button
+              onClick={() => setStep(3)}
+              className="w-full bg-gray-500 hover:bg-gray-600 font-bold py-3 px-6 rounded-full shadow-lg transform transition duration-200 hover:scale-105 mt-4"
+            >
+              Actualizar Ingresos
+            </Button>
+          </div>
+        )}
+
+        {step === 4 && (
+          <div className="space-y-6">
+            <h2 className="text-3xl font-semibold text-center text-purple-800">
+              {editingPurchase ? "Editar Compra" : "Registro de Compras"}
+            </h2>
+            <Card>
+              <CardContent className="space-y-6 pt-6">
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="description"
+                    className="text-sm font-medium text-gray-700"
+                  >
+                    Descripción de la compra
+                  </Label>
+                  <Input
+                    id="description"
+                    placeholder="Ej: Supermercado, Alquiler, etc."
+                    value={newPurchase.description}
+                    onChange={(e) =>
+                      handleNewPurchaseChange("description", e.target.value)
+                    }
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="amount"
+                    className="text-sm font-medium text-gray-700"
+                  >
+                    Monto total
+                  </Label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500">
+                      $
+                    </span>
+                    <Input
+                      id="amount"
+                      type="number"
+                      placeholder="0.00"
+                      value={newPurchase.amount}
+                      onChange={(e) =>
+                        handleNewPurchaseChange("amount", e.target.value)
+                      }
+                      className="pl-7"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label
+                      htmlFor="installments"
+                      className="text-sm font-medium text-gray-700 flex items-center"
+                    >
+                      Número de cuotas
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <HelpCircle className="h-4 w-4 ml-1 text-gray-400" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>
+                              Número total de pagos en los que se dividirá esta
+                              compra.
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </Label>
+                    <Input
+                      id="installments"
+                      type="number"
+                      min="1"
+                      placeholder="1"
+                      value={newPurchase.installments}
+                      onChange={(e) =>
+                        handleNewPurchaseChange("installments", e.target.value)
+                      }
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label
+                      htmlFor="paidInstallments"
+                      className="text-sm font-medium text-gray-700 flex items-center"
+                    >
+                      Cuotas ya pagadas
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <HelpCircle className="h-4 w-4 ml-1 text-gray-400" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>
+                              Número de cuotas que ya han sido pagadas hasta la
+                              fecha.
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </Label>
+                    <Input
+                      id="paidInstallments"
+                      type="number"
+                      min="0"
+                      max={newPurchase.installments}
+                      placeholder="0"
+                      value={newPurchase.paidInstallments}
+                      onChange={(e) =>
+                        handleNewPurchaseChange(
+                          "paidInstallments",
+                          e.target.value
+                        )
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="buyer"
+                    className="text-sm font-medium text-gray-700"
+                  >
+                    ¿Quién realizó la compra?
+                  </Label>
+                  <Select
+                    value={newPurchase.buyer}
+                    onValueChange={(value) =>
+                      handleNewPurchaseChange("buyer", value)
+                    }
+                  >
+                    <SelectTrigger id="buyer">
+                      <SelectValue placeholder="Selecciona quién compró" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="person1">{names.person1}</SelectItem>
+                      <SelectItem value="person2">{names.person2}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="firstPaymentDate"
+                    className="text-sm font-medium text-gray-700 flex items-center"
+                  >
+                    Fecha de la primera cuota
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <HelpCircle className="h-4 w-4 ml-1 text-gray-400" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>
+                            La fecha en que se realizó o se realizará el primer
+                            pago de esta compra.
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </Label>
+                  <div className="flex items-center space-x-2">
+                    <Calendar className="text-purple-600" />
+                    <Input
+                      id="firstPaymentDate"
+                      type="date"
+                      value={newPurchase.firstPaymentDate}
+                      onChange={(e) =>
+                        handleNewPurchaseChange(
+                          "firstPaymentDate",
+                          e.target.value
+                        )
+                      }
+                    />
+                  </div>
+                </div>
+
+                <Button
+                  onClick={addPurchase}
+                  className="w-full bg-purple-600 hover:bg-purple-700 font-bold py-2 px-4 rounded-full shadow-md transform transition duration-200 hover:scale-105"
+                >
+                  {editingPurchase ? "Actualizar Compra" : "Agregar Compra"}
+                </Button>
+              </CardContent>
+            </Card>
+            <Button
+              onClick={() => setStep(5)}
+              className="w-full bg-purple-600 hover:bg-purple-700 font-bold py-3 px-6 rounded-full shadow-lg transform transition duration-200 hover:scale-105"
+            >
+              Ver Resumen
+            </Button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
