@@ -66,7 +66,7 @@ export function FinancialSummaryStep({
   deletePurchase,
   onAddPurchase,
   onUpdateIncomes,
-}: FinancialSummaryStepProps) {
+}: Readonly<FinancialSummaryStepProps>) {
   const monthlyPayments = calculateMonthlyPayments();
   const contributionPercentages = calculateContributionPercentages();
   const paymentDifference = calculatePaymentDifference();

@@ -8,6 +8,8 @@ import { IncomeRegistrationStep } from "@/components/income-registration-step";
 import { FinancialSummaryStep } from "@/components/financial-summary-step";
 import { PurchaseRegistrationStep } from "@/components/purchase-registration-step";
 import confetti from "canvas-confetti";
+import { LoginButton } from "@/components/login-button";
+import { useSession } from "next-auth/react";
 
 // Define the type for a purchase
 type Purchase = {
@@ -21,6 +23,7 @@ type Purchase = {
 };
 
 export default function ExpenseDistributionApp() {
+  const { data: session, status } = useSession();
   const [step, setStep] = useState(1);
   const [method, setMethod] = useState("");
   const [incomes, setIncomes] = useState({ person1: "", person2: "" });
@@ -243,55 +246,74 @@ export default function ExpenseDistributionApp() {
     return [...activePurchases, ...completedPurchases];
   };
 
+  if (status === "loading") {
+    return <div>Cargando...</div>;
+  }
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-4">
       <div className="w-full max-w-4xl rounded-lg shadow-lg p-6 bg-gray-100 dark:bg-zinc-800">
-        <div className="flex justify-end">
+        <div className="flex justify-between items-center mb-6">
+          <LoginButton />
           <DarkMode />
         </div>
-        {step === 1 && <WelcomeStep onStart={() => setStep(2)} />}
-        {step === 2 && (
-          <MethodSelectionStep
-            method={method}
-            onMethodChange={handleMethodChange}
-            onContinue={() => setStep(3)}
-          />
-        )}
-        {step === 3 && (
-          <IncomeRegistrationStep
-            names={names}
-            incomes={incomes}
-            onNameChange={handleNameChange}
-            onIncomeChange={handleIncomeChange}
-            onContinue={() => setStep(5)}
-          />
-        )}
-        {step === 5 && (
-          <FinancialSummaryStep
-            names={names}
-            calculateMonthlyPayments={calculateMonthlyPayments}
-            calculateContributionPercentages={calculateContributionPercentages}
-            calculatePaymentDifference={calculatePaymentDifference}
-            purchases={purchases}
-            calculateDistribution={calculateDistribution}
-            sortPurchases={sortPurchases}
-            calculateLastPaymentDate={calculateLastPaymentDate}
-            incrementPaidInstallments={incrementPaidInstallments}
-            editPurchase={editPurchase}
-            deletePurchase={deletePurchase}
-            onAddPurchase={() => setStep(4)}
-            onUpdateIncomes={() => setStep(3)}
-          />
-        )}
-        {step === 4 && (
-          <PurchaseRegistrationStep
-            newPurchase={newPurchase}
-            editingPurchase={editingPurchase}
-            names={names}
-            handleNewPurchaseChange={handleNewPurchaseChange}
-            addPurchase={addPurchase}
-            onViewSummary={() => setStep(5)}
-          />
+        {session ? (
+          <>
+            {step === 1 && <WelcomeStep onStart={() => setStep(2)} />}
+            {step === 2 && (
+              <MethodSelectionStep
+                method={method}
+                onMethodChange={handleMethodChange}
+                onContinue={() => setStep(3)}
+              />
+            )}
+            {step === 3 && (
+              <IncomeRegistrationStep
+                names={names}
+                incomes={incomes}
+                onNameChange={handleNameChange}
+                onIncomeChange={handleIncomeChange}
+                onContinue={() => setStep(5)}
+              />
+            )}
+            {step === 5 && (
+              <FinancialSummaryStep
+                names={names}
+                calculateMonthlyPayments={calculateMonthlyPayments}
+                calculateContributionPercentages={
+                  calculateContributionPercentages
+                }
+                calculatePaymentDifference={calculatePaymentDifference}
+                purchases={purchases}
+                calculateDistribution={calculateDistribution}
+                sortPurchases={sortPurchases}
+                calculateLastPaymentDate={calculateLastPaymentDate}
+                incrementPaidInstallments={incrementPaidInstallments}
+                editPurchase={editPurchase}
+                deletePurchase={deletePurchase}
+                onAddPurchase={() => setStep(4)}
+                onUpdateIncomes={() => setStep(3)}
+              />
+            )}
+            {step === 4 && (
+              <PurchaseRegistrationStep
+                newPurchase={newPurchase}
+                editingPurchase={editingPurchase}
+                names={names}
+                handleNewPurchaseChange={handleNewPurchaseChange}
+                addPurchase={addPurchase}
+                onViewSummary={() => setStep(5)}
+              />
+            )}
+          </>
+        ) : (
+          <div className="text-center">
+            <h1 className="text-2xl font-bold mb-4">
+              Bienvenido a la aplicación de distribución de gastos en pareja
+            </h1>
+            <p className="mb-4">Por favor, inicia sesión para comenzar.</p>
+            <LoginButton />
+          </div>
         )}
       </div>
     </div>
