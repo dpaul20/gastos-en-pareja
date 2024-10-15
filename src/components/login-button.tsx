@@ -2,6 +2,7 @@
 
 import { signIn, signOut, useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 
 export function LoginButton() {
   const { data: session } = useSession();
@@ -9,9 +10,10 @@ export function LoginButton() {
   if (session?.user) {
     return (
       <div className="flex items-center space-x-4">
-        <span className="text-sm text-gray-700 dark:text-gray-300">
-          {session.user.name}
-        </span>
+        <Avatar>
+          <AvatarImage src={session.user.image} alt={session.user.name} />
+          <AvatarFallback>{session.user.name[0]}</AvatarFallback>
+        </Avatar>
         <Button onClick={() => signOut()} variant="outline">
           Cerrar sesión
         </Button>

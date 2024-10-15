@@ -3,6 +3,8 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import AuthWrapper from "@/app/AuthWrapper";
+import { LoginButton } from "@/components/login-button";
+import { DarkMode } from "@/components/dark-mode";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -36,7 +38,17 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <AuthWrapper>{children}</AuthWrapper>
+          <AuthWrapper>
+            <div className="flex min-h-screen flex-col items-center justify-center p-4">
+              <div className="w-full max-w-4xl rounded-lg bg-gray-100 p-6 shadow-lg dark:bg-zinc-800">
+                <div className="mb-6 flex items-center justify-between">
+                  <LoginButton />
+                  <DarkMode />
+                </div>
+                {children}
+              </div>
+            </div>
+          </AuthWrapper>
         </ThemeProvider>
       </body>
     </html>

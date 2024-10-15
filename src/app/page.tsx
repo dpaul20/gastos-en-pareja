@@ -1,15 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { DarkMode } from "@/components/dark-mode";
+import { useState } from "react";
 import { WelcomeStep } from "@/components/welcome-step";
 import { MethodSelectionStep } from "@/components/method-selection-step";
 import { IncomeRegistrationStep } from "@/components/income-registration-step";
 import { FinancialSummaryStep } from "@/components/financial-summary-step";
 import { PurchaseRegistrationStep } from "@/components/purchase-registration-step";
 import confetti from "canvas-confetti";
-import { LoginButton } from "@/components/login-button";
-import { useSession } from "next-auth/react";
+import useStepsStore from "@/stores/steps.store";
+import { Landing } from "@/components/landing";
 
 // Define the type for a purchase
 type Purchase = {
@@ -23,8 +22,7 @@ type Purchase = {
 };
 
 export default function ExpenseDistributionApp() {
-  const { data: session, status } = useSession();
-  const [step, setStep] = useState(1);
+  const { setCurrentStep, currentStep } = useStepsStore();
   const [method, setMethod] = useState("");
   const [incomes, setIncomes] = useState({ person1: "", person2: "" });
   const [purchases, setPurchases] = useState<Purchase[]>([]);
@@ -44,30 +42,6 @@ export default function ExpenseDistributionApp() {
   });
   const [purchaseToDelete, setPurchaseToDelete] = useState<number | null>(null);
 
-  useEffect(() => {
-    const savedMethod = localStorage.getItem("method");
-    const savedIncomes = localStorage.getItem("incomes");
-    const savedNames = localStorage.getItem("names");
-    const savedPurchases = localStorage.getItem("purchases");
-
-    if (savedMethod) setMethod(savedMethod);
-    if (savedIncomes) setIncomes(JSON.parse(savedIncomes));
-    if (savedNames) setNames(JSON.parse(savedNames));
-    if (savedPurchases) setPurchases(JSON.parse(savedPurchases));
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem("method", method);
-    localStorage.setItem("incomes", JSON.stringify(incomes));
-    localStorage.setItem("names", JSON.stringify(names));
-    localStorage.setItem("purchases", JSON.stringify(purchases));
-  }, [method, incomes, names, purchases]);
-
-  const handleMethodChange = (value: string) => {
-    setMethod(value);
-    triggerConfetti();
-  };
-
   const handleIncomeChange = (person: string, value: string) => {
     setIncomes({ ...incomes, [person]: value });
   };
@@ -84,8 +58,10 @@ export default function ExpenseDistributionApp() {
     if (editingPurchase) {
       setPurchases(
         purchases.map((p) =>
-          p.id === editingPurchase ? { ...newPurchase, id: editingPurchase } : p
-        )
+          p.id === editingPurchase
+            ? { ...newPurchase, id: editingPurchase }
+            : p,
+        ),
       );
       setEditingPurchase(null);
     } else {
@@ -107,7 +83,7 @@ export default function ExpenseDistributionApp() {
   const editPurchase = (purchase: Purchase) => {
     setNewPurchase(purchase);
     setEditingPurchase(purchase.id);
-    setStep(4);
+    setCurrentStep(4);
   };
 
   const deletePurchase = () => {
@@ -127,7 +103,7 @@ export default function ExpenseDistributionApp() {
           };
         }
         return p;
-      })
+      }),
     );
   };
 
@@ -159,7 +135,7 @@ export default function ExpenseDistributionApp() {
         person1: acc.person1 + purchase.distribution.person1,
         person2: acc.person2 + purchase.distribution.person2,
       }),
-      { person1: 0, person2: 0 }
+      { person1: 0, person2: 0 },
     );
   };
 
@@ -169,7 +145,7 @@ export default function ExpenseDistributionApp() {
       (acc, purchase) => {
         const remainingInstallments = Math.max(
           0,
-          purchase.installments - purchase.paidInstallments
+          purchase.installments - purchase.paidInstallments,
         );
         if (remainingInstallments > 0) {
           const monthlyPerson1 =
@@ -183,7 +159,7 @@ export default function ExpenseDistributionApp() {
         }
         return acc;
       },
-      { person1: 0, person2: 0 }
+      { person1: 0, person2: 0 },
     );
   };
 
@@ -223,7 +199,7 @@ export default function ExpenseDistributionApp() {
     if (!purchase.firstPaymentDate) return "N/A";
     const firstDate = new Date(purchase.firstPaymentDate);
     const lastDate = new Date(
-      firstDate.setMonth(firstDate.getMonth() + purchase.installments - 1)
+      firstDate.setMonth(firstDate.getMonth() + purchase.installments - 1),
     );
     return lastDate.toLocaleDateString();
   };
@@ -238,84 +214,58 @@ export default function ExpenseDistributionApp() {
 
   const sortPurchases = (purchases: Purchase[]) => {
     const activePurchases = purchases.filter(
-      (p) => p.paidInstallments < p.installments
+      (p) => p.paidInstallments < p.installments,
     );
     const completedPurchases = purchases.filter(
-      (p) => p.paidInstallments >= p.installments
+      (p) => p.paidInstallments >= p.installments,
     );
     return [...activePurchases, ...completedPurchases];
   };
 
-  if (status === "loading") {
-    return <div>Cargando...</div>;
-  }
-
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-4">
-      <div className="w-full max-w-4xl rounded-lg shadow-lg p-6 bg-gray-100 dark:bg-zinc-800">
-        <div className="flex justify-between items-center mb-6">
-          <LoginButton />
-          <DarkMode />
-        </div>
-        {session ? (
-          <>
-            {step === 1 && <WelcomeStep onStart={() => setStep(2)} />}
-            {step === 2 && (
-              <MethodSelectionStep
-                method={method}
-                onMethodChange={handleMethodChange}
-                onContinue={() => setStep(3)}
-              />
-            )}
-            {step === 3 && (
-              <IncomeRegistrationStep
-                names={names}
-                incomes={incomes}
-                onNameChange={handleNameChange}
-                onIncomeChange={handleIncomeChange}
-                onContinue={() => setStep(5)}
-              />
-            )}
-            {step === 5 && (
-              <FinancialSummaryStep
-                names={names}
-                calculateMonthlyPayments={calculateMonthlyPayments}
-                calculateContributionPercentages={
-                  calculateContributionPercentages
-                }
-                calculatePaymentDifference={calculatePaymentDifference}
-                purchases={purchases}
-                calculateDistribution={calculateDistribution}
-                sortPurchases={sortPurchases}
-                calculateLastPaymentDate={calculateLastPaymentDate}
-                incrementPaidInstallments={incrementPaidInstallments}
-                editPurchase={editPurchase}
-                deletePurchase={deletePurchase}
-                onAddPurchase={() => setStep(4)}
-                onUpdateIncomes={() => setStep(3)}
-              />
-            )}
-            {step === 4 && (
-              <PurchaseRegistrationStep
-                newPurchase={newPurchase}
-                editingPurchase={editingPurchase}
-                names={names}
-                handleNewPurchaseChange={handleNewPurchaseChange}
-                addPurchase={addPurchase}
-                onViewSummary={() => setStep(5)}
-              />
-            )}
-          </>
-        ) : (
-          <div className="text-center">
-            <h1 className="text-2xl font-bold mb-4">
-              Bienvenido a la aplicación de distribución de gastos en pareja
-            </h1>
-            <p className="mb-4">Por favor, inicia sesión para comenzar.</p>
-            <LoginButton />
-          </div>
-        )}
-      </div>
-    </div>
+    <>
+      <Landing />
+
+      <WelcomeStep />
+
+      <MethodSelectionStep />
+
+      {currentStep === 3 && (
+        <IncomeRegistrationStep
+          names={names}
+          incomes={incomes}
+          onNameChange={handleNameChange}
+          onIncomeChange={handleIncomeChange}
+          onContinue={() => setCurrentStep(5)}
+        />
+      )}
+      {currentStep === 5 && (
+        <FinancialSummaryStep
+          names={names}
+          calculateMonthlyPayments={calculateMonthlyPayments}
+          calculateContributionPercentages={calculateContributionPercentages}
+          calculatePaymentDifference={calculatePaymentDifference}
+          purchases={purchases}
+          calculateDistribution={calculateDistribution}
+          sortPurchases={sortPurchases}
+          calculateLastPaymentDate={calculateLastPaymentDate}
+          incrementPaidInstallments={incrementPaidInstallments}
+          editPurchase={editPurchase}
+          deletePurchase={deletePurchase}
+          onAddPurchase={() => setCurrentStep(4)}
+          onUpdateIncomes={() => setCurrentStep(3)}
+        />
+      )}
+      {currentStep === 4 && (
+        <PurchaseRegistrationStep
+          newPurchase={newPurchase}
+          editingPurchase={editingPurchase}
+          names={names}
+          handleNewPurchaseChange={handleNewPurchaseChange}
+          addPurchase={addPurchase}
+          onViewSummary={() => setCurrentStep(5)}
+        />
+      )}
+    </>
   );
 }

@@ -1,10 +1,11 @@
 import { Button } from "@/components/ui/button";
+import useStepsStore from "@/stores/steps.store";
 
-interface WelcomeStepProps {
-  onStart: () => void;
-}
+export function WelcomeStep() {
+  const { setCurrentStep, currentStep } = useStepsStore();
 
-export function WelcomeStep({ onStart }: WelcomeStepProps) {
+  if (currentStep !== 1) return null;
+
   return (
     <div className="space-y-6 text-center">
       <h1 className="text-4xl font-bold text-purple-800 mb-4">
@@ -14,7 +15,7 @@ export function WelcomeStep({ onStart }: WelcomeStepProps) {
         Calcula cómo compartir los gastos de forma justa y eficiente en pareja
       </p>
       <Button
-        onClick={onStart}
+        onClick={() => setCurrentStep(2)}
         className="w-full bg-purple-600 hover:bg-purple-700 font-bold py-3 px-6 rounded-full shadow-lg transform transition duration-200 hover:scale-105"
       >
         Comenzar la Aventura
