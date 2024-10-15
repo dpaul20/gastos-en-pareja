@@ -26,6 +26,8 @@ model User {
 
   Method Method[]
 
+  IncomeCouple IncomeCouple?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -108,4 +110,18 @@ model MethodType {
 enum MethodName {
   FONDO_COMUN
   PROPORCIONAL
+}
+
+model IncomeCouple {
+  id            String @id @default(cuid())
+  person1       String
+  person2       String
+  incomePerson1 Float
+  incomePerson2 Float
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

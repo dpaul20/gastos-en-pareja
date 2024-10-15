@@ -42,14 +42,6 @@ export default function ExpenseDistributionApp() {
   });
   const [purchaseToDelete, setPurchaseToDelete] = useState<number | null>(null);
 
-  const handleIncomeChange = (person: string, value: string) => {
-    setIncomes({ ...incomes, [person]: value });
-  };
-
-  const handleNameChange = (person: string, value: string) => {
-    setNames({ ...names, [person]: value });
-  };
-
   const handleNewPurchaseChange = (field: string, value: string | number) => {
     setNewPurchase({ ...newPurchase, [field]: value });
   };
@@ -230,15 +222,8 @@ export default function ExpenseDistributionApp() {
 
       <MethodSelectionStep />
 
-      {currentStep === 3 && (
-        <IncomeRegistrationStep
-          names={names}
-          incomes={incomes}
-          onNameChange={handleNameChange}
-          onIncomeChange={handleIncomeChange}
-          onContinue={() => setCurrentStep(5)}
-        />
-      )}
+      <IncomeRegistrationStep />
+
       {currentStep === 5 && (
         <FinancialSummaryStep
           names={names}
