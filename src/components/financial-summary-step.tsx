@@ -1,5 +1,6 @@
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+"use client";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -8,7 +9,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
+} from "@/components/ui/table";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,61 +20,22 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-import { Pencil, Trash2, Plus } from "lucide-react"
+} from "@/components/ui/alert-dialog";
+import { Pencil, Trash2, Plus } from "lucide-react";
+import useStepsStore from "@/stores/steps.store";
+import useIncomeCoupleStore from "@/stores/income-couple.store";
 
-type Purchase = {
-  id: number;
-  description: string;
-  amount: number;
-  installments: number;
-  buyer: string;
-  paidInstallments: number;
-  firstPaymentDate: string;
-  distribution?: {
-    person1: number;
-    person2: number;
-  };
-};
+export function FinancialSummaryStep() {
+  const { currentStep, setCurrentStep } = useStepsStore();
+  const { incomeCouple } = useIncomeCoupleStore();
 
-interface FinancialSummaryStepProps {
-  names: { person1: string; person2: string };
-  calculateMonthlyPayments: () => { person1: number; person2: number };
-  calculateContributionPercentages: () => { person1: string; person2: string };
-  calculatePaymentDifference: () => { payer: string | null; receiver: string | null; amount: number };
-  purchases: Purchase[];
-  calculateDistribution: () => Purchase[];
-  sortPurchases: (purchases: Purchase[]) => Purchase[];
-  calculateLastPaymentDate: (purchase: Purchase) => string;
-  incrementPaidInstallments: (id: number) => void;
-  editPurchase: (purchase: Purchase) => void;
-  deletePurchase: () => void;
-  onAddPurchase: () => void;
-  onUpdateIncomes: () => void;
-}
+  
 
-export function FinancialSummaryStep({
-  names,
-  calculateMonthlyPayments,
-  calculateContributionPercentages,
-  calculatePaymentDifference,
-  purchases,
-  calculateDistribution,
-  sortPurchases,
-  calculateLastPaymentDate,
-  incrementPaidInstallments,
-  editPurchase,
-  deletePurchase,
-  onAddPurchase,
-  onUpdateIncomes,
-}: Readonly<FinancialSummaryStepProps>) {
-  const monthlyPayments = calculateMonthlyPayments();
-  const contributionPercentages = calculateContributionPercentages();
-  const paymentDifference = calculatePaymentDifference();
+  if (currentStep !== 5) return null;
 
   return (
     <div className="space-y-6">
-      <h2 className="text-3xl font-semibold text-center text-purple-800">
+      <h2 className="text-center text-3xl font-semibold text-purple-800">
         Resumen Financiero
       </h2>
       <Card>
@@ -90,7 +52,6 @@ export function FinancialSummaryStep({
             </p>
             <p className="text-lg font-semibold text-pink-600">
               {names.person2}: ${monthlyPayments.person2.toFixed(2)} por mes (
-              
               {contributionPercentages.person2}% del total)
             </p>
           </div>
@@ -105,10 +66,14 @@ export function FinancialSummaryStep({
         <CardContent>
           {paymentDifference.payer && paymentDifference.receiver ? (
             <p className="text-lg font-semibold">
-              {paymentDifference.payer} debe pagar ${paymentDifference.amount.toFixed(2)} a {paymentDifference.receiver} para igualar los gastos.
+              {paymentDifference.payer} debe pagar $
+              {paymentDifference.amount.toFixed(2)} a{" "}
+              {paymentDifference.receiver} para igualar los gastos.
             </p>
           ) : (
-            <p className="text-lg font-semibold">Los gastos están equilibrados.</p>
+            <p className="text-lg font-semibold">
+              Los gastos están equilibrados.
+            </p>
           )}
         </CardContent>
       </Card>
@@ -118,21 +83,15 @@ export function FinancialSummaryStep({
         </h3>
         {purchases.length > 0 ? (
           <Table>
-            <TableCaption>
-              Lista de compras y su distribución
-            </TableCaption>
+            <TableCaption>Lista de compras y su distribución</TableCaption>
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[200px]">Compra</TableHead>
                 <TableHead className="text-right">Monto Total</TableHead>
                 <TableHead className="text-right">Cuotas</TableHead>
-                <TableHead className="text-right">
-                  Cuotas Pendientes
-                </TableHead>
+                <TableHead className="text-right">Cuotas Pendientes</TableHead>
                 <TableHead className="text-right">Pago Mensual</TableHead>
-                <TableHead className="text-center">
-                  Última Cuota
-                </TableHead>
+                <TableHead className="text-center">Última Cuota</TableHead>
                 <TableHead className="text-center">Acciones</TableHead>
               </TableRow>
             </TableHeader>
@@ -140,8 +99,7 @@ export function FinancialSummaryStep({
               {sortPurchases(calculateDistribution()).map((purchase) => {
                 const isCompleted =
                   purchase.paidInstallments >= purchase.installments;
-                const monthlyPayment =
-                  purchase.amount / purchase.installments;
+                const monthlyPayment = purchase.amount / purchase.installments;
                 return (
                   <TableRow
                     key={purchase.id}
@@ -163,7 +121,7 @@ export function FinancialSummaryStep({
                     <TableCell className="text-right">
                       {Math.max(
                         0,
-                        purchase.installments - purchase.paidInstallments
+                        purchase.installments - purchase.paidInstallments,
                       )}
                     </TableCell>
                     <TableCell className="text-right">
@@ -177,9 +135,7 @@ export function FinancialSummaryStep({
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() =>
-                            incrementPaidInstallments(purchase.id)
-                          }
+                          onClick={() => incrementPaidInstallments(purchase.id)}
                           disabled={isCompleted}
                         >
                           <Plus className="h-4 w-4" />
@@ -199,9 +155,7 @@ export function FinancialSummaryStep({
                           <AlertDialogTrigger asChild>
                             <Button variant="ghost" size="sm">
                               <Trash2 className="h-4 w-4 text-red-600" />
-                              <span className="sr-only">
-                                Eliminar compra
-                              </span>
+                              <span className="sr-only">Eliminar compra</span>
                             </Button>
                           </AlertDialogTrigger>
                           <AlertDialogContent>
@@ -210,17 +164,13 @@ export function FinancialSummaryStep({
                                 ¿Estás seguro?
                               </AlertDialogTitle>
                               <AlertDialogDescription>
-                                Esta acción no se puede deshacer. Esto
-                                eliminará permanentemente la compra.
+                                Esta acción no se puede deshacer. Esto eliminará
+                                permanentemente la compra.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                              <AlertDialogCancel>
-                                Cancelar
-                              </AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={deletePurchase}
-                              >
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction onClick={deletePurchase}>
                                 Eliminar
                               </AlertDialogAction>
                             </AlertDialogFooter>
@@ -241,16 +191,16 @@ export function FinancialSummaryStep({
       </div>
       <Button
         onClick={onAddPurchase}
-        className="w-full bg-purple-600 hover:bg-purple-700 font-bold py-3 px-6 rounded-full shadow-lg transform transition duration-200 hover:scale-105"
+        className="w-full transform rounded-full bg-purple-600 px-6 py-3 font-bold shadow-lg transition duration-200 hover:scale-105 hover:bg-purple-700"
       >
         Agregar Compra
       </Button>
       <Button
         onClick={onUpdateIncomes}
-        className="w-full bg-gray-500 hover:bg-gray-600 font-bold py-3 px-6 rounded-full shadow-lg transform transition duration-200 hover:scale-105 mt-4"
+        className="mt-4 w-full transform rounded-full bg-gray-500 px-6 py-3 font-bold shadow-lg transition duration-200 hover:scale-105 hover:bg-gray-600"
       >
         Actualizar Ingresos
       </Button>
     </div>
-  )
+  );
 }

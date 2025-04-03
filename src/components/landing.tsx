@@ -1,36 +1,30 @@
+"use client";
 import { useSession } from "next-auth/react";
 import { Button } from "./ui/button";
 import useStepsStore from "@/stores/steps.store";
 import useMethodStore from "@/stores/method.store";
 import { useEffect } from "react";
-import useIncomeStore from "@/stores/income-couple.store";
+import useIncomeCoupleStore from "@/stores/income-couple.store";
+import usePurchaseStore from "@/stores/purchase.store";
 
 export function Landing() {
   const { data: session, status } = useSession();
   const { setCurrentStep, currentStep } = useStepsStore();
   const { method, getMethod } = useMethodStore();
-  const { income, getIncome } = useIncomeStore();
+  const { incomeCouple, getIncomeCouple } = useIncomeCoupleStore();
+  const { getPurchase, purchases } = usePurchaseStore();
 
   useEffect(() => {
     if (Object.keys(method).length === 0) getMethod();
   }, [method, getMethod]);
 
   useEffect(() => {
-    console.log("income", income);
-    if (Object.keys(income).length === 0) getIncome();
-  }, [income, getIncome]);
+    if (!incomeCouple) getIncomeCouple();
+  }, [incomeCouple, getIncomeCouple]);
 
-  const onContinue = () => {
-    if (!session?.user) {
-      setCurrentStep(1);
-    } else if (!method) {
-      setCurrentStep(2);
-    } else if (!income) {
-      setCurrentStep(3);
-    } else {
-      setCurrentStep(5);
-    }
-  };
+  useEffect(() => {
+    if (!purchases) getPurchase();
+  }, [purchases, getPurchase]);
 
   if (status === "loading") {
     return <p>Cargando...</p>;
@@ -39,6 +33,19 @@ export function Landing() {
   if (currentStep !== 0) return null;
 
   if (session?.user) {
+    const onContinue = () => {
+      if (!session?.user) {
+        setCurrentStep(1);
+      } else if (!method) {
+        setCurrentStep(2);
+      } else if (!incomeCouple) {
+        setCurrentStep(3);
+      } else if (!purchases) {
+        setCurrentStep(4);
+      } else {
+        setCurrentStep(5);
+      }
+    };
     return (
       <div className="text-center">
         <h1 className="mb-4 text-2xl font-bold text-purple-800">

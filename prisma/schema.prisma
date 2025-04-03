@@ -24,9 +24,8 @@ model User {
   // Optional for WebAuthn support
   Authenticator Authenticator[]
 
-  Method Method[]
-
-  IncomeCouple IncomeCouple?
+  Method Method?
+  Person Person[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -112,15 +111,30 @@ enum MethodName {
   PROPORCIONAL
 }
 
-model IncomeCouple {
-  id            String @id @default(cuid())
-  person1       String
-  person2       String
-  incomePerson1 Float
-  incomePerson2 Float
+model Person {
+  id     String @id @default(cuid())
+  name   String
+  income Float
 
-  user   User   @relation(fields: [userId], references: [id])
-  userId String @unique
+  Purchase Purchase[]
+
+  User   User?   @relation(fields: [userId], references: [id])
+  userId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Purchase {
+  id               String   @id @default(cuid())
+  amount           Float
+  description      String
+  firstPaymentDate DateTime
+  installments     Int
+  paidInstallments Int
+
+  Person   Person? @relation(fields: [personId], references: [id])
+  personId String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

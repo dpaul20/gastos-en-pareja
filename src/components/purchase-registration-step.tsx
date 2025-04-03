@@ -1,38 +1,64 @@
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent } from "@/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { Calendar, HelpCircle } from "lucide-react"
+"use client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Calendar, HelpCircle } from "lucide-react";
+import { useState } from "react";
+import usePurchaseStore from "@/stores/purchase.store";
+import useIncomeCoupleStore from "@/stores/income-couple.store";
+import useStepsStore from "@/stores/steps.store";
 
-interface PurchaseRegistrationStepProps {
-  newPurchase: {
-    description: string;
-    amount: number;
-    installments: number;
-    buyer: string;
-    paidInstallments: number;
-    firstPaymentDate: string;
+export function PurchaseRegistrationStep() {
+  const { currentStep, setCurrentStep } = useStepsStore();
+  const { purchases, setPurchases } = usePurchaseStore();
+  const { incomeCouple } = useIncomeCoupleStore();
+  const [editingPurchase, setEditingPurchase] = useState<number | null>(null);
+  const [description, setDescription] = useState("");
+  const [amount, setAmount] = useState(0);
+  const [installments, setInstallments] = useState(1);
+  const [paidInstallments, setPaidInstallments] = useState(0);
+  const [buyer, setBuyer] = useState("");
+  const [firstPaymentDate, setFirstPaymentDate] = useState("");
+
+  const addPurchase = () => {
+    if (editingPurchase) {
+      setPurchases(
+        purchases.map((p) =>
+          p.id === editingPurchase
+            ? { ...newPurchase, id: editingPurchase }
+            : p,
+        ),
+      );
+      setEditingPurchase(null);
+    } else {
+      const newPurchaseWithId = { ...newPurchase, id: Date.now() };
+      setPurchases([...purchases, newPurchaseWithId]);
+    }
   };
-  editingPurchase: number | null;
-  names: { person1: string; person2: string };
-  handleNewPurchaseChange: (field: string, value: string | number) => void;
-  addPurchase: () => void;
-  onViewSummary: () => void;
-}
 
-export function PurchaseRegistrationStep({
-  newPurchase,
-  editingPurchase,
-  names,
-  handleNewPurchaseChange,
-  addPurchase,
-  onViewSummary,
-}: PurchaseRegistrationStepProps) {
+  const onViewSummary = () => {
+    setCurrentStep(5);
+  };
+
+  if (currentStep !== 4) return null;
+
   return (
     <div className="space-y-6">
-      <h2 className="text-3xl font-semibold text-center text-purple-800">
+      <h2 className="text-center text-3xl font-semibold text-purple-800">
         {editingPurchase ? "Editar Compra" : "Registro de Compras"}
       </h2>
       <Card>
@@ -47,10 +73,8 @@ export function PurchaseRegistrationStep({
             <Input
               id="description"
               placeholder="Ej: Supermercado, Alquiler, etc."
-              value={newPurchase.description}
-              onChange={(e) =>
-                handleNewPurchaseChange("description", e.target.value)
-              }
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
             />
           </div>
 
@@ -62,33 +86,31 @@ export function PurchaseRegistrationStep({
               Monto total
             </Label>
             <div className="relative">
-              <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500">
+              <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
                 $
               </span>
               <Input
                 id="amount"
                 type="number"
                 placeholder="0.00"
-                value={newPurchase.amount}
-                onChange={(e) =>
-                  handleNewPurchaseChange("amount", parseFloat(e.target.value))
-                }
+                value={amount}
+                onChange={(e) => setAmount(parseFloat(e.target.value))}
                 className="pl-7"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label
                 htmlFor="installments"
-                className="text-sm font-medium text-gray-700 flex items-center"
+                className="flex items-center text-sm font-medium text-gray-700"
               >
                 Número de cuotas
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <HelpCircle className="h-4 w-4 ml-1 text-gray-400" />
+                      <HelpCircle className="ml-1 h-4 w-4 text-gray-400" />
                     </TooltipTrigger>
                     <TooltipContent>
                       <p>
@@ -104,28 +126,25 @@ export function PurchaseRegistrationStep({
                 type="number"
                 min="1"
                 placeholder="1"
-                value={newPurchase.installments}
-                onChange={(e) =>
-                  handleNewPurchaseChange("installments", parseInt(e.target.value))
-                }
+                value={installments}
+                onChange={(e) => setInstallments(parseInt(e.target.value))}
               />
             </div>
 
             <div className="space-y-2">
               <Label
                 htmlFor="paidInstallments"
-                className="text-sm font-medium text-gray-700 flex items-center"
+                className="flex items-center text-sm font-medium text-gray-700"
               >
                 Cuotas ya pagadas
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <HelpCircle className="h-4 w-4 ml-1 text-gray-400" />
+                      <HelpCircle className="ml-1 h-4 w-4 text-gray-400" />
                     </TooltipTrigger>
                     <TooltipContent>
                       <p>
-                        Número de cuotas que ya han sido pagadas hasta la
-                        fecha.
+                        Número de cuotas que ya han sido pagadas hasta la fecha.
                       </p>
                     </TooltipContent>
                   </Tooltip>
@@ -135,15 +154,10 @@ export function PurchaseRegistrationStep({
                 id="paidInstallments"
                 type="number"
                 min="0"
-                max={newPurchase.installments}
+                max={installments}
                 placeholder="0"
-                value={newPurchase.paidInstallments}
-                onChange={(e) =>
-                  handleNewPurchaseChange(
-                    "paidInstallments",
-                    parseInt(e.target.value)
-                  )
-                }
+                value={paidInstallments}
+                onChange={(e) => setPaidInstallments(parseInt(e.target.value))}
               />
             </div>
           </div>
@@ -155,18 +169,16 @@ export function PurchaseRegistrationStep({
             >
               ¿Quién realizó la compra?
             </Label>
-            <Select
-              value={newPurchase.buyer}
-              onValueChange={(value) =>
-                handleNewPurchaseChange("buyer", value)
-              }
-            >
+            <Select value={buyer} onValueChange={(value) => setBuyer(value)}>
               <SelectTrigger id="buyer">
                 <SelectValue placeholder="Selecciona quién compró" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="person1">{names.person1}</SelectItem>
-                <SelectItem value="person2">{names.person2}</SelectItem>
+                {incomeCouple?.map((person) => (
+                  <SelectItem key={person.id} value={person.id}>
+                    {person.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -174,18 +186,18 @@ export function PurchaseRegistrationStep({
           <div className="space-y-2">
             <Label
               htmlFor="firstPaymentDate"
-              className="text-sm font-medium text-gray-700 flex items-center"
+              className="flex items-center text-sm font-medium text-gray-700"
             >
               Fecha de la primera cuota
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <HelpCircle className="h-4 w-4 ml-1 text-gray-400" />
+                    <HelpCircle className="ml-1 h-4 w-4 text-gray-400" />
                   </TooltipTrigger>
                   <TooltipContent>
                     <p>
-                      La fecha en que se realizó o se realizará el primer
-                      pago de esta compra.
+                      La fecha en que se realizó o se realizará el primer pago
+                      de esta compra.
                     </p>
                   </TooltipContent>
                 </Tooltip>
@@ -196,12 +208,9 @@ export function PurchaseRegistrationStep({
               <Input
                 id="firstPaymentDate"
                 type="date"
-                value={newPurchase.firstPaymentDate}
+                value={firstPaymentDate}
                 onChange={(e) =>
-                  handleNewPurchaseChange(
-                    "firstPaymentDate",
-                    e.target.value
-                  )
+                  setFirstPaymentDate(new Date(e.target.value).toISOString())
                 }
               />
             </div>
@@ -209,7 +218,7 @@ export function PurchaseRegistrationStep({
 
           <Button
             onClick={addPurchase}
-            className="w-full bg-purple-600 hover:bg-purple-700 font-bold py-2 px-4 rounded-full shadow-md transform transition duration-200 hover:scale-105"
+            className="w-full transform rounded-full bg-purple-600 px-4 py-2 font-bold shadow-md transition duration-200 hover:scale-105 hover:bg-purple-700"
           >
             {editingPurchase ? "Actualizar Compra" : "Agregar Compra"}
           </Button>
@@ -217,10 +226,10 @@ export function PurchaseRegistrationStep({
       </Card>
       <Button
         onClick={onViewSummary}
-        className="w-full bg-purple-600 hover:bg-purple-700 font-bold py-3 px-6 rounded-full shadow-lg transform transition duration-200 hover:scale-105"
+        className="w-full transform rounded-full bg-purple-600 px-6 py-3 font-bold shadow-lg transition duration-200 hover:scale-105 hover:bg-purple-700"
       >
         Ver Resumen
       </Button>
     </div>
-  )
+  );
 }

@@ -1,22 +1,22 @@
-import { IncomeCouple } from "@prisma/client";
+import { Person } from "@prisma/client";
 import axios from "axios";
 import { create } from "zustand";
 
 export interface IcomeCoupleStore {
-  income: IncomeCouple;
-  setIncome: (income: IncomeCouple) => void;
-  getIncome: () => Promise<void>;
+  incomeCouple: Person[] | null;
+  setIncomeCouple: (incomeCouple: Person[]) => void;
+  getIncomeCouple: () => Promise<void>;
 }
 
-const useIncomeStore = create<IcomeCoupleStore>((set) => ({
-  income: {} as IncomeCouple,
+const useIncomeCoupleStore = create<IcomeCoupleStore>((set) => ({
+  incomeCouple: null,
 
-  setIncome: (income) => set({ income }),
+  setIncomeCouple: (incomeCouple: Person[]) => set({ incomeCouple: incomeCouple }),
 
-  getIncome: async () => {
-    const { data: incomeCouple } = await axios.get<IncomeCouple>("/api/income");
-    set({ income: incomeCouple });
+  getIncomeCouple: async () => {
+    const { data: incomeCouple } = await axios.get<Person[]>("/api/persons");
+    set({ incomeCouple: incomeCouple });
   },
 }));
 
-export default useIncomeStore;
+export default useIncomeCoupleStore;

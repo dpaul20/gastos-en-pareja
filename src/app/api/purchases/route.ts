@@ -1,19 +1,28 @@
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/auth/authOptions";
 
 const prisma = new PrismaClient();
 
 export async function GET() {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const purchases = await prisma.purchase.findMany({
-      include: { buyer: true },
+      where: {
+        Person: {
+          userId: session?.user.id,
+        },
+      },
     });
     return NextResponse.json(purchases);
   } catch (error) {
-    return NextResponse.json(
-      { error: "Error fetching purchases" },
-      { status: 500 }
-    );
+    console.error({ error });
+    return NextResponse.json({ error: JSON.stringify(error) }, { status: 500 });
   }
 }
 
@@ -34,7 +43,7 @@ export async function POST(request: Request) {
   } catch (error) {
     return NextResponse.json(
       { error: "Error creating purchase" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -20,8 +20,15 @@ const useMethodStore = create<MethodStore>((set) => ({
     set({ methodName });
   },
   getMethod: async () => {
-    const { data: method } = await axios.get("/api/methods");
-    set({ method });
+    try {
+      const { data: method } = await axios.get("/api/methods", {
+        withCredentials: true, // This ensures cookies (including session cookies) are sent
+      });
+      set({ method });
+    } catch (error) {
+      console.error("Error fetching method:", error);
+      // Optional: Handle error state in your store
+    }
   },
 }));
 
