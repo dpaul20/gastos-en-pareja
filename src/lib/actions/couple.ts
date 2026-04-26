@@ -47,6 +47,20 @@ export async function sendInvitation(coupleId: string, email: string) {
   } = await supabase.auth.getUser();
   if (!user) throw new Error("No autenticado");
 
+  // Rate limit: máx 5 invitaciones por usuario en la última hora
+  const oneHourAgo = new Date(Date.now() - 3_600_000).toISOString();
+  const { count } = await supabase
+    .from("invitations")
+    .select("id", { count: "exact", head: true })
+    .eq("inviter_id", user.id)
+    .gte("created_at", oneHourAgo);
+
+  if ((count ?? 0) >= 5) {
+    throw new Error(
+      "Límite de invitaciones alcanzado. Intentá de nuevo en una hora.",
+    );
+  }
+
   const { data: invitation, error } = await supabase
     .from("invitations")
     .insert({ couple_id: coupleId, inviter_id: user.id, email })
@@ -55,7 +69,12 @@ export async function sendInvitation(coupleId: string, email: string) {
 
   if (error || !invitation) throw new Error("Error al crear la invitación");
 
-  const inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL}/invite/${invitation.token}`;
+  // Build invite URL from request headers — no NEXT_PUBLIC_APP_URL needed
+  const { headers } = await import("next/headers");
+  const h = await headers();
+  const host = h.get("host") ?? "localhost:3000";
+  const proto = process.env.NODE_ENV === "production" ? "https" : "http";
+  const inviteUrl = `${proto}://${host}/invite/${invitation.token}`;
 
   // Send email via Resend
   const res = await fetch("https://api.resend.com/emails", {
