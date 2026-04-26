@@ -43,10 +43,14 @@ export function calculateMonthlyBalance(params: {
 
   const totalIncome = incomes.reduce((sum, i) => sum + Number(i.amount), 0);
 
-  // Monthly installment cost = total_amount / installments for PENDING purchases
+  // Monthly installment cost = round(total_amount / installments) per purchase
+  // Rounding per-purchase avoids accumulated floating point drift
   const installmentTotal = installmentPurchases
     .filter((p) => p.paid_installments < p.installments)
-    .reduce((sum, p) => sum + Number(p.total_amount) / p.installments, 0);
+    .reduce(
+      (sum, p) => sum + Math.round(Number(p.total_amount) / p.installments),
+      0,
+    );
 
   // Fixed expenses: sum amounts from active templates for this month
   const fixedTotal = fixedExpenseInstances.reduce(
