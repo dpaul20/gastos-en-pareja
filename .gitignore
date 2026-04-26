@@ -23,6 +23,8 @@
 # misc
 .DS_Store
 *.pem
+*.zip
+"Gastos en Pareja Design System*"
 
 # debug
 npm-debug.log*
