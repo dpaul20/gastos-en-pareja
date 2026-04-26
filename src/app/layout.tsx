@@ -1,20 +1,15 @@
 import type { Metadata } from "next";
-import localFont from "next/font/local";
+import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { ThemeProvider } from "@/components/theme-provider";
-import AuthWrapper from "@/app/AuthWrapper";
-import { LoginButton } from "@/components/login-button";
-import { DarkMode } from "@/components/dark-mode";
 
-const geistSans = localFont({
-  src: "./fonts/GeistVF.woff",
+const geistSans = Geist({
   variable: "--font-geist-sans",
-  weight: "100 900",
+  subsets: ["latin"],
 });
-const geistMono = localFont({
-  src: "./fonts/GeistMonoVF.woff",
+
+const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
-  weight: "100 900",
+  subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
@@ -28,29 +23,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <AuthWrapper>
-            <div className="flex min-h-screen flex-col items-center justify-center p-4">
-              <div className="w-full max-w-4xl rounded-lg bg-gray-100 p-6 shadow-lg dark:bg-zinc-800">
-                <div className="mb-6 flex items-center justify-between">
-                  <LoginButton />
-                  <DarkMode />
-                </div>
-                {children}
-              </div>
-            </div>
-          </AuthWrapper>
-        </ThemeProvider>
-      </body>
+    <html
+      lang="en"
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+    >
+      <body className="flex min-h-full flex-col">{children}</body>
     </html>
   );
 }

@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:registry.modelcontextprotocol.io)",
+      "Bash(claude mcp *)",
+      "Read(//c/Users/dpaul/**)",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\('mcpServers', {}\\), indent=2\\)\\)\")",
+      "Bash(node -e \"const d=require\\('C:/Users/dpaul/.claude.json'\\); console.log\\(JSON.stringify\\(d.mcpServers || d.mcp || {}, null, 2\\)\\)\")"
+    ]
+  }
+}
