@@ -7,6 +7,17 @@ export const metadata: Metadata = {
   description:
     "Gestioná los gastos del mes de forma proporcional a los ingresos de cada uno.",
   manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Gastos en Pareja",
+  },
+  formatDetection: { telephone: false },
+  openGraph: {
+    type: "website",
+    title: "Gastos en Pareja",
+    description: "Gestioná los gastos del mes de forma proporcional.",
+  },
 };
 
 export const viewport: Viewport = {
