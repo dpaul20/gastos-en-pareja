@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /login
+Disallow: /dashboard
+Disallow: /expenses
+Disallow: /history
+Disallow: /settings
+Disallow: /invite/
+Disallow: /auth/
+
+Sitemap: https://gastospareja.app/sitemap.xml
