@@ -9,6 +9,7 @@ import { formatARS, getMonthDate } from "@/lib/utils";
 import {
   useCoupleMember,
   useMonthlyData,
+  useCoupleMemberProfiles,
 } from "@/lib/queries/use-monthly-data";
 import {
   createInstallmentPurchase,
@@ -226,6 +227,22 @@ export default function ExpensesPage() {
   const coupleId = member?.couple_id ?? null;
   const month = getMonthDate();
   const { data } = useMonthlyData(coupleId, month);
+  const { data: profiles = [] } = useCoupleMemberProfiles(
+    member?.user_id ?? null,
+  );
+
+  const getInitials = (userId: string) => {
+    const p = profiles.find((pr) => pr.user_id === userId);
+    if (!p) return "?";
+    return p.full_name
+      .split(" ")
+      .map((w: string) => w[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase();
+  };
+  const getPerson = (userId: string): "a" | "b" =>
+    userId === member?.user_id ? "a" : "b";
 
   function invalidate() {
     queryClient.invalidateQueries({ queryKey: ["monthly-data"] });
@@ -636,8 +653,8 @@ export default function ExpensesPage() {
                 }}
               >
                 <Avatar
-                  initials={v.user_id === member?.user_id ? "DE" : "AN"}
-                  person={v.user_id === member?.user_id ? "a" : "b"}
+                  initials={getInitials(v.user_id)}
+                  person={getPerson(v.user_id)}
                   size="md"
                 />
                 <div style={{ flex: 1 }}>

@@ -9,6 +9,7 @@ import { formatARS, formatMonth, getMonthDate } from "@/lib/utils";
 import {
   useCoupleMember,
   useMonthlyData,
+  useCoupleMemberProfiles,
 } from "@/lib/queries/use-monthly-data";
 import { calculateMonthlyBalance } from "@/lib/utils/balance";
 import { ensureFixedExpenseInstances } from "@/lib/actions/expenses";
@@ -41,18 +42,36 @@ export default function DashboardPage() {
       })
     : null;
 
+  const { data: profiles = [] } = useCoupleMemberProfiles(
+    member?.user_id ?? null,
+  );
+
   const isLoading = loadingMember || loadingData;
 
-  // Find display names from member data
   const currentUserId = member?.user_id;
   const myBalance = balance?.balances.find((b) => b.userId === currentUserId);
   const partnerBalance = balance?.balances.find(
     (b) => b.userId !== currentUserId,
   );
 
-  // Determine initials (placeholder — real names come from auth.users)
-  const myInitials = "DE";
-  const partnerInitials = "AN";
+  // Initials from real profiles — falls back to "?" if not loaded yet
+  const getInitials = (name: string) =>
+    name
+      .split(" ")
+      .map((w) => w[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase();
+
+  const myProfile = profiles.find((p) => p.user_id === currentUserId);
+  const partnerProfile = profiles.find((p) => p.user_id !== currentUserId);
+  const myInitials = myProfile ? getInitials(myProfile.full_name) : "?";
+  const partnerInitials = partnerProfile
+    ? getInitials(partnerProfile.full_name)
+    : "?";
+  const myFirstName = myProfile?.full_name.split(" ")[0] ?? "Vos";
+  const partnerFirstName =
+    partnerProfile?.full_name.split(" ")[0] ?? "Tu pareja";
 
   if (!member || member.couples?.status !== "ACTIVE") {
     return (
@@ -207,7 +226,9 @@ export default function DashboardPage() {
                         fontFamily: "var(--font-sans)",
                       }}
                     >
-                      {balance.debtor === currentUserId ? "Debés" : "Te deben"}
+                      {balance.debtor === currentUserId
+                        ? `${myFirstName} le debe a ${partnerFirstName}`
+                        : `${partnerFirstName} le debe a ${myFirstName}`}
                     </div>
                   </>
                 ) : (
@@ -245,6 +266,7 @@ export default function DashboardPage() {
                   {[
                     {
                       initials: myInitials,
+                      name: myFirstName,
                       person: "a" as const,
                       pct: myBalance
                         ? Math.round(myBalance.percentage * 100)
@@ -255,6 +277,7 @@ export default function DashboardPage() {
                     },
                     {
                       initials: partnerInitials,
+                      name: partnerFirstName,
                       person: "b" as const,
                       pct: partnerBalance
                         ? Math.round(partnerBalance.percentage * 100)
@@ -294,7 +317,7 @@ export default function DashboardPage() {
                             fontFamily: "var(--font-sans)",
                           }}
                         >
-                          {p.initials} · {p.pct}%
+                          {p.name} · {p.pct}%
                         </span>
                       </div>
                       <div
