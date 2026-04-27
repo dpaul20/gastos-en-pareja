@@ -1,84 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Avatar } from "@/components/shared/avatar";
 import { Badge } from "@/components/shared/badge";
 import { FAB } from "@/components/shared/fab";
-import { formatARS } from "@/lib/utils";
-
-// TODO: replace with real data (issue #4)
-const mockCuotas: Array<{
-  id: string;
-  name: string;
-  cuota: number;
-  paid: number;
-  total: number;
-  status: "pending" | "paid";
-}> = [
-  {
-    id: "1",
-    name: "Aire Acondicionado",
-    cuota: 55000,
-    paid: 19,
-    total: 24,
-    status: "pending",
-  },
-  {
-    id: "2",
-    name: "Ventiladores",
-    cuota: 55608,
-    paid: 3,
-    total: 9,
-    status: "pending",
-  },
-];
-
-const mockFijos = [
-  { id: "1", name: "Casita", amt: 500000, due: "9 abr.", paid: true },
-  {
-    id: "2",
-    name: "EPEC — Electricidad",
-    amt: 68740,
-    due: "31 mar.",
-    paid: true,
-  },
-  { id: "3", name: "Aguas Cordobesas", amt: 26910, due: "9 abr.", paid: true },
-  { id: "4", name: "Cable", amt: 38877, due: "13 abr.", paid: true },
-  { id: "5", name: "Expensas", amt: 26292, due: "10 abr.", paid: true },
-  { id: "6", name: "Naranja X", amt: 152266, due: "10 abr.", paid: true },
-  { id: "7", name: "Claro", amt: 9115, due: "1 abr.", paid: true },
-];
-
-const mockVariables = [
-  {
-    id: "1",
-    name: "Supermercado",
-    amt: 8450,
-    person: "b" as const,
-    date: "22 abr.",
-  },
-  {
-    id: "2",
-    name: "YPF — Nafta",
-    amt: 12000,
-    person: "a" as const,
-    date: "18 abr.",
-  },
-  {
-    id: "3",
-    name: "Farmacia",
-    amt: 3200,
-    person: "a" as const,
-    date: "20 abr.",
-  },
-  {
-    id: "4",
-    name: "Restaurante",
-    amt: 6800,
-    person: "b" as const,
-    date: "15 abr.",
-  },
-];
+import { formatARS, getMonthDate } from "@/lib/utils";
+import {
+  useCoupleMember,
+  useMonthlyData,
+} from "@/lib/queries/use-monthly-data";
+import {
+  createInstallmentPurchase,
+  incrementPaidInstallments,
+  createFixedExpenseTemplate,
+  toggleFixedExpenseInstance,
+  createVariableExpense,
+} from "@/lib/actions/expenses";
 
 type Tab = "cuotas" | "fijos" | "variables";
 
@@ -135,298 +73,43 @@ function SegmentedControl({
   );
 }
 
-function CuotasList() {
-  return (
-    <div
-      style={{
-        padding: "12px 16px",
-        display: "flex",
-        flexDirection: "column",
-        gap: 8,
-      }}
-    >
-      {mockCuotas.map((c) => (
-        <div
-          key={c.id}
-          style={{
-            background: "var(--bg-elevated)",
-            borderRadius: 14,
-            padding: "14px 16px",
-            border: "1px solid var(--border-subtle)",
-            boxShadow: "var(--shadow-sm)",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "flex-start",
-              marginBottom: 8,
-            }}
-          >
-            <div>
-              <div
-                style={{
-                  fontSize: 15,
-                  fontWeight: 500,
-                  color: "var(--fg-1)",
-                  fontFamily: "var(--font-sans)",
-                }}
-              >
-                {c.name}
-              </div>
-              <div
-                style={{
-                  fontSize: 12,
-                  color: "var(--fg-3)",
-                  marginTop: 2,
-                  fontFamily: "var(--font-sans)",
-                }}
-              >
-                Cuota {c.paid} de {c.total}
-              </div>
-            </div>
-            <div style={{ textAlign: "right" }}>
-              <div
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 15,
-                  fontWeight: 600,
-                  color: "var(--fg-1)",
-                  marginBottom: 4,
-                }}
-              >
-                {formatARS(c.cuota)}
-              </div>
-              <Badge variant={c.status === "paid" ? "success" : "warning"}>
-                {c.status === "paid" ? "Pagado" : "Pendiente"}
-              </Badge>
-            </div>
-          </div>
-          <div
-            style={{
-              background: "var(--color-neutral-200)",
-              borderRadius: 99,
-              height: 5,
-              overflow: "hidden",
-            }}
-          >
-            <div
-              style={{
-                width: `${(c.paid / c.total) * 100}%`,
-                height: "100%",
-                background:
-                  c.status === "paid"
-                    ? "var(--status-success)"
-                    : "var(--accent)",
-                borderRadius: 99,
-              }}
-            />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
+function AddSheet({
+  tab,
+  onClose,
+  onSave,
+}: {
+  tab: Tab;
+  onClose: () => void;
+  onSave: (data: Record<string, string>) => void;
+}) {
+  const [fields, setFields] = useState<Record<string, string>>({});
 
-function FijosList() {
-  const total = mockFijos.reduce((s, f) => s + f.amt, 0);
-  return (
-    <div style={{ padding: "12px 16px" }}>
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: 1,
-          background: "var(--bg-elevated)",
-          borderRadius: 14,
-          border: "1px solid var(--border-subtle)",
-          overflow: "hidden",
-          boxShadow: "var(--shadow-sm)",
-        }}
-      >
-        {mockFijos.map((f, i) => (
-          <div
-            key={f.id}
-            style={{
-              padding: "14px 16px",
-              display: "flex",
-              alignItems: "center",
-              gap: 12,
-              borderBottom:
-                i < mockFijos.length - 1
-                  ? "1px solid var(--border-subtle)"
-                  : "none",
-            }}
-          >
-            <div style={{ flex: 1 }}>
-              <div
-                style={{
-                  fontSize: 14,
-                  fontWeight: 500,
-                  color: "var(--fg-1)",
-                  fontFamily: "var(--font-sans)",
-                }}
-              >
-                {f.name}
-              </div>
-              <div
-                style={{
-                  fontSize: 11,
-                  color: "var(--fg-3)",
-                  marginTop: 1,
-                  fontFamily: "var(--font-sans)",
-                }}
-              >
-                Vence {f.due}
-              </div>
-            </div>
-            <div
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 14,
-                fontWeight: 600,
-                color: "var(--fg-1)",
-                marginRight: 8,
-              }}
-            >
-              {formatARS(f.amt)}
-            </div>
-            <div
-              style={{
-                width: 28,
-                height: 28,
-                borderRadius: 99,
-                background: f.paid
-                  ? "var(--status-success-subtle)"
-                  : "var(--bg-sunken)",
-                border: `2px solid ${f.paid ? "var(--status-success)" : "var(--border-default)"}`,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
-              }}
-            >
-              {f.paid && (
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="var(--status-success)"
-                  strokeWidth="2.5"
-                >
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-      <div
-        style={{
-          background: "var(--bg-elevated)",
-          borderRadius: 12,
-          padding: "12px 16px",
-          marginTop: 8,
-          display: "flex",
-          justifyContent: "space-between",
-          border: "1px solid var(--border-subtle)",
-        }}
-      >
-        <span
-          style={{
-            fontSize: 13,
-            fontWeight: 600,
-            color: "var(--fg-2)",
-            fontFamily: "var(--font-sans)",
-          }}
-        >
-          Total fijos
-        </span>
-        <span
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 15,
-            fontWeight: 700,
-            color: "var(--fg-1)",
-          }}
-        >
-          {formatARS(total)}
-        </span>
-      </div>
-    </div>
-  );
-}
+  const fieldDefs: Record<
+    Tab,
+    Array<{ key: string; label: string; inputMode?: string }>
+  > = {
+    cuotas: [
+      { key: "description", label: "Descripción" },
+      { key: "total_amount", label: "Monto total", inputMode: "numeric" },
+      { key: "installments", label: "Cuotas", inputMode: "numeric" },
+      { key: "first_payment_date", label: "Primer pago (AAAA-MM-DD)" },
+    ],
+    fijos: [
+      { key: "description", label: "Descripción" },
+      { key: "amount", label: "Monto", inputMode: "numeric" },
+      {
+        key: "due_day",
+        label: "Día de vencimiento (1-31)",
+        inputMode: "numeric",
+      },
+    ],
+    variables: [
+      { key: "description", label: "Descripción" },
+      { key: "amount", label: "Monto", inputMode: "numeric" },
+      { key: "date", label: "Fecha (AAAA-MM-DD)" },
+    ],
+  };
 
-function VariablesList() {
-  return (
-    <div
-      style={{
-        padding: "12px 16px",
-        display: "flex",
-        flexDirection: "column",
-        gap: 8,
-      }}
-    >
-      {mockVariables.map((v) => (
-        <div
-          key={v.id}
-          style={{
-            background: "var(--bg-elevated)",
-            borderRadius: 14,
-            padding: "14px 16px",
-            border: "1px solid var(--border-subtle)",
-            boxShadow: "var(--shadow-sm)",
-            display: "flex",
-            alignItems: "center",
-            gap: 12,
-          }}
-        >
-          <Avatar
-            initials={v.person === "a" ? "DE" : "AN"}
-            person={v.person}
-            size="md"
-          />
-          <div style={{ flex: 1 }}>
-            <div
-              style={{
-                fontSize: 14,
-                fontWeight: 500,
-                color: "var(--fg-1)",
-                fontFamily: "var(--font-sans)",
-              }}
-            >
-              {v.name}
-            </div>
-            <div
-              style={{
-                fontSize: 12,
-                color: "var(--fg-3)",
-                marginTop: 2,
-                fontFamily: "var(--font-sans)",
-              }}
-            >
-              {v.person === "a" ? "Deivy" : "Annie"} · {v.date}
-            </div>
-          </div>
-          <div
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 15,
-              fontWeight: 600,
-              color: "var(--fg-1)",
-            }}
-          >
-            {formatARS(v.amt)}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function AddExpenseSheet({ onClose }: { onClose: () => void }) {
   return (
     <div
       style={{
@@ -466,12 +149,13 @@ function AddExpenseSheet({ onClose }: { onClose: () => void }) {
             color: "var(--fg-1)",
             fontFamily: "var(--font-sans)",
             marginBottom: 16,
+            textTransform: "capitalize",
           }}
         >
-          Nuevo gasto
+          Nuevo gasto — {tab}
         </div>
-        {["Descripción", "Monto"].map((label) => (
-          <div key={label} style={{ marginBottom: 14 }}>
+        {fieldDefs[tab].map((f) => (
+          <div key={f.key} style={{ marginBottom: 14 }}>
             <div
               style={{
                 fontSize: 13,
@@ -481,11 +165,17 @@ function AddExpenseSheet({ onClose }: { onClose: () => void }) {
                 fontFamily: "var(--font-sans)",
               }}
             >
-              {label}
+              {f.label}
             </div>
             <input
-              placeholder={label === "Monto" ? "$0" : ""}
-              inputMode={label === "Monto" ? "numeric" : "text"}
+              value={fields[f.key] ?? ""}
+              onChange={(e) =>
+                setFields((p) => ({ ...p, [f.key]: e.target.value }))
+              }
+              inputMode={
+                (f.inputMode as React.HTMLAttributes<HTMLInputElement>["inputMode"]) ??
+                "text"
+              }
               style={{
                 width: "100%",
                 border: "1.5px solid var(--border-default)",
@@ -493,15 +183,19 @@ function AddExpenseSheet({ onClose }: { onClose: () => void }) {
                 padding: "12px 14px",
                 fontSize: 15,
                 fontFamily:
-                  label === "Monto" ? "var(--font-mono)" : "var(--font-sans)",
+                  f.inputMode === "numeric"
+                    ? "var(--font-mono)"
+                    : "var(--font-sans)",
                 outline: "none",
                 background: "var(--bg-elevated)",
                 color: "var(--fg-1)",
+                boxSizing: "border-box",
               }}
             />
           </div>
         ))}
         <button
+          onClick={() => onSave(fields)}
           style={{
             width: "100%",
             background: "var(--accent)",
@@ -514,9 +208,8 @@ function AddExpenseSheet({ onClose }: { onClose: () => void }) {
             fontFamily: "var(--font-sans)",
             cursor: "pointer",
           }}
-          onClick={onClose}
         >
-          Guardar gasto
+          Guardar
         </button>
       </div>
     </div>
@@ -526,6 +219,49 @@ function AddExpenseSheet({ onClose }: { onClose: () => void }) {
 export default function ExpensesPage() {
   const [tab, setTab] = useState<Tab>("cuotas");
   const [showForm, setShowForm] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const queryClient = useQueryClient();
+
+  const { data: member } = useCoupleMember();
+  const coupleId = member?.couple_id ?? null;
+  const month = getMonthDate();
+  const { data } = useMonthlyData(coupleId, month);
+
+  function invalidate() {
+    queryClient.invalidateQueries({ queryKey: ["monthly-data"] });
+  }
+
+  function handleSave(fields: Record<string, string>) {
+    setShowForm(false);
+    startTransition(async () => {
+      if (tab === "cuotas") {
+        await createInstallmentPurchase({
+          description: fields.description,
+          total_amount: parseFloat(fields.total_amount),
+          installments: parseInt(fields.installments),
+          first_payment_date:
+            fields.first_payment_date || new Date().toISOString().slice(0, 10),
+        });
+      } else if (tab === "fijos") {
+        await createFixedExpenseTemplate({
+          description: fields.description,
+          amount: parseFloat(fields.amount),
+          due_day: parseInt(fields.due_day),
+        });
+      } else {
+        await createVariableExpense({
+          description: fields.description,
+          amount: parseFloat(fields.amount),
+          date: fields.date || new Date().toISOString().slice(0, 10),
+        });
+      }
+      invalidate();
+    });
+  }
+
+  const cuotas = data?.installmentPurchases ?? [];
+  const fijos = data?.fixedExpenseInstances ?? [];
+  const variables = data?.variableExpenses ?? [];
 
   return (
     <div
@@ -556,13 +292,400 @@ export default function ExpensesPage() {
         </div>
         <SegmentedControl active={tab} onChange={setTab} />
       </div>
+
       <div style={{ flex: 1, overflowY: "auto" }}>
-        {tab === "cuotas" && <CuotasList />}
-        {tab === "fijos" && <FijosList />}
-        {tab === "variables" && <VariablesList />}
+        {/* CUOTAS */}
+        {tab === "cuotas" && (
+          <div
+            style={{
+              padding: "12px 16px",
+              display: "flex",
+              flexDirection: "column",
+              gap: 8,
+            }}
+          >
+            {cuotas.length === 0 && (
+              <div
+                style={{
+                  textAlign: "center",
+                  padding: "48px 0",
+                  color: "var(--fg-3)",
+                  fontFamily: "var(--font-sans)",
+                  fontSize: 14,
+                }}
+              >
+                Sin compras en cuotas. Usá el + para agregar.
+              </div>
+            )}
+            {cuotas.map((c) => {
+              const isPaid = c.paid_installments >= c.installments;
+              const cuota = Math.round(c.total_amount / c.installments);
+              return (
+                <div
+                  key={c.id}
+                  style={{
+                    background: "var(--bg-elevated)",
+                    borderRadius: 14,
+                    padding: "14px 16px",
+                    border: "1px solid var(--border-subtle)",
+                    boxShadow: "var(--shadow-sm)",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "flex-start",
+                      marginBottom: 8,
+                    }}
+                  >
+                    <div>
+                      <div
+                        style={{
+                          fontSize: 15,
+                          fontWeight: 500,
+                          color: "var(--fg-1)",
+                          fontFamily: "var(--font-sans)",
+                        }}
+                      >
+                        {c.description}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: 12,
+                          color: "var(--fg-3)",
+                          marginTop: 2,
+                          fontFamily: "var(--font-sans)",
+                        }}
+                      >
+                        Cuota {c.paid_installments} de {c.installments}
+                      </div>
+                    </div>
+                    <div
+                      style={{
+                        textAlign: "right",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "flex-end",
+                        gap: 4,
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontFamily: "var(--font-mono)",
+                          fontSize: 15,
+                          fontWeight: 600,
+                          color: "var(--fg-1)",
+                        }}
+                      >
+                        {formatARS(cuota)}
+                      </div>
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: 6,
+                          alignItems: "center",
+                        }}
+                      >
+                        <Badge variant={isPaid ? "success" : "warning"}>
+                          {isPaid ? "Pagado" : "Pendiente"}
+                        </Badge>
+                        {!isPaid && (
+                          <button
+                            onClick={() =>
+                              startTransition(async () => {
+                                await incrementPaidInstallments(c.id);
+                                invalidate();
+                              })
+                            }
+                            style={{
+                              background: "var(--accent)",
+                              border: "none",
+                              borderRadius: 6,
+                              padding: "3px 8px",
+                              color: "white",
+                              fontSize: 11,
+                              fontWeight: 600,
+                              cursor: "pointer",
+                              fontFamily: "var(--font-sans)",
+                            }}
+                          >
+                            +1
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    style={{
+                      background: "var(--color-neutral-200)",
+                      borderRadius: 99,
+                      height: 5,
+                      overflow: "hidden",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: `${(c.paid_installments / c.installments) * 100}%`,
+                        height: "100%",
+                        background: isPaid
+                          ? "var(--status-success)"
+                          : "var(--accent)",
+                        borderRadius: 99,
+                      }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* FIJOS */}
+        {tab === "fijos" && (
+          <div style={{ padding: "12px 16px" }}>
+            {fijos.length === 0 && (
+              <div
+                style={{
+                  textAlign: "center",
+                  padding: "48px 0",
+                  color: "var(--fg-3)",
+                  fontFamily: "var(--font-sans)",
+                  fontSize: 14,
+                }}
+              >
+                Sin gastos fijos. Usá el + para agregar.
+              </div>
+            )}
+            {fijos.length > 0 && (
+              <>
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 1,
+                    background: "var(--bg-elevated)",
+                    borderRadius: 14,
+                    border: "1px solid var(--border-subtle)",
+                    overflow: "hidden",
+                    boxShadow: "var(--shadow-sm)",
+                  }}
+                >
+                  {fijos.map((fi, i) => (
+                    <div
+                      key={fi.id}
+                      style={{
+                        padding: "14px 16px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 12,
+                        borderBottom:
+                          i < fijos.length - 1
+                            ? "1px solid var(--border-subtle)"
+                            : "none",
+                      }}
+                    >
+                      <div style={{ flex: 1 }}>
+                        <div
+                          style={{
+                            fontSize: 14,
+                            fontWeight: 500,
+                            color: "var(--fg-1)",
+                            fontFamily: "var(--font-sans)",
+                          }}
+                        >
+                          {fi.fixed_expense_templates.description}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: 11,
+                            color: "var(--fg-3)",
+                            marginTop: 1,
+                            fontFamily: "var(--font-sans)",
+                          }}
+                        >
+                          Vence día {fi.fixed_expense_templates.due_day}
+                        </div>
+                      </div>
+                      <div
+                        style={{
+                          fontFamily: "var(--font-mono)",
+                          fontSize: 14,
+                          fontWeight: 600,
+                          color: "var(--fg-1)",
+                          marginRight: 8,
+                        }}
+                      >
+                        {formatARS(fi.fixed_expense_templates.amount)}
+                      </div>
+                      <button
+                        onClick={() =>
+                          startTransition(async () => {
+                            await toggleFixedExpenseInstance(fi.id, !fi.paid);
+                            invalidate();
+                          })
+                        }
+                        style={{
+                          width: 28,
+                          height: 28,
+                          borderRadius: 99,
+                          cursor: "pointer",
+                          background: fi.paid
+                            ? "var(--status-success-subtle)"
+                            : "var(--bg-sunken)",
+                          border: `2px solid ${fi.paid ? "var(--status-success)" : "var(--border-default)"}`,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          flexShrink: 0,
+                        }}
+                      >
+                        {fi.paid && (
+                          <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="var(--status-success)"
+                            strokeWidth="2.5"
+                          >
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        )}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <div
+                  style={{
+                    background: "var(--bg-elevated)",
+                    borderRadius: 12,
+                    padding: "12px 16px",
+                    marginTop: 8,
+                    display: "flex",
+                    justifyContent: "space-between",
+                    border: "1px solid var(--border-subtle)",
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 600,
+                      color: "var(--fg-2)",
+                      fontFamily: "var(--font-sans)",
+                    }}
+                  >
+                    Total fijos
+                  </span>
+                  <span
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 15,
+                      fontWeight: 700,
+                      color: "var(--fg-1)",
+                    }}
+                  >
+                    {formatARS(
+                      fijos.reduce(
+                        (s, fi) => s + fi.fixed_expense_templates.amount,
+                        0,
+                      ),
+                    )}
+                  </span>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* VARIABLES */}
+        {tab === "variables" && (
+          <div
+            style={{
+              padding: "12px 16px",
+              display: "flex",
+              flexDirection: "column",
+              gap: 8,
+            }}
+          >
+            {variables.length === 0 && (
+              <div
+                style={{
+                  textAlign: "center",
+                  padding: "48px 0",
+                  color: "var(--fg-3)",
+                  fontFamily: "var(--font-sans)",
+                  fontSize: 14,
+                }}
+              >
+                Sin gastos variables. Usá el + para agregar.
+              </div>
+            )}
+            {variables.map((v) => (
+              <div
+                key={v.id}
+                style={{
+                  background: "var(--bg-elevated)",
+                  borderRadius: 14,
+                  padding: "14px 16px",
+                  border: "1px solid var(--border-subtle)",
+                  boxShadow: "var(--shadow-sm)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                }}
+              >
+                <Avatar
+                  initials={v.user_id === member?.user_id ? "DE" : "AN"}
+                  person={v.user_id === member?.user_id ? "a" : "b"}
+                  size="md"
+                />
+                <div style={{ flex: 1 }}>
+                  <div
+                    style={{
+                      fontSize: 14,
+                      fontWeight: 500,
+                      color: "var(--fg-1)",
+                      fontFamily: "var(--font-sans)",
+                    }}
+                  >
+                    {v.description}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 12,
+                      color: "var(--fg-3)",
+                      marginTop: 2,
+                      fontFamily: "var(--font-sans)",
+                    }}
+                  >
+                    {v.date}
+                  </div>
+                </div>
+                <div
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 15,
+                    fontWeight: 600,
+                    color: "var(--fg-1)",
+                  }}
+                >
+                  {formatARS(v.amount)}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
+
       <FAB onClick={() => setShowForm(true)} label="Agregar gasto" />
-      {showForm && <AddExpenseSheet onClose={() => setShowForm(false)} />}
+      {showForm && (
+        <AddSheet
+          tab={tab}
+          onClose={() => setShowForm(false)}
+          onSave={handleSave}
+        />
+      )}
     </div>
   );
 }
