@@ -326,7 +326,7 @@ export type Database = {
     Functions: {
       create_couple_for_user: { Args: { p_user_id: string }; Returns: string };
       get_couple_member_profiles: {
-        Args: never;
+        Args: { p_user_id: string };
         Returns: {
           email: string;
           full_name: string;

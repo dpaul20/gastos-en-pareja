@@ -23,7 +23,9 @@ function getInitials(name: string): string {
 
 export default function SettingsPage() {
   const { data: member, isLoading } = useCoupleMember();
-  const { data: profiles = [] } = useCoupleMemberProfiles();
+  const { data: profiles = [] } = useCoupleMemberProfiles(
+    member?.user_id ?? null,
+  );
   const queryClient = useQueryClient();
   const [isPending, startTransition] = useTransition();
   const [inviteEmail, setInviteEmail] = useState("");
