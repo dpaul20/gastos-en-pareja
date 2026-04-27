@@ -41,6 +41,8 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // Allow 127.0.0.1 for OAuth callbacks in local dev (Supabase local uses 127.0.0.1)
+  allowedDevOrigins: ["127.0.0.1"],
   async headers() {
     return [
       {
