@@ -3,14 +3,27 @@
 import { useState, useEffect, useTransition } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Avatar } from "@/components/shared/avatar";
-import { useCoupleMember } from "@/lib/queries/use-monthly-data";
+import {
+  useCoupleMember,
+  useCoupleMemberProfiles,
+} from "@/lib/queries/use-monthly-data";
 import { upsertIncome } from "@/lib/actions/expenses";
 import { sendInvitation, createCouple } from "@/lib/actions/couple";
 import { formatARS, getMonthDate } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 
+function getInitials(name: string): string {
+  return name
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
+
 export default function SettingsPage() {
   const { data: member, isLoading } = useCoupleMember();
+  const { data: profiles = [] } = useCoupleMemberProfiles();
   const queryClient = useQueryClient();
   const [isPending, startTransition] = useTransition();
   const [inviteEmail, setInviteEmail] = useState("");
@@ -205,18 +218,30 @@ export default function SettingsPage() {
                   }}
                 >
                   <div style={{ position: "relative", width: 60, height: 48 }}>
-                    <Avatar initials="DE" person="a" size="lg" />
-                    <div
-                      style={{
-                        position: "absolute",
-                        top: 0,
-                        left: 28,
-                        border: "2px solid var(--bg-elevated)",
-                        borderRadius: 9999,
-                      }}
-                    >
-                      <Avatar initials="AN" person="b" size="lg" />
-                    </div>
+                    <Avatar
+                      initials={
+                        profiles[0] ? getInitials(profiles[0].full_name) : "?"
+                      }
+                      person="a"
+                      size="lg"
+                    />
+                    {profiles[1] && (
+                      <div
+                        style={{
+                          position: "absolute",
+                          top: 0,
+                          left: 28,
+                          border: "2px solid var(--bg-elevated)",
+                          borderRadius: 9999,
+                        }}
+                      >
+                        <Avatar
+                          initials={getInitials(profiles[1].full_name)}
+                          person="b"
+                          size="lg"
+                        />
+                      </div>
+                    )}
                   </div>
                   <div>
                     <div
@@ -227,7 +252,9 @@ export default function SettingsPage() {
                         fontFamily: "var(--font-sans)",
                       }}
                     >
-                      Tu pareja
+                      {profiles
+                        .map((p) => p.full_name.split(" ")[0])
+                        .join(" y ") || "Tu pareja"}
                     </div>
                     <div
                       style={{

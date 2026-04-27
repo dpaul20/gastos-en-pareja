@@ -25,10 +25,12 @@ function MonthCard({
   coupleId,
   month,
   onClick,
+  hideIfEmpty = false,
 }: {
   coupleId: string;
   month: string;
   onClick: () => void;
+  hideIfEmpty?: boolean;
 }) {
   const { data, isLoading } = useMonthlyData(coupleId, month);
 
@@ -47,29 +49,10 @@ function MonthCard({
     ? Math.round(balance.balances[0].percentage * 100)
     : 50;
 
-  if (isLoading) {
-    return (
-      <div
-        style={{
-          background: "var(--bg-elevated)",
-          borderRadius: 14,
-          padding: "16px",
-          border: "1px solid var(--border-subtle)",
-          height: 88,
-        }}
-      >
-        <div
-          style={{
-            fontSize: 12,
-            color: "var(--fg-3)",
-            fontFamily: "var(--font-sans)",
-          }}
-        >
-          Cargando...
-        </div>
-      </div>
-    );
-  }
+  if (isLoading) return null;
+
+  // Hide months with no data when hideIfEmpty is true
+  if (hideIfEmpty && (!balance || balance.totalExpenses === 0)) return null;
 
   if (!balance || balance.totalExpenses === 0) {
     return (
@@ -489,6 +472,7 @@ export default function HistoryPage() {
               coupleId={coupleId}
               month={month}
               onClick={() => setSelected(month)}
+              hideIfEmpty
             />
           ))
         )}
