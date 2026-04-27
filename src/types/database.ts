@@ -324,6 +324,7 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      create_couple_for_user: { Args: { p_user_id: string }; Returns: string };
       is_couple_member: { Args: { p_couple_id: string }; Returns: boolean };
     };
     Enums: {
