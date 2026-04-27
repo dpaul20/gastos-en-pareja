@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { addMonths, subMonths } from "date-fns";
 import { Avatar } from "@/components/shared/avatar";
@@ -23,10 +23,12 @@ export default function DashboardPage() {
 
   const { data, isLoading: loadingData } = useMonthlyData(coupleId, month);
 
-  // Ensure fixed expense instances exist for this month
-  if (coupleId && isCurrentMonth) {
-    ensureFixedExpenseInstances(coupleId, month);
-  }
+  // Ensure fixed expense instances exist for this month (must be in useEffect — Server Action can't be called during render)
+  useEffect(() => {
+    if (coupleId && isCurrentMonth) {
+      ensureFixedExpenseInstances(coupleId, month);
+    }
+  }, [coupleId, month, isCurrentMonth]);
 
   const balance = data
     ? calculateMonthlyBalance({
