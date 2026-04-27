@@ -72,6 +72,22 @@ export function useCoupleMember() {
   });
 }
 
+export function useCoupleMemberProfiles(userId: string | null) {
+  const supabase = createClient();
+  return useQuery({
+    queryKey: ["couple-member-profiles", userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      if (!userId) return [];
+      const { data, error } = await supabase.rpc("get_couple_member_profiles", {
+        p_user_id: userId,
+      });
+      if (error) return [];
+      return data ?? [];
+    },
+  });
+}
+
 function getNextMonth(month: string): string {
   const [year, m] = month.split("-").map(Number);
   const next = new Date(year, m, 1);

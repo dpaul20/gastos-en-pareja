@@ -1,57 +1,209 @@
 "use client";
 
 import { useState } from "react";
-import { Avatar } from "@/components/shared/avatar";
 import { Badge } from "@/components/shared/badge";
-import { formatARS } from "@/lib/utils";
+import { formatARS, formatMonth, getMonthDate } from "@/lib/utils";
+import {
+  useCoupleMember,
+  useMonthlyData,
+} from "@/lib/queries/use-monthly-data";
+import { calculateMonthlyBalance } from "@/lib/utils/balance";
+import { subMonths } from "date-fns";
 
-// TODO: replace with real data (issue #4)
-const mockMonths = [
-  {
-    label: "Marzo 2026",
-    isoMonth: "2026-03-01",
-    total: 98400,
-    balance: 22100,
-    debtor: "Annie",
-    creditor: "Deivy",
-    deivyPct: 65,
-  },
-  {
-    label: "Febrero 2026",
-    isoMonth: "2026-02-01",
-    total: 115200,
-    balance: 8600,
-    debtor: "Deivy",
-    creditor: "Annie",
-    deivyPct: 65,
-  },
-  {
-    label: "Enero 2026",
-    isoMonth: "2026-01-01",
-    total: 88750,
-    balance: 19300,
-    debtor: "Annie",
-    creditor: "Deivy",
-    deivyPct: 65,
-  },
-  {
-    label: "Diciembre 2025",
-    isoMonth: "2025-12-01",
-    total: 132000,
-    balance: 44100,
-    debtor: "Annie",
-    creditor: "Deivy",
-    deivyPct: 65,
-  },
-];
+const MONTHS_TO_SHOW = 6;
+
+function useHistoryMonths(coupleId: string | null) {
+  const today = new Date();
+  // Generate last N months (excluding current)
+  return Array.from({ length: MONTHS_TO_SHOW }, (_, i) => {
+    const d = subMonths(today, i + 1);
+    return getMonthDate(d);
+  });
+}
+
+function MonthCard({
+  coupleId,
+  month,
+  onClick,
+  hideIfEmpty = false,
+}: {
+  coupleId: string;
+  month: string;
+  onClick: () => void;
+  hideIfEmpty?: boolean;
+}) {
+  const { data, isLoading } = useMonthlyData(coupleId, month);
+
+  const balance = data
+    ? calculateMonthlyBalance({
+        incomes: data.incomes,
+        installmentPurchases: data.installmentPurchases,
+        fixedExpenseInstances: data.fixedExpenseInstances as Parameters<
+          typeof calculateMonthlyBalance
+        >[0]["fixedExpenseInstances"],
+        variableExpenses: data.variableExpenses,
+      })
+    : null;
+
+  const myPct = balance?.balances[0]
+    ? Math.round(balance.balances[0].percentage * 100)
+    : 50;
+
+  if (isLoading) return null;
+
+  // Hide months with no data when hideIfEmpty is true
+  if (hideIfEmpty && (!balance || balance.totalExpenses === 0)) return null;
+
+  if (!balance || balance.totalExpenses === 0) {
+    return (
+      <div
+        style={{
+          background: "var(--bg-elevated)",
+          borderRadius: 14,
+          padding: "16px",
+          border: "1px solid var(--border-subtle)",
+          boxShadow: "var(--shadow-sm)",
+          opacity: 0.6,
+        }}
+      >
+        <div
+          style={{
+            fontSize: 15,
+            fontWeight: 600,
+            color: "var(--fg-1)",
+            fontFamily: "var(--font-sans)",
+          }}
+        >
+          {formatMonth(month)}
+        </div>
+        <div
+          style={{
+            fontSize: 13,
+            color: "var(--fg-3)",
+            marginTop: 4,
+            fontFamily: "var(--font-sans)",
+          }}
+        >
+          Sin datos
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        background: "var(--bg-elevated)",
+        borderRadius: 14,
+        padding: "16px",
+        border: "1px solid var(--border-subtle)",
+        boxShadow: "var(--shadow-sm)",
+        textAlign: "left",
+        cursor: "pointer",
+        width: "100%",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          marginBottom: 10,
+        }}
+      >
+        <div
+          style={{
+            fontSize: 15,
+            fontWeight: 600,
+            color: "var(--fg-1)",
+            fontFamily: "var(--font-sans)",
+          }}
+        >
+          {formatMonth(month)}
+        </div>
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="var(--fg-3)"
+          strokeWidth="2"
+        >
+          <polyline points="9 18 15 12 9 6" />
+        </svg>
+      </div>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 8,
+        }}
+      >
+        <span
+          style={{
+            fontSize: 12,
+            color: "var(--fg-2)",
+            fontFamily: "var(--font-sans)",
+          }}
+        >
+          {balance.debtAmount > 0
+            ? `Diferencia: ${formatARS(balance.debtAmount)}`
+            : "Equilibrado"}
+        </span>
+        <span
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 16,
+            fontWeight: 700,
+            color:
+              balance.debtAmount > 0
+                ? "var(--status-danger)"
+                : "var(--status-success)",
+          }}
+        >
+          {formatARS(balance.totalExpenses)}
+        </span>
+      </div>
+      <div
+        style={{
+          background: "var(--color-neutral-200)",
+          borderRadius: 99,
+          height: 4,
+          display: "flex",
+          overflow: "hidden",
+        }}
+      >
+        <div style={{ width: `${myPct}%`, background: "var(--person-a)" }} />
+        <div style={{ flex: 1, background: "var(--person-b)" }} />
+      </div>
+    </button>
+  );
+}
 
 function MonthDetail({
-  m,
+  coupleId,
+  month,
   onBack,
 }: {
-  m: (typeof mockMonths)[0];
+  coupleId: string;
+  month: string;
   onBack: () => void;
 }) {
+  const { data } = useMonthlyData(coupleId, month);
+
+  const balance = data
+    ? calculateMonthlyBalance({
+        incomes: data.incomes,
+        installmentPurchases: data.installmentPurchases,
+        fixedExpenseInstances: data.fixedExpenseInstances as Parameters<
+          typeof calculateMonthlyBalance
+        >[0]["fixedExpenseInstances"],
+        variableExpenses: data.variableExpenses,
+      })
+    : null;
+
   return (
     <div
       style={{
@@ -103,150 +255,165 @@ function MonthDetail({
             fontFamily: "var(--font-sans)",
           }}
         >
-          {m.label}
+          {formatMonth(month)}
         </span>
         <Badge variant="neutral">Solo lectura</Badge>
       </div>
       <div
         style={{
           flex: 1,
-          padding: "16px 16px",
+          padding: "16px",
           display: "flex",
           flexDirection: "column",
           gap: 12,
         }}
       >
-        <div
-          style={{
-            background: "var(--bg-elevated)",
-            borderRadius: 16,
-            padding: "18px",
-            border: "1px solid var(--border-subtle)",
-            boxShadow: "var(--shadow-sm)",
-          }}
-        >
-          <div
-            style={{
-              fontSize: 11,
-              fontWeight: 600,
-              color: "var(--fg-3)",
-              textTransform: "uppercase",
-              letterSpacing: "0.05em",
-              marginBottom: 8,
-              fontFamily: "var(--font-sans)",
-            }}
-          >
-            Balance del mes
-          </div>
-          <div
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 32,
-              fontWeight: 700,
-              color: "var(--status-danger)",
-              letterSpacing: "-0.02em",
-            }}
-          >
-            {formatARS(m.balance)}
-          </div>
-          <div
-            style={{
-              fontSize: 14,
-              color: "var(--fg-2)",
-              marginTop: 4,
-              fontFamily: "var(--font-sans)",
-            }}
-          >
-            {m.debtor} le debía a {m.creditor}
-          </div>
-          <div
-            style={{
-              marginTop: 14,
-              background: "var(--color-neutral-200)",
-              borderRadius: 99,
-              height: 6,
-              display: "flex",
-              overflow: "hidden",
-            }}
-          >
+        {balance && (
+          <>
             <div
-              style={{ width: `${m.deivyPct}%`, background: "var(--person-a)" }}
-            />
-            <div style={{ flex: 1, background: "var(--person-b)" }} />
-          </div>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              marginTop: 6,
-            }}
-          >
-            <span
               style={{
-                fontSize: 11,
+                background: "var(--bg-elevated)",
+                borderRadius: 16,
+                padding: "18px",
+                border: "1px solid var(--border-subtle)",
+                boxShadow: "var(--shadow-sm)",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 600,
+                  color: "var(--fg-3)",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                  marginBottom: 8,
+                  fontFamily: "var(--font-sans)",
+                }}
+              >
+                Balance del mes
+              </div>
+              <div
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 32,
+                  fontWeight: 700,
+                  color:
+                    balance.debtAmount > 0
+                      ? "var(--status-danger)"
+                      : "var(--status-success)",
+                  letterSpacing: "-0.02em",
+                }}
+              >
+                {formatARS(balance.debtAmount)}
+              </div>
+              <div
+                style={{
+                  fontSize: 14,
+                  color: "var(--fg-2)",
+                  marginTop: 4,
+                  fontFamily: "var(--font-sans)",
+                }}
+              >
+                {balance.debtAmount > 0
+                  ? "Diferencia entre aportes"
+                  : "Todo equilibrado"}
+              </div>
+              <div
+                style={{
+                  marginTop: 14,
+                  background: "var(--color-neutral-200)",
+                  borderRadius: 99,
+                  height: 6,
+                  display: "flex",
+                  overflow: "hidden",
+                }}
+              >
+                {balance.balances.map((b, i) => (
+                  <div
+                    key={b.userId}
+                    style={{
+                      width: `${Math.round(b.percentage * 100)}%`,
+                      background:
+                        i === 0 ? "var(--person-a)" : "var(--person-b)",
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+            {[
+              {
+                label: "Cuotas activas",
+                amt: balance.installmentTotal,
                 color: "var(--person-a)",
-                fontWeight: 600,
-                fontFamily: "var(--font-sans)",
-              }}
-            >
-              Deivy {m.deivyPct}%
-            </span>
-            <span
-              style={{
-                fontSize: 11,
+              },
+              {
+                label: "Gastos fijos",
+                amt: balance.fixedTotal,
                 color: "var(--person-b)",
-                fontWeight: 600,
-                fontFamily: "var(--font-sans)",
-              }}
-            >
-              Annie {100 - m.deivyPct}%
-            </span>
-          </div>
-        </div>
-        <div
-          style={{
-            background: "var(--bg-elevated)",
-            borderRadius: 16,
-            padding: "18px",
-            border: "1px solid var(--border-subtle)",
-            display: "flex",
-            alignItems: "center",
-            gap: 12,
-          }}
-        >
-          <div
-            style={{
-              fontSize: 14,
-              fontWeight: 600,
-              color: "var(--fg-1)",
-              fontFamily: "var(--font-sans)",
-            }}
-          >
-            Total del mes
-          </div>
-          <div
-            style={{
-              marginLeft: "auto",
-              fontFamily: "var(--font-mono)",
-              fontSize: 16,
-              fontWeight: 700,
-              color: "var(--fg-1)",
-            }}
-          >
-            {formatARS(m.total)}
-          </div>
-        </div>
+              },
+              {
+                label: "Variables",
+                amt: balance.variableTotal,
+                color: "var(--status-warning)",
+              },
+              {
+                label: "Total",
+                amt: balance.totalExpenses,
+                color: "var(--fg-1)",
+              },
+            ].map((r) => (
+              <div
+                key={r.label}
+                style={{
+                  background: "var(--bg-elevated)",
+                  borderRadius: 14,
+                  padding: "14px 16px",
+                  border: "1px solid var(--border-subtle)",
+                  display: "flex",
+                  justifyContent: "space-between",
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: 14,
+                    color: "var(--fg-2)",
+                    fontFamily: "var(--font-sans)",
+                  }}
+                >
+                  {r.label}
+                </span>
+                <span
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 14,
+                    fontWeight: 700,
+                    color: r.color,
+                  }}
+                >
+                  {formatARS(r.amt)}
+                </span>
+              </div>
+            ))}
+          </>
+        )}
       </div>
     </div>
   );
 }
 
 export default function HistoryPage() {
-  const [selected, setSelected] = useState<number | null>(null);
+  const [selected, setSelected] = useState<string | null>(null);
+  const { data: member } = useCoupleMember();
+  const coupleId = member?.couple_id ?? null;
+  const months = useHistoryMonths(coupleId);
 
-  if (selected !== null) {
+  if (selected && coupleId) {
     return (
-      <MonthDetail m={mockMonths[selected]} onBack={() => setSelected(null)} />
+      <MonthDetail
+        coupleId={coupleId}
+        month={selected}
+        onBack={() => setSelected(null)}
+      />
     );
   }
 
@@ -286,123 +453,29 @@ export default function HistoryPage() {
           gap: 8,
         }}
       >
-        {mockMonths.map((m, i) => (
-          <button
-            key={m.isoMonth}
-            onClick={() => setSelected(i)}
+        {!coupleId ? (
+          <div
             style={{
-              background: "var(--bg-elevated)",
-              borderRadius: 14,
-              padding: "16px",
-              border: "1px solid var(--border-subtle)",
-              boxShadow: "var(--shadow-sm)",
-              textAlign: "left",
-              cursor: "pointer",
-              width: "100%",
+              textAlign: "center",
+              padding: "48px 0",
+              color: "var(--fg-3)",
+              fontFamily: "var(--font-sans)",
+              fontSize: 14,
             }}
           >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "flex-start",
-                marginBottom: 10,
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 15,
-                  fontWeight: 600,
-                  color: "var(--fg-1)",
-                  fontFamily: "var(--font-sans)",
-                }}
-              >
-                {m.label}
-              </div>
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="var(--fg-3)"
-                strokeWidth="2"
-              >
-                <polyline points="9 18 15 12 9 6" />
-              </svg>
-            </div>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: 8,
-              }}
-            >
-              <span
-                style={{
-                  fontSize: 12,
-                  color: "var(--fg-2)",
-                  fontFamily: "var(--font-sans)",
-                }}
-              >
-                {m.debtor} → {m.creditor}
-              </span>
-              <span
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 16,
-                  fontWeight: 700,
-                  color: "var(--status-danger)",
-                }}
-              >
-                {formatARS(m.balance)}
-              </span>
-            </div>
-            <div
-              style={{
-                background: "var(--color-neutral-200)",
-                borderRadius: 99,
-                height: 4,
-                display: "flex",
-                overflow: "hidden",
-              }}
-            >
-              <div
-                style={{
-                  width: `${m.deivyPct}%`,
-                  background: "var(--person-a)",
-                }}
-              />
-              <div style={{ flex: 1, background: "var(--person-b)" }} />
-            </div>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                marginTop: 5,
-              }}
-            >
-              <span
-                style={{
-                  fontSize: 10,
-                  color: "var(--fg-3)",
-                  fontFamily: "var(--font-sans)",
-                }}
-              >
-                Total: {formatARS(m.total)}
-              </span>
-              <span
-                style={{
-                  fontSize: 10,
-                  color: "var(--fg-3)",
-                  fontFamily: "var(--font-sans)",
-                }}
-              >
-                DE {m.deivyPct}% · AN {100 - m.deivyPct}%
-              </span>
-            </div>
-          </button>
-        ))}
+            Configurá tu pareja para ver el historial.
+          </div>
+        ) : (
+          months.map((month) => (
+            <MonthCard
+              key={month}
+              coupleId={coupleId}
+              month={month}
+              onClick={() => setSelected(month)}
+              hideIfEmpty
+            />
+          ))
+        )}
       </div>
     </div>
   );

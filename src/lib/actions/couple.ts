@@ -10,34 +10,19 @@ export async function createCouple() {
   } = await supabase.auth.getUser();
   if (!user) throw new Error("No autenticado");
 
-  // Check if user already has a couple
-  const { data: existing } = await supabase
-    .from("couple_members")
-    .select("couple_id")
-    .eq("user_id", user.id)
-    .single();
+  // Use SECURITY DEFINER RPC — bypasses RLS on couples table.
+  // Kong/PostgREST may not propagate ES256 JWT claims for direct table inserts,
+  // so auth.uid() can be null even with a valid session. Passing user_id explicitly.
+  const { data: coupleId, error } = await supabase.rpc(
+    "create_couple_for_user",
+    { p_user_id: user.id },
+  );
 
-  if (existing) return { coupleId: existing.couple_id };
-
-  // Create couple
-  const { data: couple, error } = await supabase
-    .from("couples")
-    .insert({ status: "PENDING" })
-    .select()
-    .single();
-
-  if (error || !couple) throw new Error("Error al crear la pareja");
-
-  // Add creator as OWNER — bypass RLS via service client
-  const service = await createServiceClient();
-  await service.from("couple_members").insert({
-    couple_id: couple.id,
-    user_id: user.id,
-    role: "OWNER",
-  });
+  if (error || !coupleId)
+    throw new Error(error?.message ?? "Error al crear la pareja");
 
   revalidatePath("/", "layout");
-  return { coupleId: couple.id };
+  return { coupleId };
 }
 
 export async function sendInvitation(coupleId: string, email: string) {
@@ -76,7 +61,12 @@ export async function sendInvitation(coupleId: string, email: string) {
   const proto = process.env.NODE_ENV === "production" ? "https" : "http";
   const inviteUrl = `${proto}://${host}/invite/${invitation.token}`;
 
-  // Send email via Resend
+  // In dev: skip Resend and log the invite URL to the terminal (like Mailpit)
+  if (process.env.NODE_ENV !== "production") {
+    console.log(`\n📧 [DEV] Invitación para ${email}:\n   ${inviteUrl}\n`);
+    return { token: invitation.token };
+  }
+
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
