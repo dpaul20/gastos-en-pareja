@@ -219,7 +219,7 @@ export default function SettingsPage() {
                     alignItems: "center",
                   }}
                 >
-                  <div style={{ position: "relative", width: 60, height: 48 }}>
+                  <div style={{ display: "flex", flexShrink: 0 }}>
                     <Avatar
                       initials={
                         profiles[0] ? getInitials(profiles[0].full_name) : "?"
@@ -230,9 +230,7 @@ export default function SettingsPage() {
                     {profiles[1] && (
                       <div
                         style={{
-                          position: "absolute",
-                          top: 0,
-                          left: 28,
+                          marginLeft: -12,
                           border: "2px solid var(--bg-elevated)",
                           borderRadius: 9999,
                         }}
