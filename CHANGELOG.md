@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.1.0](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.0.1...gastos-en-pareja-v1.1.0) (2026-04-27)
+
+
+### ✨ Features
+
+* conecta Dashboard y Settings con datos reales ([a04cb84](https://github.com/dpaul20/gastos-en-pareja/commit/a04cb84049a3e4c2baa8c7d01751ba43346de746))
+* conecta Dashboard y Settings con datos reales ([114d0a0](https://github.com/dpaul20/gastos-en-pareja/commit/114d0a090bde0bf16261a2002f42ab37914a6b72))
+* conecta Gastos e Historial con datos reales ([63867b2](https://github.com/dpaul20/gastos-en-pareja/commit/63867b2e3f66ecf1b8c73cd0711572de9adbe1d8))
+* nombres reales en Settings + oculta meses vacíos en Historial ([48fc4d8](https://github.com/dpaul20/gastos-en-pareja/commit/48fc4d843478ea7a79b5d70919f1efd38f7429c4))
+
+
+### 🐛 Bug Fixes
+
+* avatares de pareja no se superponen con el nombre ([930f865](https://github.com/dpaul20/gastos-en-pareja/commit/930f86583416e628ad039ed9355d82a0a9d40708))
+* exclui e2e/ do Vitest para evitar conflito com Playwright ([d976bfb](https://github.com/dpaul20/gastos-en-pareja/commit/d976bfba9b6570c6a0b64c1c1f361f2f5d6b609a))
+* get_couple_member_profiles acepta user_id explícito ([d7abc70](https://github.com/dpaul20/gastos-en-pareja/commit/d7abc70516c675b80a100c3b91b5d81f013d3982))
+* mueve ensureFixedExpenseInstances a useEffect en Dashboard ([6e18834](https://github.com/dpaul20/gastos-en-pareja/commit/6e1883474954b03b99dd8dea53efcc503edf4870))
+
 ## [1.0.1](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.0.0...gastos-en-pareja-v1.0.1) (2026-04-27)
 
 
