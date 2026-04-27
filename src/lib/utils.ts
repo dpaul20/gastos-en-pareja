@@ -18,5 +18,6 @@ export function formatMonth(isoDate: string): string {
   const d = new Date(Number(year), Number(month) - 1);
   return d
     .toLocaleDateString("es-AR", { month: "long", year: "numeric" })
+    .replaceAll(/\s+de\s+/gi, " ") // Windows adds "de" between month and year
     .replace(/^\w/, (c) => c.toUpperCase());
 }
