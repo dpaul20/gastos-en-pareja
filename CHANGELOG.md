@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.0.1](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.0.0...gastos-en-pareja-v1.0.1) (2026-04-27)
+
+
+### 🐛 Bug Fixes
+
+* agrega 127.0.0.1 a allowedDevOrigins para OAuth local ([5ec7391](https://github.com/dpaul20/gastos-en-pareja/commit/5ec7391b83f21f3b9f2ff6c38d901e073f826fee))
+* CSP y OAuth redirect para desarrollo local con Supabase ([4a48154](https://github.com/dpaul20/gastos-en-pareja/commit/4a4815449648b239c153531db0fbb6d9f1b053e2))
+* CSP y OAuth redirect para desarrollo local con Supabase ([f21f8a7](https://github.com/dpaul20/gastos-en-pareja/commit/f21f8a7ad12bc4a7fdc0a5e61faaf0998fb5b1d2)), closes [#20](https://github.com/dpaul20/gastos-en-pareja/issues/20)
+
 ## [1.0.0](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v0.9.0...gastos-en-pareja-v1.0.0) (2026-04-27)
 
 
