@@ -1,7 +1,14 @@
 import type { NextConfig } from "next";
 
+const isDev = process.env.NODE_ENV === "development";
+
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const supabaseHost = supabaseUrl ? new URL(supabaseUrl).host : "*.supabase.co";
+
+// In dev, Supabase local runs on http:// — CSP must allow both protocols
+const supabaseConnectSrc = isDev
+  ? `https://${supabaseHost} http://${supabaseHost} wss://${supabaseHost} ws://${supabaseHost}`
+  : `https://${supabaseHost} wss://${supabaseHost}`;
 
 const ContentSecurityPolicy = `
   default-src 'self';
@@ -10,8 +17,7 @@ const ContentSecurityPolicy = `
   font-src 'self' https://fonts.gstatic.com;
   img-src 'self' data: blob: https://*.googleusercontent.com;
   connect-src 'self'
-    https://${supabaseHost}
-    wss://${supabaseHost}
+    ${supabaseConnectSrc}
     https://api.resend.com
     https://accounts.google.com;
   frame-src https://accounts.google.com;
@@ -19,7 +25,7 @@ const ContentSecurityPolicy = `
   base-uri 'self';
   form-action 'self';
   frame-ancestors 'none';
-  upgrade-insecure-requests;
+  ${isDev ? "" : "upgrade-insecure-requests;"}
 `
   .replaceAll(/\s{2,}/g, " ")
   .trim();
@@ -41,15 +47,9 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
-  // Allow 127.0.0.1 for OAuth callbacks in local dev (Supabase local uses 127.0.0.1)
   allowedDevOrigins: ["127.0.0.1"],
   async headers() {
-    return [
-      {
-        source: "/(.*)",
-        headers: securityHeaders,
-      },
-    ];
+    return [{ source: "/(.*)", headers: securityHeaders }];
   },
 };
 
