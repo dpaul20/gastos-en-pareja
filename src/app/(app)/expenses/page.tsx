@@ -85,10 +85,15 @@ function AddSheet({
   tab: Tab;
   categories: ReturnType<typeof useCategories>["data"];
   onClose: () => void;
-  onSave: (data: Record<string, string>, categoryId: string | null) => void;
+  onSave: (
+    data: Record<string, string>,
+    categoryId: string | null,
+    autoRenew: boolean,
+  ) => void;
 }) {
   const [fields, setFields] = useState<Record<string, string>>({});
   const [categoryId, setCategoryId] = useState<string | null>(null);
+  const [autoRenew, setAutoRenew] = useState(false);
 
   const fieldDefs: Record<
     Tab,
@@ -220,8 +225,59 @@ function AddSheet({
             />
           </div>
         )}
+        {tab === "cuotas" && (
+          <div
+            style={{
+              marginBottom: 14,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <span
+              style={{
+                fontSize: 13,
+                fontWeight: 500,
+                color: "var(--fg-2)",
+                fontFamily: "var(--font-sans)",
+              }}
+            >
+              Renovar automáticamente
+            </span>
+            <button
+              type="button"
+              onClick={() => setAutoRenew((a) => !a)}
+              style={{
+                width: 44,
+                height: 26,
+                borderRadius: 99,
+                border: "none",
+                cursor: "pointer",
+                background: autoRenew
+                  ? "var(--accent)"
+                  : "var(--border-default)",
+                transition: "background 150ms",
+                position: "relative",
+              }}
+              aria-label="Auto-renovar"
+            >
+              <div
+                style={{
+                  width: 20,
+                  height: 20,
+                  borderRadius: 99,
+                  background: "white",
+                  position: "absolute",
+                  top: 3,
+                  left: autoRenew ? 21 : 3,
+                  transition: "left 150ms",
+                }}
+              />
+            </button>
+          </div>
+        )}
         <button
-          onClick={() => onSave(fields, categoryId)}
+          onClick={() => onSave(fields, categoryId, autoRenew)}
           style={{
             width: "100%",
             background: "var(--accent)",
@@ -280,6 +336,7 @@ export default function ExpensesPage() {
   function handleSave(
     fields: Record<string, string>,
     categoryId: string | null,
+    autoRenew: boolean,
   ) {
     setShowForm(false);
     startTransition(async () => {
@@ -291,6 +348,7 @@ export default function ExpensesPage() {
           first_payment_date:
             fields.first_payment_date || new Date().toISOString().slice(0, 10),
           category_id: categoryId ?? undefined,
+          auto_renew: autoRenew || undefined,
         });
       } else if (tab === "fijos") {
         await createFixedExpenseTemplate({
@@ -422,6 +480,7 @@ export default function ExpensesPage() {
                         }}
                       >
                         Cuota {c.paid_installments} de {c.installments}
+                        {c.auto_renew ? " 🔄" : ""}
                       </div>
                     </div>
                     <div
