@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.0](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.2.0...gastos-en-pareja-v1.3.0) (2026-04-29)
+
+
+### ✨ Features
+
+* gastos recurrentes automáticos ([5fc749b](https://github.com/dpaul20/gastos-en-pareja/commit/5fc749b69e2499a48c5158343b8540382eba7f5a))
+* gastos recurrentes automáticos ([3b1cdd1](https://github.com/dpaul20/gastos-en-pareja/commit/3b1cdd177ca495f071ddcd170bd1423f30a2626d)), closes [#32](https://github.com/dpaul20/gastos-en-pareja/issues/32)
+
 ## [1.2.0](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.1.0...gastos-en-pareja-v1.2.0) (2026-04-29)
 
 
