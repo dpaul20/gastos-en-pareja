@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.1](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.3.0...gastos-en-pareja-v1.3.1) (2026-04-29)
+
+
+### 🐛 Bug Fixes
+
+* cambia from de Resend a onboarding@resend.dev ([0f3a67d](https://github.com/dpaul20/gastos-en-pareja/commit/0f3a67da6abe53570782faf9daac9363b07a0b36))
+* cambia from de Resend a onboarding@resend.dev ([9f78c2e](https://github.com/dpaul20/gastos-en-pareja/commit/9f78c2e51adc6135f02f762381c5189ac9ad1f1c))
+
 ## [1.3.0](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.2.0...gastos-en-pareja-v1.3.0) (2026-04-29)
 
 
