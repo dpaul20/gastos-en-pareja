@@ -18,6 +18,7 @@ import { ensureFixedExpenseInstances } from "@/lib/actions/expenses";
 
 export default function DashboardPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [newInstancesBanner, setNewInstancesBanner] = useState(0);
   const month = getMonthDate(currentDate);
   const isCurrentMonth = month === getMonthDate();
 
@@ -26,12 +27,13 @@ export default function DashboardPage() {
 
   const { data, isLoading: loadingData } = useMonthlyData(coupleId, month);
 
-  // Ensure fixed expense instances exist for this month (must be in useEffect — Server Action can't be called during render)
+  // Genera instancias de gastos fijos para CUALQUIER mes visitado (no solo el actual)
   useEffect(() => {
-    if (coupleId && isCurrentMonth) {
-      ensureFixedExpenseInstances(coupleId, month);
-    }
-  }, [coupleId, month, isCurrentMonth]);
+    if (!coupleId) return;
+    ensureFixedExpenseInstances(coupleId, month).then(({ created }) => {
+      if (created > 0) setNewInstancesBanner(created);
+    });
+  }, [coupleId, month]);
 
   const balance = data
     ? calculateMonthlyBalance({
@@ -198,6 +200,47 @@ export default function DashboardPage() {
           </div>
         ) : (
           <>
+            {/* Banner: nuevas instancias de gastos fijos generadas */}
+            {newInstancesBanner > 0 && (
+              <div
+                style={{
+                  background: "var(--status-success-subtle)",
+                  borderRadius: 12,
+                  padding: "10px 14px",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: 13,
+                    color: "var(--status-success)",
+                    fontFamily: "var(--font-sans)",
+                    fontWeight: 500,
+                  }}
+                >
+                  ✓ {newInstancesBanner} gasto
+                  {newInstancesBanner > 1 ? "s" : ""} fijo
+                  {newInstancesBanner > 1 ? "s" : ""} generado
+                  {newInstancesBanner > 1 ? "s" : ""} para este mes
+                </span>
+                <button
+                  onClick={() => setNewInstancesBanner(0)}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    color: "var(--status-success)",
+                    fontSize: 16,
+                    padding: 2,
+                  }}
+                  aria-label="Cerrar"
+                >
+                  ×
+                </button>
+              </div>
+            )}
             {/* Balance Card */}
             <div
               style={{

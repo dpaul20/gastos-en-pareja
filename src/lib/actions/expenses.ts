@@ -47,6 +47,7 @@ export async function createInstallmentPurchase(data: {
   installments: number;
   first_payment_date: string;
   category_id?: string;
+  auto_renew?: boolean;
 }) {
   const { supabase, coupleId } = await getCouple();
 
@@ -58,20 +59,35 @@ export async function createInstallmentPurchase(data: {
 }
 
 export async function incrementPaidInstallments(id: string) {
-  const { supabase } = await getCouple();
+  const { supabase, coupleId } = await getCouple();
 
   const { data } = await supabase
     .from("installment_purchases")
-    .select("paid_installments, installments")
+    .select("*")
     .eq("id", id)
     .single();
 
   if (!data || data.paid_installments >= data.installments) return;
 
+  const newPaid = data.paid_installments + 1;
   await supabase
     .from("installment_purchases")
-    .update({ paid_installments: data.paid_installments + 1 })
+    .update({ paid_installments: newPaid })
     .eq("id", id);
+
+  // Auto-renovación: si se completó y auto_renew = true, crear nueva compra idéntica
+  if (newPaid >= data.installments && data.auto_renew) {
+    await supabase.from("installment_purchases").insert({
+      couple_id: coupleId,
+      description: data.description,
+      total_amount: data.total_amount,
+      installments: data.installments,
+      paid_installments: 0,
+      first_payment_date: new Date().toISOString().slice(0, 10),
+      auto_renew: true,
+      category_id: data.category_id,
+    });
+  }
 
   revalidatePath("/expenses");
   revalidatePath("/dashboard");
@@ -116,7 +132,7 @@ export async function toggleFixedExpenseInstance(
 export async function ensureFixedExpenseInstances(
   coupleId: string,
   month: string,
-) {
+): Promise<{ created: number }> {
   const { supabase } = await getCouple();
 
   const { data: templates } = await supabase
@@ -125,7 +141,7 @@ export async function ensureFixedExpenseInstances(
     .eq("couple_id", coupleId)
     .eq("active", true);
 
-  if (!templates?.length) return;
+  if (!templates?.length) return { created: 0 };
 
   const { data: existing } = await supabase
     .from("fixed_expense_instances")
@@ -146,6 +162,7 @@ export async function ensureFixedExpenseInstances(
   if (toCreate.length) {
     await supabase.from("fixed_expense_instances").insert(toCreate);
   }
+  return { created: toCreate.length };
 }
 
 // ── VARIABLE EXPENSES ─────────────────────────────────────────
