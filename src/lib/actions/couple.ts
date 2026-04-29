@@ -74,7 +74,7 @@ export async function sendInvitation(coupleId: string, email: string) {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from: "Gastos en Pareja <noreply@gastospareja.app>",
+      from: "Gastos en Pareja <onboarding@resend.dev>",
       to: email,
       subject: `${user.email} te invitó a Gastos en Pareja`,
       html: `
