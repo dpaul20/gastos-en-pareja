@@ -84,6 +84,44 @@ export type Database = {
         };
         Relationships: [];
       };
+      expense_categories: {
+        Row: {
+          color: string;
+          couple_id: string | null;
+          created_at: string;
+          icon: string;
+          id: string;
+          name: string;
+          sort_order: number;
+        };
+        Insert: {
+          color?: string;
+          couple_id?: string | null;
+          created_at?: string;
+          icon?: string;
+          id?: string;
+          name: string;
+          sort_order?: number;
+        };
+        Update: {
+          color?: string;
+          couple_id?: string | null;
+          created_at?: string;
+          icon?: string;
+          id?: string;
+          name?: string;
+          sort_order?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "expense_categories_couple_id_fkey";
+            columns: ["couple_id"];
+            isOneToOne: false;
+            referencedRelation: "couples";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       fixed_expense_instances: {
         Row: {
           couple_id: string;
@@ -130,6 +168,7 @@ export type Database = {
         Row: {
           active: boolean;
           amount: number;
+          category_id: string | null;
           couple_id: string;
           created_at: string;
           description: string;
@@ -139,6 +178,7 @@ export type Database = {
         Insert: {
           active?: boolean;
           amount: number;
+          category_id?: string | null;
           couple_id: string;
           created_at?: string;
           description: string;
@@ -148,6 +188,7 @@ export type Database = {
         Update: {
           active?: boolean;
           amount?: number;
+          category_id?: string | null;
           couple_id?: string;
           created_at?: string;
           description?: string;
@@ -155,6 +196,13 @@ export type Database = {
           id?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "fixed_expense_templates_category_id_fkey";
+            columns: ["category_id"];
+            isOneToOne: false;
+            referencedRelation: "expense_categories";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "fixed_expense_templates_couple_id_fkey";
             columns: ["couple_id"];
@@ -201,6 +249,7 @@ export type Database = {
       };
       installment_purchases: {
         Row: {
+          category_id: string | null;
           couple_id: string;
           created_at: string;
           description: string;
@@ -211,6 +260,7 @@ export type Database = {
           total_amount: number;
         };
         Insert: {
+          category_id?: string | null;
           couple_id: string;
           created_at?: string;
           description: string;
@@ -221,6 +271,7 @@ export type Database = {
           total_amount: number;
         };
         Update: {
+          category_id?: string | null;
           couple_id?: string;
           created_at?: string;
           description?: string;
@@ -231,6 +282,13 @@ export type Database = {
           total_amount?: number;
         };
         Relationships: [
+          {
+            foreignKeyName: "installment_purchases_category_id_fkey";
+            columns: ["category_id"];
+            isOneToOne: false;
+            referencedRelation: "expense_categories";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "installment_purchases_couple_id_fkey";
             columns: ["couple_id"];
@@ -284,6 +342,7 @@ export type Database = {
       variable_expenses: {
         Row: {
           amount: number;
+          category_id: string | null;
           couple_id: string;
           created_at: string;
           date: string;
@@ -293,6 +352,7 @@ export type Database = {
         };
         Insert: {
           amount: number;
+          category_id?: string | null;
           couple_id: string;
           created_at?: string;
           date?: string;
@@ -302,6 +362,7 @@ export type Database = {
         };
         Update: {
           amount?: number;
+          category_id?: string | null;
           couple_id?: string;
           created_at?: string;
           date?: string;
@@ -310,6 +371,13 @@ export type Database = {
           user_id?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "variable_expenses_category_id_fkey";
+            columns: ["category_id"];
+            isOneToOne: false;
+            referencedRelation: "expense_categories";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "variable_expenses_couple_id_fkey";
             columns: ["couple_id"];
