@@ -10,8 +10,10 @@ import {
   useCoupleMember,
   useMonthlyData,
   useCoupleMemberProfiles,
+  useCategories,
 } from "@/lib/queries/use-monthly-data";
 import { calculateMonthlyBalance } from "@/lib/utils/balance";
+import { groupByCategory } from "@/lib/utils/categories";
 import { ensureFixedExpenseInstances } from "@/lib/actions/expenses";
 
 export default function DashboardPage() {
@@ -45,6 +47,28 @@ export default function DashboardPage() {
   const { data: profiles = [] } = useCoupleMemberProfiles(
     member?.user_id ?? null,
   );
+  const { data: categories = [] } = useCategories(coupleId);
+
+  const categoryBreakdown =
+    data && balance && balance.totalExpenses > 0
+      ? groupByCategory(
+          [
+            ...data.installmentPurchases.map((p) => ({
+              amount: Math.round(p.total_amount / p.installments),
+              category_id: p.category_id,
+            })),
+            ...data.fixedExpenseInstances.map((fi) => ({
+              amount: fi.fixed_expense_templates.amount,
+              category_id: fi.fixed_expense_templates.category_id,
+            })),
+            ...data.variableExpenses.map((v) => ({
+              amount: v.amount,
+              category_id: v.category_id,
+            })),
+          ],
+          categories,
+        ).slice(0, 5)
+      : [];
 
   const isLoading = loadingMember || loadingData;
 
@@ -477,6 +501,106 @@ export default function DashboardPage() {
                 </span>
               </div>
             </div>
+
+            {/* Breakdown por categoría */}
+            {categoryBreakdown.length > 0 && (
+              <div
+                style={{
+                  background: "var(--bg-elevated)",
+                  borderRadius: 16,
+                  border: "1px solid var(--border-subtle)",
+                  boxShadow: "var(--shadow-sm)",
+                  overflow: "hidden",
+                }}
+              >
+                <div
+                  style={{
+                    padding: "14px 16px",
+                    borderBottom: "1px solid var(--border-subtle)",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 600,
+                      color: "var(--fg-3)",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.05em",
+                      fontFamily: "var(--font-sans)",
+                    }}
+                  >
+                    Por categoría
+                  </div>
+                </div>
+                <div
+                  style={{
+                    padding: "12px 16px",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 8,
+                  }}
+                >
+                  {categoryBreakdown.map((g) => {
+                    const pct = balance
+                      ? Math.round((g.total / balance.totalExpenses) * 100)
+                      : 0;
+                    const color = g.category?.color ?? "#B2BEC3";
+                    const label = g.category
+                      ? `${g.category.icon} ${g.category.name}`
+                      : "📦 Sin categorizar";
+                    return (
+                      <div key={g.category?.id ?? "uncategorized"}>
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            marginBottom: 3,
+                          }}
+                        >
+                          <span
+                            style={{
+                              fontSize: 12,
+                              color: "var(--fg-2)",
+                              fontFamily: "var(--font-sans)",
+                            }}
+                          >
+                            {label}
+                          </span>
+                          <span
+                            style={{
+                              fontSize: 12,
+                              fontWeight: 600,
+                              color: "var(--fg-1)",
+                              fontFamily: "var(--font-mono)",
+                            }}
+                          >
+                            {formatARS(g.total)}
+                          </span>
+                        </div>
+                        <div
+                          style={{
+                            background: "var(--bg-sunken)",
+                            borderRadius: 99,
+                            height: 5,
+                            overflow: "hidden",
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: `${pct}%`,
+                              height: "100%",
+                              background: color,
+                              borderRadius: 99,
+                              transition: "width 400ms",
+                            }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             <Link
               href="/expenses"

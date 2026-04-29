@@ -10,7 +10,9 @@ import {
   useCoupleMember,
   useMonthlyData,
   useCoupleMemberProfiles,
+  useCategories,
 } from "@/lib/queries/use-monthly-data";
+import { CategoryPicker } from "@/components/shared/category-picker";
 import {
   createInstallmentPurchase,
   incrementPaidInstallments,
@@ -76,14 +78,17 @@ function SegmentedControl({
 
 function AddSheet({
   tab,
+  categories,
   onClose,
   onSave,
 }: {
   tab: Tab;
+  categories: ReturnType<typeof useCategories>["data"];
   onClose: () => void;
-  onSave: (data: Record<string, string>) => void;
+  onSave: (data: Record<string, string>, categoryId: string | null) => void;
 }) {
   const [fields, setFields] = useState<Record<string, string>>({});
+  const [categoryId, setCategoryId] = useState<string | null>(null);
 
   const fieldDefs: Record<
     Tab,
@@ -195,8 +200,28 @@ function AddSheet({
             />
           </div>
         ))}
+        {categories && categories.length > 0 && (
+          <div style={{ marginBottom: 14 }}>
+            <div
+              style={{
+                fontSize: 13,
+                fontWeight: 500,
+                color: "var(--fg-2)",
+                marginBottom: 8,
+                fontFamily: "var(--font-sans)",
+              }}
+            >
+              Categoría
+            </div>
+            <CategoryPicker
+              categories={categories}
+              value={categoryId}
+              onChange={setCategoryId}
+            />
+          </div>
+        )}
         <button
-          onClick={() => onSave(fields)}
+          onClick={() => onSave(fields, categoryId)}
           style={{
             width: "100%",
             background: "var(--accent)",
@@ -230,6 +255,10 @@ export default function ExpensesPage() {
   const { data: profiles = [] } = useCoupleMemberProfiles(
     member?.user_id ?? null,
   );
+  const { data: categories = [] } = useCategories(coupleId);
+  const [filterCategory, setFilterCategory] = useState<string | null | "all">(
+    "all",
+  );
 
   const getInitials = (userId: string) => {
     const p = profiles.find((pr) => pr.user_id === userId);
@@ -248,7 +277,10 @@ export default function ExpensesPage() {
     queryClient.invalidateQueries({ queryKey: ["monthly-data"] });
   }
 
-  function handleSave(fields: Record<string, string>) {
+  function handleSave(
+    fields: Record<string, string>,
+    categoryId: string | null,
+  ) {
     setShowForm(false);
     startTransition(async () => {
       if (tab === "cuotas") {
@@ -258,27 +290,41 @@ export default function ExpensesPage() {
           installments: parseInt(fields.installments),
           first_payment_date:
             fields.first_payment_date || new Date().toISOString().slice(0, 10),
+          category_id: categoryId ?? undefined,
         });
       } else if (tab === "fijos") {
         await createFixedExpenseTemplate({
           description: fields.description,
           amount: parseFloat(fields.amount),
           due_day: parseInt(fields.due_day),
+          category_id: categoryId ?? undefined,
         });
       } else {
         await createVariableExpense({
           description: fields.description,
           amount: parseFloat(fields.amount),
           date: fields.date || new Date().toISOString().slice(0, 10),
+          category_id: categoryId ?? undefined,
         });
       }
       invalidate();
     });
   }
 
-  const cuotas = data?.installmentPurchases ?? [];
-  const fijos = data?.fixedExpenseInstances ?? [];
-  const variables = data?.variableExpenses ?? [];
+  const allCuotas = data?.installmentPurchases ?? [];
+  const allFijos = data?.fixedExpenseInstances ?? [];
+  const allVariables = data?.variableExpenses ?? [];
+
+  // Client-side filter by category
+  const cuotas =
+    filterCategory === "all"
+      ? allCuotas
+      : allCuotas.filter((c) => c.category_id === filterCategory);
+  const fijos = filterCategory === "all" ? allFijos : allFijos;
+  const variables =
+    filterCategory === "all"
+      ? allVariables
+      : allVariables.filter((v) => v.category_id === filterCategory);
 
   return (
     <div
@@ -699,6 +745,7 @@ export default function ExpensesPage() {
       {showForm && (
         <AddSheet
           tab={tab}
+          categories={categories}
           onClose={() => setShowForm(false)}
           onSave={handleSave}
         />

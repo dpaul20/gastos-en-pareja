@@ -46,6 +46,7 @@ export async function createInstallmentPurchase(data: {
   total_amount: number;
   installments: number;
   first_payment_date: string;
+  category_id?: string;
 }) {
   const { supabase, coupleId } = await getCouple();
 
@@ -89,6 +90,7 @@ export async function createFixedExpenseTemplate(data: {
   description: string;
   amount: number;
   due_day: number;
+  category_id?: string;
 }) {
   const { supabase, coupleId } = await getCouple();
   await supabase
@@ -152,6 +154,7 @@ export async function createVariableExpense(data: {
   description: string;
   amount: number;
   date: string;
+  category_id?: string;
 }) {
   const { supabase, user, coupleId } = await getCouple();
 

@@ -72,6 +72,20 @@ export function useCoupleMember() {
   });
 }
 
+export function useCategories(coupleId: string | null) {
+  const supabase = createClient();
+  return useQuery({
+    queryKey: ["categories", coupleId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("expense_categories")
+        .select("*")
+        .order("sort_order");
+      return data ?? [];
+    },
+  });
+}
+
 export function useCoupleMemberProfiles(userId: string | null) {
   const supabase = createClient();
   return useQuery({
