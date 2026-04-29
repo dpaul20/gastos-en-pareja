@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.2.0](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.1.0...gastos-en-pareja-v1.2.0) (2026-04-29)
+
+
+### ✨ Features
+
+* categorías de gastos ([3f40acb](https://github.com/dpaul20/gastos-en-pareja/commit/3f40acbfb9629d290a3ec6809369df7984d6dcd0))
+* categorías de gastos ([958b526](https://github.com/dpaul20/gastos-en-pareja/commit/958b526a66481cf80786d8e8da2e281d4cb8909d)), closes [#31](https://github.com/dpaul20/gastos-en-pareja/issues/31)
+
+
+### 🐛 Bug Fixes
+
+* avatares e iniciales dinámicas en Dashboard y Gastos ([27cf148](https://github.com/dpaul20/gastos-en-pareja/commit/27cf148eb6d6f322d908576ff93bd97b33fe35d0))
+* avatares e iniciales dinámicas en Dashboard y Gastos ([77a6faf](https://github.com/dpaul20/gastos-en-pareja/commit/77a6faf85dbc83807e220be1cf248af7d3c52695)), closes [#27](https://github.com/dpaul20/gastos-en-pareja/issues/27)
+
 ## [1.1.0](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.0.1...gastos-en-pareja-v1.1.0) (2026-04-27)
 
 
