@@ -29,6 +29,9 @@ e2e/auth.json
 *.zip
 "Gastos en Pareja Design System*"
 
+# local design system / AI-generated scratch work
+/docs/
+
 # debug
 npm-debug.log*
 yarn-debug.log*
