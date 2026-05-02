@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.4.0](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.3.3...gastos-en-pareja-v1.4.0) (2026-05-02)
+
+
+### ✨ Features
+
+* **email:** migrate to Brevo with provider-agnostic abstraction ([27dac63](https://github.com/dpaul20/gastos-en-pareja/commit/27dac634dfc13e3d313fb24f54f5ed01ace2b63b))
+* **email:** migrate to Brevo with provider-agnostic abstraction ([d043f15](https://github.com/dpaul20/gastos-en-pareja/commit/d043f1506897d842636a07d3ecc2481c3b5578f9)), closes [#50](https://github.com/dpaul20/gastos-en-pareja/issues/50)
+
 ## [1.3.3](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.3.2...gastos-en-pareja-v1.3.3) (2026-05-02)
 
 
