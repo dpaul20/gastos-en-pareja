@@ -11,8 +11,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  quality:
-    name: "Lint · Unit"
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -42,6 +42,29 @@ jobs:
       - name: Lint
         run: npx eslint --cache --cache-location .eslintcache
 
+  unit:
+    name: Unit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - uses: actions/cache@v4
+        id: node-cache
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Install dependencies
+        if: steps.node-cache.outputs.cache-hit != 'true'
+        run: npm ci
+
       - name: Unit tests
         run: npm run test:coverage
 
@@ -49,7 +72,7 @@ jobs:
     name: E2E
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    needs: quality
+    needs: [lint, unit]
 
     steps:
       - uses: actions/checkout@v4
