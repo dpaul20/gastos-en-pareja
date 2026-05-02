@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.3.3](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.3.2...gastos-en-pareja-v1.3.3) (2026-05-02)
+
+
+### 🐛 Bug Fixes
+
+* manejar errores de Server Components con digest ([808dc7f](https://github.com/dpaul20/gastos-en-pareja/commit/808dc7f8c9f4a956e2303b40d863e0937d6e1938))
+* manejar errores de Server Components con digest ([df256eb](https://github.com/dpaul20/gastos-en-pareja/commit/df256eb8fa9a3595f7cf7ed6878a316343834b21)), closes [#45](https://github.com/dpaul20/gastos-en-pareja/issues/45)
+* revert String.raw tagged template in proxy config matcher ([e434d6f](https://github.com/dpaul20/gastos-en-pareja/commit/e434d6f18ae89e13ecb70834d5175ddf9e0b55ff))
+* use reset prop and static env vars in error boundary and client ([0675d8d](https://github.com/dpaul20/gastos-en-pareja/commit/0675d8d84218359c574807f09b050a88d50a4640))
+
 ## [1.3.2](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.3.1...gastos-en-pareja-v1.3.2) (2026-05-02)
 
 
