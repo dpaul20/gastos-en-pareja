@@ -27,10 +27,10 @@ function MonthCard({
   onClick,
   hideIfEmpty = false,
 }: {
-  coupleId: string;
-  month: string;
-  onClick: () => void;
-  hideIfEmpty?: boolean;
+  readonly coupleId: string;
+  readonly month: string;
+  readonly onClick: () => void;
+  readonly hideIfEmpty?: boolean;
 }) {
   const { data, isLoading } = useMonthlyData(coupleId, month);
 
@@ -187,9 +187,9 @@ function MonthDetail({
   month,
   onBack,
 }: {
-  coupleId: string;
-  month: string;
-  onBack: () => void;
+  readonly coupleId: string;
+  readonly month: string;
+  readonly onBack: () => void;
 }) {
   const { data } = useMonthlyData(coupleId, month);
 
@@ -418,7 +418,7 @@ export default function HistoryPage() {
   }
 
   return (
-    <div
+    <main
       style={{
         display: "flex",
         flexDirection: "column",
@@ -433,16 +433,17 @@ export default function HistoryPage() {
           padding: "14px 20px",
         }}
       >
-        <div
+        <h1
           style={{
             fontSize: 20,
             fontWeight: 700,
             color: "var(--fg-1)",
             fontFamily: "var(--font-sans)",
+            margin: 0,
           }}
         >
           Historial
-        </div>
+        </h1>
       </div>
       <div
         style={{
@@ -453,7 +454,17 @@ export default function HistoryPage() {
           gap: 8,
         }}
       >
-        {!coupleId ? (
+        {coupleId ? (
+          months.map((month) => (
+            <MonthCard
+              key={month}
+              coupleId={coupleId}
+              month={month}
+              onClick={() => setSelected(month)}
+              hideIfEmpty
+            />
+          ))
+        ) : (
           <div
             style={{
               textAlign: "center",
@@ -465,18 +476,8 @@ export default function HistoryPage() {
           >
             Configurá tu pareja para ver el historial.
           </div>
-        ) : (
-          months.map((month) => (
-            <MonthCard
-              key={month}
-              coupleId={coupleId}
-              month={month}
-              onClick={() => setSelected(month)}
-              hideIfEmpty
-            />
-          ))
         )}
       </div>
-    </div>
+    </main>
   );
 }
