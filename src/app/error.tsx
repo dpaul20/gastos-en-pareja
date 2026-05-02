@@ -4,10 +4,10 @@ import { useEffect } from "react";
 
 type ErrorPageProps = Readonly<{
   error: Error & { digest?: string };
-  unstable_retry: () => void;
+  reset: () => void;
 }>;
 
-export default function ErrorPage({ error, unstable_retry }: ErrorPageProps) {
+export default function ErrorPage({ error, reset }: ErrorPageProps) {
   useEffect(() => {
     console.error("App render error:", error);
   }, [error]);
@@ -48,7 +48,7 @@ export default function ErrorPage({ error, unstable_retry }: ErrorPageProps) {
 
         <button
           type="button"
-          onClick={() => unstable_retry()}
+          onClick={() => reset()}
           style={{
             background: "var(--accent)",
             color: "white",
