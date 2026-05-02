@@ -4,8 +4,8 @@ export default defineConfig({
   testDir: "./e2e",
   globalSetup: "./e2e/global-setup.ts",
   fullyParallel: false,
-  retries: process.env.CI ? 2 : 0,
-  workers: 1,
+  retries: process.env.CI ? 1 : 0,
+  workers: process.env.CI ? 2 : 1,
   reporter: process.env.CI
     ? [["github"], ["html"]]
     : [["list"], ["html", { open: "never" }]],
@@ -28,5 +28,5 @@ export default defineConfig({
     reuseExistingServer: true,
     timeout: 120_000,
   },
-  timeout: 30_000,
+  timeout: 15_000,
 });

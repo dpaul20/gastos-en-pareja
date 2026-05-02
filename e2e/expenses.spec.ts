@@ -164,9 +164,14 @@ test.describe("Manejo de errores de red", () => {
   test("la página de expenses sigue respondiendo aunque la API falle", async ({
     authenticatedPage: page,
   }) => {
-    // Interceptar llamadas al API de Supabase para simular fallo parcial
+    // Simular un 500 evita resetear el socket del dev server y mantiene
+    // el objetivo del test: la UI debe sobrevivir a un fallo parcial.
     await page.route("**/rest/v1/variable_expenses*", (route) => {
-      route.abort("failed");
+      route.fulfill({
+        status: 500,
+        contentType: "application/json",
+        body: JSON.stringify({ message: "simulated e2e failure" }),
+      });
     });
 
     const expenses = new ExpensesPage(page);
