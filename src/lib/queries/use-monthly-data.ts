@@ -2,6 +2,10 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
+import type { Database } from "@/types/database";
+
+type CoupleMemberProfile =
+  Database["public"]["Functions"]["get_couple_member_profiles"]["Returns"][number];
 
 export function useMonthlyData(coupleId: string | null, month: string) {
   const supabase = createClient();
@@ -87,17 +91,18 @@ export function useCategories(coupleId: string | null) {
 }
 
 export function useCoupleMemberProfiles(userId: string | null) {
-  const supabase = createClient();
   return useQuery({
     queryKey: ["couple-member-profiles", userId],
     enabled: !!userId,
     queryFn: async () => {
       if (!userId) return [];
-      const { data, error } = await supabase.rpc("get_couple_member_profiles", {
-        p_user_id: userId,
+      const response = await fetch("/api/couple/member-profiles", {
+        cache: "no-store",
       });
-      if (error) return [];
-      return data ?? [];
+
+      if (!response.ok) return [];
+
+      return (await response.json()) as CoupleMemberProfile[];
     },
   });
 }
