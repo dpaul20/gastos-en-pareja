@@ -2,6 +2,7 @@
 
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { sendEmail } from "@/lib/utils/email";
 
 export async function createCouple() {
   const supabase = await createClient();
@@ -61,35 +62,17 @@ export async function sendInvitation(coupleId: string, email: string) {
   const proto = process.env.NODE_ENV === "production" ? "https" : "http";
   const inviteUrl = `${proto}://${host}/invite/${invitation.token}`;
 
-  // In dev: skip Resend and log the invite URL to the terminal (like Mailpit)
-  if (process.env.NODE_ENV !== "production") {
-    console.log(`\n📧 [DEV] Invitación para ${email}:\n   ${inviteUrl}\n`);
-    return { token: invitation.token };
-  }
-
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: "Gastos en Pareja <onboarding@resend.dev>",
-      to: email,
-      subject: `${user.email} te invitó a Gastos en Pareja`,
-      html: `
-        <p>Hola,</p>
-        <p><strong>${user.email}</strong> te invitó a compartir los gastos del mes en Gastos en Pareja.</p>
-        <p><a href="${inviteUrl}" style="background:#6C5CE7;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;">Aceptar invitación</a></p>
-        <p style="color:#999;font-size:12px;">El link expira en 7 días.</p>
-      `,
-    }),
+  await sendEmail({
+    to: email,
+    subject: `${user.email} te invitó a Gastos en Pareja`,
+    html: `
+      <p>Hola,</p>
+      <p><strong>${user.email}</strong> te invitó a compartir los gastos del mes en Gastos en Pareja.</p>
+      <p><a href="${inviteUrl}" style="background:#6C5CE7;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;">Aceptar invitación</a></p>
+      <p style="color:#999;font-size:12px;">El link expira en 7 días.</p>
+    `,
   });
 
-  if (!res.ok) {
-    const body = await res.text().catch(() => "(no body)");
-    throw new Error(`Error al enviar el email (${res.status}): ${body}`);
-  }
   return { token: invitation.token };
 }
 
