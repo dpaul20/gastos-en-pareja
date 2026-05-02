@@ -21,9 +21,12 @@ export default async function InvitePage({ params }: Props) {
 
   try {
     await acceptInvitation(token);
-    redirect("/dashboard");
   } catch (e) {
     error = e instanceof Error ? e.message : "Error al aceptar la invitación";
+  }
+
+  if (!error) {
+    redirect("/dashboard");
   }
 
   return (
