@@ -1,6 +1,8 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+const PUBLIC_FILE_PATH = /\.[^/]+$/;
+
 function getRequiredEnv(
   name: "NEXT_PUBLIC_SUPABASE_URL" | "NEXT_PUBLIC_SUPABASE_ANON_KEY",
 ): string {
@@ -39,10 +41,20 @@ export async function proxy(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const isAuthRoute = request.nextUrl.pathname.startsWith("/login");
+  const isAuthCallbackRoute =
+    request.nextUrl.pathname.startsWith("/auth/callback");
   const isInviteRoute = request.nextUrl.pathname.startsWith("/invite");
   const isApiRoute = request.nextUrl.pathname.startsWith("/api");
+  const isPublicFileRoute = PUBLIC_FILE_PATH.test(request.nextUrl.pathname);
 
-  if (!user && !isAuthRoute && !isInviteRoute && !isApiRoute) {
+  if (
+    !user &&
+    !isAuthRoute &&
+    !isAuthCallbackRoute &&
+    !isInviteRoute &&
+    !isApiRoute &&
+    !isPublicFileRoute
+  ) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
@@ -51,6 +63,7 @@ export async function proxy(request: NextRequest) {
   if (user && isAuthRoute) {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
+    url.search = "";
     return NextResponse.redirect(url);
   }
 
@@ -59,6 +72,6 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|.*[.](?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
