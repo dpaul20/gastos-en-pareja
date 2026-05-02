@@ -36,7 +36,7 @@ export default function ErrorPage({ error, unstable_retry }: ErrorPageProps) {
         }}
       >
         <h2 style={{ margin: 0, marginBottom: 10, color: "var(--fg-1)" }}>
-          Ocurrio un error al cargar esta pantalla
+          Ocurrió un error al cargar esta pantalla
         </h2>
         <p style={{ marginTop: 0, marginBottom: 12, color: "var(--fg-2)" }}>
           Si el problema persiste, comparti el codigo de diagnostico con
