@@ -1,4 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 import type { Database } from "@/types/database";
 
@@ -34,24 +35,14 @@ export async function createClient() {
 }
 
 export async function createServiceClient() {
-  const cookieStore = await cookies();
   const supabaseUrl = getRequiredServerEnv("NEXT_PUBLIC_SUPABASE_URL");
   const serviceRoleKey = getRequiredServerEnv("SUPABASE_SERVICE_ROLE_KEY");
 
-  return createServerClient<Database>(supabaseUrl, serviceRoleKey, {
-    cookies: {
-      getAll() {
-        return cookieStore.getAll();
-      },
-      setAll(cookiesToSet) {
-        try {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options),
-          );
-        } catch {
-          // noop on Server Component context
-        }
-      },
+  return createSupabaseClient<Database>(supabaseUrl, serviceRoleKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
     },
   });
 }
