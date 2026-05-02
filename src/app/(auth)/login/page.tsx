@@ -31,7 +31,7 @@ function LoginContent() {
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "space-between",
-        background: "#F7F7F8",
+        background: "var(--bg-base)",
         padding: "60px 32px 48px",
         maxWidth: 390,
         margin: "0 auto",
@@ -53,19 +53,21 @@ function LoginContent() {
             width: 80,
             height: 80,
             borderRadius: 24,
-            background: "linear-gradient(135deg, #6C5CE7 0%, #8B79FA 100%)",
+            background:
+              "linear-gradient(135deg, var(--color-violet-500) 0%, var(--color-violet-400) 100%)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            boxShadow: "0 8px 32px rgba(108,92,231,0.35)",
+            boxShadow: "var(--shadow-lg)",
           }}
         >
           <svg
+            aria-hidden="true"
             width="40"
             height="40"
             viewBox="0 0 24 24"
             fill="none"
-            stroke="white"
+            stroke="var(--fg-inverse)"
             strokeWidth="1.5"
           >
             <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
@@ -80,9 +82,9 @@ function LoginContent() {
             style={{
               fontSize: 28,
               fontWeight: 700,
-              color: "#0F0F11",
+              color: "var(--fg-1)",
               letterSpacing: "-0.02em",
-              fontFamily: "DM Sans, system-ui, sans-serif",
+              fontFamily: "var(--font-sans)",
               lineHeight: 1.2,
               margin: 0,
             }}
@@ -92,10 +94,10 @@ function LoginContent() {
           <div
             style={{
               fontSize: 15,
-              color: "#6E6E7A",
+              color: "var(--fg-2)",
               marginTop: 8,
               lineHeight: 1.5,
-              fontFamily: "DM Sans, system-ui, sans-serif",
+              fontFamily: "var(--font-sans)",
             }}
           >
             Gestioná los gastos del mes
@@ -105,13 +107,17 @@ function LoginContent() {
         </div>
 
         {/* Feature pills */}
-        <div
+        <ul
+          aria-label="Características"
           style={{
             display: "flex",
             flexDirection: "column",
             gap: 10,
             marginTop: 16,
             width: "100%",
+            listStyle: "none",
+            margin: "16px 0 0",
+            padding: 0,
           }}
         >
           {[
@@ -119,43 +125,44 @@ function LoginContent() {
             { icon: "📅", text: "Control de cuotas y gastos fijos" },
             { icon: "🔄", text: "Sincronizado entre los dos" },
           ].map((f) => (
-            <div
+            <li
               key={f.text}
               style={{
-                background: "white",
+                background: "var(--bg-elevated)",
                 borderRadius: 12,
-                border: "1px solid rgba(0,0,0,0.06)",
+                border: "1px solid var(--border-subtle)",
                 padding: "12px 16px",
                 display: "flex",
                 alignItems: "center",
                 gap: 12,
-                boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+                boxShadow: "var(--shadow-sm)",
               }}
             >
               <span style={{ fontSize: 18 }}>{f.icon}</span>
               <span
                 style={{
                   fontSize: 14,
-                  color: "#4A4A56",
-                  fontFamily: "DM Sans, system-ui, sans-serif",
+                  color: "var(--fg-2)",
+                  fontFamily: "var(--font-sans)",
                   fontWeight: 500,
                 }}
               >
                 {f.text}
               </span>
-            </div>
+            </li>
           ))}
-        </div>
+        </ul>
       </div>
 
       {/* CTA */}
       <div style={{ width: "100%" }}>
         <button
+          type="button"
           onClick={signInWithGoogle}
           style={{
             width: "100%",
-            background: "white",
-            border: "1.5px solid #E2E2E6",
+            background: "var(--bg-elevated)",
+            border: "1.5px solid var(--border-default)",
             borderRadius: 14,
             padding: "16px 20px",
             display: "flex",
@@ -163,14 +170,14 @@ function LoginContent() {
             justifyContent: "center",
             gap: 12,
             cursor: "pointer",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-            fontFamily: "DM Sans, system-ui, sans-serif",
+            boxShadow: "var(--shadow-sm)",
+            fontFamily: "var(--font-sans)",
             fontSize: 16,
             fontWeight: 600,
-            color: "#1A1A20",
+            color: "var(--fg-1)",
           }}
         >
-          <svg width="22" height="22" viewBox="0 0 24 24">
+          <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24">
             <path
               d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
               fill="#4285F4"
@@ -196,7 +203,7 @@ function LoginContent() {
             marginTop: 14,
             fontSize: 12,
             color: "var(--fg-3)",
-            fontFamily: "DM Sans, system-ui, sans-serif",
+            fontFamily: "var(--font-sans)",
           }}
         >
           Al continuar aceptás los términos de uso
