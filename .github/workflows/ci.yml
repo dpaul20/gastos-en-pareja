@@ -24,14 +24,26 @@ jobs:
           node-version: 20
           cache: npm
 
+      - uses: actions/cache@v4
+        id: node-cache
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
       - name: Install dependencies
+        if: steps.node-cache.outputs.cache-hit != 'true'
         run: npm ci
 
+      - uses: actions/cache@v4
+        with:
+          path: .eslintcache
+          key: eslint-${{ runner.os }}-${{ hashFiles('package-lock.json', 'eslint.config.mjs') }}
+
       - name: Lint
-        run: npm run lint
+        run: npx eslint --cache --cache-location .eslintcache
 
       - name: Unit tests
-        run: npm run test
+        run: npm run test:coverage
 
   e2e:
     name: E2E
@@ -47,12 +59,24 @@ jobs:
           node-version: 20
           cache: npm
 
+      - uses: actions/cache@v4
+        id: node-cache
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
       - name: Install dependencies
+        if: steps.node-cache.outputs.cache-hit != 'true'
         run: npm ci
 
       - uses: supabase/setup-cli@v1
         with:
           version: 2.95.4
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.supabase
+          key: supabase-${{ runner.os }}-${{ hashFiles('supabase/config.toml') }}
 
       - name: Start Supabase
         run: supabase start
@@ -72,7 +96,14 @@ jobs:
             -H "Content-Type: application/json" \
             -d '{"email":"test@gastospareja.local","password":"Test1234!","email_confirm":true}'
 
+      - uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
       - name: Install Playwright browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps chromium
 
       - name: Run E2E tests
