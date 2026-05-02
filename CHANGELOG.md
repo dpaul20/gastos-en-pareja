@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.5.0](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.4.1...gastos-en-pareja-v1.5.0) (2026-05-02)
+
+
+### ✨ Features
+
+* **settings:** show invite sent confirmation and block resend until expiry ([a5fcc8f](https://github.com/dpaul20/gastos-en-pareja/commit/a5fcc8f10652df9b7833ee47c776118d4f38e7f6)), closes [#66](https://github.com/dpaul20/gastos-en-pareja/issues/66)
+
+
+### 🐛 Bug Fixes
+
+* **a11y:** replace div role=group with semantic fieldset in CategoryPicker ([6282541](https://github.com/dpaul20/gastos-en-pareja/commit/6282541cbf71ad1310cdd6523763af6a7d13e680)), closes [#63](https://github.com/dpaul20/gastos-en-pareja/issues/63)
+* **auth:** pass next query param through OAuth for unauthenticated invite flow ([c67aca5](https://github.com/dpaul20/gastos-en-pareja/commit/c67aca50fc9c050b44934f42f42fd9b8b4d562bd)), closes [#65](https://github.com/dpaul20/gastos-en-pareja/issues/65)
+* **auth:** wrap useSearchParams in Suspense boundary on login page ([78a67ec](https://github.com/dpaul20/gastos-en-pareja/commit/78a67ec5c1a40a0de4748b781e87bfd37d000dc7))
+* **invitations:** deduplicate pending invitations and enforce unique constraint ([0c20e07](https://github.com/dpaul20/gastos-en-pareja/commit/0c20e0746eebbb53aa2a0ebefffcd9deb07e33bc)), closes [#61](https://github.com/dpaul20/gastos-en-pareja/issues/61)
+* **proxy:** exclude /auth/callback and static assets from auth guard ([85650f4](https://github.com/dpaul20/gastos-en-pareja/commit/85650f44431812ac747281e14f36f636b1b8a639)), closes [#59](https://github.com/dpaul20/gastos-en-pareja/issues/59)
+* **security:** harden SECURITY DEFINER functions and inline is_couple_member in RLS policies ([cce218d](https://github.com/dpaul20/gastos-en-pareja/commit/cce218d0dcd24b869787d2764487693e56faa931)), closes [#60](https://github.com/dpaul20/gastos-en-pareja/issues/60)
+* **security:** move get_couple_member_profiles RPC to server-side API route ([174d835](https://github.com/dpaul20/gastos-en-pareja/commit/174d83579e8ada7e9d915f9c3cede8867e15dcc7)), closes [#62](https://github.com/dpaul20/gastos-en-pareja/issues/62)
+* **supabase:** createServiceClient uses admin client without user session ([415acbd](https://github.com/dpaul20/gastos-en-pareja/commit/415acbd2c2a2e0182f58be653861a74458acbe48)), closes [#64](https://github.com/dpaul20/gastos-en-pareja/issues/64)
+
 ## [1.4.1](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.4.0...gastos-en-pareja-v1.4.1) (2026-05-02)
 
 
