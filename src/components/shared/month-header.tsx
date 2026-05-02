@@ -53,6 +53,7 @@ export function MonthHeader({
         </svg>
       </button>
       <span
+        data-testid="current-month"
         style={{
           fontSize: 17,
           fontWeight: 600,

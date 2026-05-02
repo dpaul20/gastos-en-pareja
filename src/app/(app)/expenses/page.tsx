@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useEffect, useTransition } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Avatar } from "@/components/shared/avatar";
 import { Badge } from "@/components/shared/badge";
@@ -94,6 +94,15 @@ function AddSheet({
   const [fields, setFields] = useState<Record<string, string>>({});
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [autoRenew, setAutoRenew] = useState(false);
+
+  // Close on Escape — <dialog open> (not showModal) doesn't handle it natively
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [onClose]);
 
   const fieldDefs: Record<
     Tab,
@@ -190,6 +199,7 @@ function AddSheet({
               {f.label}
             </div>
             <input
+              aria-label={f.label}
               value={fields[f.key] ?? ""}
               onChange={(e) =>
                 setFields((p) => ({ ...p, [f.key]: e.target.value }))

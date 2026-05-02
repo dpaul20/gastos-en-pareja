@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { getMonthDate } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
 
 async function getCouple() {
@@ -109,9 +110,21 @@ export async function createFixedExpenseTemplate(data: {
   category_id?: string;
 }) {
   const { supabase, coupleId } = await getCouple();
-  await supabase
+  const { data: template, error } = await supabase
     .from("fixed_expense_templates")
-    .insert({ ...data, couple_id: coupleId });
+    .insert({ ...data, couple_id: coupleId })
+    .select("id")
+    .single();
+  if (!error && template) {
+    // Create an instance for the current month so it appears in the list immediately
+    const month = getMonthDate();
+    await supabase.from("fixed_expense_instances").insert({
+      template_id: template.id,
+      couple_id: coupleId,
+      month,
+      paid: false,
+    });
+  }
   revalidatePath("/expenses");
   revalidatePath("/dashboard");
 }

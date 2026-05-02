@@ -172,7 +172,7 @@ function BalanceCard({
           padding: "20px 20px 16px",
         }}
       >
-        <div
+        <h2
           style={{
             fontSize: 11,
             fontWeight: 600,
@@ -181,10 +181,11 @@ function BalanceCard({
             letterSpacing: "0.05em",
             marginBottom: 4,
             fontFamily: "var(--font-sans)",
+            margin: 0,
           }}
         >
           Balance {formatMonth(month)}
-        </div>
+        </h2>
         {balance.debtAmount > 0 ? (
           <>
             <div
