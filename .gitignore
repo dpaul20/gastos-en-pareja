@@ -44,3 +44,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# GGA (Gentleman Guardian Angel) AI code review config
+.gga
+
+# Serwist generated service worker
+/public/sw.js
