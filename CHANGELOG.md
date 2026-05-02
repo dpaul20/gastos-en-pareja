@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.2](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.3.1...gastos-en-pareja-v1.3.2) (2026-05-02)
+
+
+### 🐛 Bug Fixes
+
+* incluir codigo y cuerpo de error en fallo de Resend ([43b4191](https://github.com/dpaul20/gastos-en-pareja/commit/43b41912adffbd22211e99673b43b753c59abe9e)), closes [#42](https://github.com/dpaul20/gastos-en-pareja/issues/42)
+* mejorar mensaje de error al enviar invitación por email ([c862bfa](https://github.com/dpaul20/gastos-en-pareja/commit/c862bfa2128dd63e142111c39610b2b3b49be07a))
+
 ## [1.3.1](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.3.0...gastos-en-pareja-v1.3.1) (2026-04-29)
 
 
