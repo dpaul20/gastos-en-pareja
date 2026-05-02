@@ -12,7 +12,7 @@ export function MonthHeader({
   onPrev,
   onNext,
   canGoNext = true,
-}: MonthHeaderProps) {
+}: Readonly<MonthHeaderProps>) {
   return (
     <div
       style={{
@@ -41,6 +41,7 @@ export function MonthHeader({
         aria-label="Mes anterior"
       >
         <svg
+          aria-hidden="true"
           width="20"
           height="20"
           viewBox="0 0 24 24"
@@ -80,6 +81,7 @@ export function MonthHeader({
         aria-label="Mes siguiente"
       >
         <svg
+          aria-hidden="true"
           width="20"
           height="20"
           viewBox="0 0 24 24"

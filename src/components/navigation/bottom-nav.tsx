@@ -85,6 +85,7 @@ export function BottomNav() {
 
   return (
     <nav
+      aria-label="Navegación principal"
       style={{
         position: "fixed",
         bottom: 0,
@@ -110,6 +111,8 @@ export function BottomNav() {
           <Link
             key={item.id}
             href={item.href}
+            aria-current={isActive ? "page" : undefined}
+            aria-label={item.label}
             style={{
               flex: 1,
               display: "flex",

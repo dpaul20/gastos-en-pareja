@@ -9,13 +9,19 @@ interface AvatarProps {
 const sizes = { sm: 28, md: 36, lg: 48, xl: 60 };
 const fonts = { sm: 10, md: 13, lg: 17, xl: 22 };
 
-export function Avatar({ initials, person, size = "md" }: AvatarProps) {
+export function Avatar({
+  initials,
+  person,
+  size = "md",
+}: Readonly<AvatarProps>) {
   const px = sizes[size];
   const fs = fonts[size];
   const bg = person === "a" ? "var(--person-a)" : "var(--person-b)";
 
   return (
     <div
+      role="img"
+      aria-label={`Avatar de ${initials}`}
       style={{
         width: px,
         height: px,

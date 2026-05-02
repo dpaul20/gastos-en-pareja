@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Avatar } from "@/components/shared/avatar";
 import { Badge } from "@/components/shared/badge";
-import { FAB } from "@/components/shared/fab";
+import { FAB as Fab } from "@/components/shared/fab";
 import { formatARS, getMonthDate } from "@/lib/utils";
 import {
   useCoupleMember,
@@ -27,8 +27,8 @@ function SegmentedControl({
   active,
   onChange,
 }: {
-  active: Tab;
-  onChange: (t: Tab) => void;
+  readonly active: Tab;
+  readonly onChange: (t: Tab) => void;
 }) {
   return (
     <div
@@ -82,10 +82,10 @@ function AddSheet({
   onClose,
   onSave,
 }: {
-  tab: Tab;
-  categories: ReturnType<typeof useCategories>["data"];
-  onClose: () => void;
-  onSave: (
+  readonly tab: Tab;
+  readonly categories: ReturnType<typeof useCategories>["data"];
+  readonly onClose: () => void;
+  readonly onSave: (
     data: Record<string, string>,
     categoryId: string | null,
     autoRenew: boolean,
@@ -122,27 +122,38 @@ function AddSheet({
   };
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "var(--bg-overlay)",
-        zIndex: 200,
-        display: "flex",
-        alignItems: "flex-end",
-      }}
-      onClick={onClose}
-    >
+    <>
+      {/* Backdrop */}
       <div
+        aria-hidden="true"
         style={{
+          position: "fixed",
+          inset: 0,
+          background: "var(--bg-overlay)",
+          zIndex: 200,
+        }}
+        onClick={onClose}
+      />
+      {/* Sheet */}
+      {/* biome-ignore lint/a11y/noNoninteractiveEventListener: <dialog> is a native interactive element */}
+      <dialog
+        open
+        aria-label="Agregar gasto"
+        style={{
+          position: "fixed",
+          bottom: 0,
+          left: "50%",
+          transform: "translateX(-50%)",
           background: "var(--bg-elevated)",
           borderRadius: "20px 20px 0 0",
           width: "100%",
           maxWidth: 390,
-          margin: "0 auto",
+          margin: 0,
           padding: "20px 20px 40px",
+          border: "none",
+          zIndex: 201,
+          boxSizing: "border-box",
         }}
-        onClick={(e) => e.stopPropagation()}
       >
         <div
           style={{
@@ -293,15 +304,15 @@ function AddSheet({
         >
           Guardar
         </button>
-      </div>
-    </div>
+      </dialog>
+    </>
   );
 }
 
 export default function ExpensesPage() {
   const [tab, setTab] = useState<Tab>("cuotas");
   const [showForm, setShowForm] = useState(false);
-  const [isPending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
   const queryClient = useQueryClient();
 
   const { data: member } = useCoupleMember();
@@ -312,9 +323,7 @@ export default function ExpensesPage() {
     member?.user_id ?? null,
   );
   const { data: categories = [] } = useCategories(coupleId);
-  const [filterCategory, setFilterCategory] = useState<string | null | "all">(
-    "all",
-  );
+  const [filterCategory] = useState<string | null>("all");
 
   const getInitials = (userId: string) => {
     const p = profiles.find((pr) => pr.user_id === userId);
@@ -343,8 +352,8 @@ export default function ExpensesPage() {
       if (tab === "cuotas") {
         await createInstallmentPurchase({
           description: fields.description,
-          total_amount: parseFloat(fields.total_amount),
-          installments: parseInt(fields.installments),
+          total_amount: Number.parseFloat(fields.total_amount),
+          installments: Number.parseInt(fields.installments),
           first_payment_date:
             fields.first_payment_date || new Date().toISOString().slice(0, 10),
           category_id: categoryId ?? undefined,
@@ -353,14 +362,14 @@ export default function ExpensesPage() {
       } else if (tab === "fijos") {
         await createFixedExpenseTemplate({
           description: fields.description,
-          amount: parseFloat(fields.amount),
-          due_day: parseInt(fields.due_day),
+          amount: Number.parseFloat(fields.amount),
+          due_day: Number.parseInt(fields.due_day),
           category_id: categoryId ?? undefined,
         });
       } else {
         await createVariableExpense({
           description: fields.description,
-          amount: parseFloat(fields.amount),
+          amount: Number.parseFloat(fields.amount),
           date: fields.date || new Date().toISOString().slice(0, 10),
           category_id: categoryId ?? undefined,
         });
@@ -378,14 +387,19 @@ export default function ExpensesPage() {
     filterCategory === "all"
       ? allCuotas
       : allCuotas.filter((c) => c.category_id === filterCategory);
-  const fijos = filterCategory === "all" ? allFijos : allFijos;
+  const fijos =
+    filterCategory === "all"
+      ? allFijos
+      : allFijos.filter(
+          (f) => f.fixed_expense_templates?.category_id === filterCategory,
+        );
   const variables =
     filterCategory === "all"
       ? allVariables
       : allVariables.filter((v) => v.category_id === filterCategory);
 
   return (
-    <div
+    <main
       style={{
         display: "flex",
         flexDirection: "column",
@@ -400,17 +414,18 @@ export default function ExpensesPage() {
           paddingTop: 14,
         }}
       >
-        <div
+        <h1
           style={{
             fontSize: 20,
             fontWeight: 700,
             color: "var(--fg-1)",
             fontFamily: "var(--font-sans)",
             padding: "0 20px 10px",
+            margin: 0,
           }}
         >
           Gastos
-        </div>
+        </h1>
         <SegmentedControl active={tab} onChange={setTab} />
       </div>
 
@@ -800,7 +815,7 @@ export default function ExpensesPage() {
         )}
       </div>
 
-      <FAB onClick={() => setShowForm(true)} label="Agregar gasto" />
+      <Fab onClick={() => setShowForm(true)} label="Agregar gasto" />
       {showForm && (
         <AddSheet
           tab={tab}
@@ -809,6 +824,6 @@ export default function ExpensesPage() {
           onSave={handleSave}
         />
       )}
-    </div>
+    </main>
   );
 }

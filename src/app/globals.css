@@ -6,20 +6,47 @@
   /* Violet (accent / Persona A) */
   --color-violet-50: #f0eeff;
   --color-violet-100: #ddd8ff;
+  --color-violet-200: #beb4fe;
+  --color-violet-300: #9d8ffc;
+  --color-violet-400: #8b79fa;
   --color-violet-500: #6c5ce7;
   --color-violet-600: #5849d1;
+  --color-violet-700: #4438b8;
+  --color-violet-800: #342c90;
+  --color-violet-900: #231e63;
 
   /* Teal (Persona B / success) */
   --color-teal-50: #e6faf6;
+  --color-teal-100: #c0f1e7;
+  --color-teal-200: #85e3cf;
+  --color-teal-300: #40d0b4;
+  --color-teal-400: #15be9e;
   --color-teal-500: #00b894;
+  --color-teal-600: #009e7e;
+  --color-teal-700: #00836a;
+  --color-teal-800: #006652;
+  --color-teal-900: #004a3c;
 
   /* Coral (danger / deuda) */
   --color-coral-50: #fef0ed;
+  --color-coral-100: #fcddd7;
+  --color-coral-200: #f8b7ab;
+  --color-coral-300: #f2907e;
+  --color-coral-400: #eb7460;
   --color-coral-500: #e17055;
+  --color-coral-600: #c45a41;
+  --color-coral-700: #a44631;
+  --color-coral-800: #823424;
+  --color-coral-900: #5e2219;
 
   /* Amber (warning) */
   --color-amber-50: #fffbeb;
+  --color-amber-100: #fef3c7;
+  --color-amber-200: #fde68a;
+  --color-amber-300: #fcd34d;
   --color-amber-400: #fdcb6e;
+  --color-amber-500: #f59e0b;
+  --color-amber-600: #d97706;
 
   /* Neutrals */
   --color-neutral-0: #ffffff;
@@ -27,7 +54,8 @@
   --color-neutral-100: #efeff1;
   --color-neutral-200: #e2e2e6;
   --color-neutral-300: #c8c8ce;
-  --color-neutral-400: #9a9aa6;
+  --color-neutral-400: #6c6c78; /* corregido: 4.84:1 sobre bg-base ✅ WCAG AA */
+  --color-neutral-450: #9a9aa6; /* valor original — solo para dark --fg-2 */
   --color-neutral-500: #6e6e7a;
   --color-neutral-600: #4a4a56;
   --color-neutral-700: #2e2e38;
@@ -52,23 +80,29 @@
 
   --person-a: var(--color-violet-500);
   --person-a-subtle: var(--color-violet-50);
+  --person-a-fg: var(--color-neutral-0);
   --person-b: var(--color-teal-500);
   --person-b-subtle: var(--color-teal-50);
+  --person-b-fg: var(--color-neutral-0);
 
   --status-success: var(--color-teal-500);
   --status-success-subtle: var(--color-teal-50);
   --status-danger: var(--color-coral-500);
   --status-danger-subtle: var(--color-coral-50);
   --status-warning: var(--color-amber-400);
+  --status-warning-subtle: var(--color-amber-50);
   --status-pending: var(--color-neutral-400);
   --status-pending-subtle: var(--color-neutral-100);
 
   --border-subtle: rgba(0, 0, 0, 0.06);
   --border-default: var(--color-neutral-200);
+  --border-strong: var(--color-neutral-300);
   --border-focus: var(--color-violet-500);
 
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
   --shadow-md: 0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 16px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 4px 6px rgba(0, 0, 0, 0.07), 0 12px 32px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 8px 16px rgba(0, 0, 0, 0.08), 0 24px 48px rgba(0, 0, 0, 0.12);
 
   --radius-sm: 8px;
   --radius-md: 12px;
@@ -78,6 +112,41 @@
 
   --font-sans: "DM Sans", system-ui, -apple-system, sans-serif;
   --font-mono: "JetBrains Mono", "Courier New", monospace;
+
+  --text-xs: 12px;
+  --text-sm: 14px;
+  --text-base: 16px;
+  --text-lg: 20px;
+  --text-xl: 24px;
+  --text-2xl: 32px;
+  --text-3xl: 40px;
+
+  --leading-tight: 1.2;
+  --leading-snug: 1.35;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.65;
+
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  --duration-fast: 100ms;
+  --duration-normal: 150ms;
+  --duration-slow: 250ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
 
   --bottom-nav-height: 68px;
   --screen-padding: 16px;
@@ -90,11 +159,12 @@
     --bg-sunken: rgba(255, 255, 255, 0.05);
 
     --fg-1: var(--color-neutral-50);
-    --fg-2: var(--color-neutral-400);
+    --fg-2: var(--color-neutral-450); /* #9a9aa6 → 6.88:1 sobre dark bg ✅ */
     --fg-3: var(--color-neutral-600);
+    --fg-inverse: var(--color-neutral-900);
 
-    --accent: var(--color-violet-100);
-    --accent-hover: var(--color-violet-50);
+    --accent: var(--color-violet-400);
+    --accent-hover: var(--color-violet-300);
     --accent-subtle: rgba(108, 92, 231, 0.15);
 
     --person-a-subtle: rgba(108, 92, 231, 0.15);
@@ -102,13 +172,18 @@
 
     --status-success-subtle: rgba(0, 184, 148, 0.12);
     --status-danger-subtle: rgba(225, 112, 85, 0.12);
+    --status-warning-subtle: rgba(253, 203, 110, 0.12);
     --status-pending-subtle: rgba(255, 255, 255, 0.06);
 
     --border-subtle: rgba(255, 255, 255, 0.06);
     --border-default: rgba(255, 255, 255, 0.1);
+    --border-strong: rgba(255, 255, 255, 0.16);
 
     --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
     --shadow-md: 0 1px 3px rgba(0, 0, 0, 0.3), 0 4px 16px rgba(0, 0, 0, 0.25);
+    --shadow-lg: 0 4px 6px rgba(0, 0, 0, 0.3), 0 12px 32px rgba(0, 0, 0, 0.35);
+    --shadow-xl:
+      0 8px 16px rgba(0, 0, 0, 0.35), 0 24px 48px rgba(0, 0, 0, 0.45);
   }
 }
 
