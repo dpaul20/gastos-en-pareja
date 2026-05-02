@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.4.1](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.4.0...gastos-en-pareja-v1.4.1) (2026-05-02)
+
+
+### 🐛 Bug Fixes
+
+* invitation acceptance redirect swallowed by try/catch ([ef49601](https://github.com/dpaul20/gastos-en-pareja/commit/ef49601536e58c3f5faa48dee6163e0e53353d66))
+* move redirect() outside try/catch in invite page ([99e4f90](https://github.com/dpaul20/gastos-en-pareja/commit/99e4f90d46e45df1d177ccb4a702938d1a50afca))
+
 ## [1.4.0](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.3.3...gastos-en-pareja-v1.4.0) (2026-05-02)
 
 
