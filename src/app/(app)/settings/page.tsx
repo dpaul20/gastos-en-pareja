@@ -9,7 +9,7 @@ import {
 } from "@/lib/queries/use-monthly-data";
 import { upsertIncome } from "@/lib/actions/expenses";
 import { sendInvitation, createCouple } from "@/lib/actions/couple";
-import { formatARS, getMonthDate } from "@/lib/utils";
+import { getMonthDate } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 
 function getInitials(name: string): string {
@@ -30,9 +30,28 @@ export default function SettingsPage() {
   const [isPending, startTransition] = useTransition();
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteMsg, setInviteMsg] = useState("");
+  const [inviteExpiresAt, setInviteExpiresAt] = useState<string | null>(null);
   const [myIncome, setMyIncome] = useState("");
 
   const supabase = createClient();
+
+  useEffect(() => {
+    if (!member) return;
+    // Check for existing pending invitation
+    const now = new Date().toISOString();
+    supabase
+      .from("invitations")
+      .select("expires_at")
+      .eq("couple_id", member.couple_id)
+      .is("accepted_at", null)
+      .gt("expires_at", now)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) setInviteExpiresAt(data.expires_at);
+      });
+  }, [member, supabase]);
 
   useEffect(() => {
     if (!member) return;
@@ -49,13 +68,8 @@ export default function SettingsPage() {
       });
   }, [member, supabase]);
 
-  const myPct = (() => {
-    const v = parseInt(myIncome.replace(/\D/g, "")) || 0;
-    return v > 0 ? `${Math.round((v / (v * 1.5)) * 100)}%` : "—";
-  })();
-
   async function handleSaveIncome() {
-    const amount = parseInt(myIncome.replace(/\D/g, ""));
+    const amount = Number.parseInt(myIncome.replaceAll(/\D/g, ""));
     if (!amount || !member) return;
     startTransition(async () => {
       await upsertIncome(amount, getMonthDate());
@@ -70,12 +84,16 @@ export default function SettingsPage() {
     });
   }
 
-  async function handleInvite(e: React.FormEvent) {
+  async function handleInvite(e: React.SyntheticEvent) {
     e.preventDefault();
     if (!member || !inviteEmail) return;
     startTransition(async () => {
       try {
-        await sendInvitation(member.couple_id, inviteEmail);
+        const { expiresAt } = await sendInvitation(
+          member.couple_id,
+          inviteEmail,
+        );
+        setInviteExpiresAt(expiresAt);
         setInviteMsg("Invitación enviada ✓");
         setInviteEmail("");
       } catch (err) {
@@ -86,7 +104,7 @@ export default function SettingsPage() {
 
   async function handleSignOut() {
     await supabase.auth.signOut();
-    window.location.href = "/login";
+    globalThis.location.href = "/login";
   }
 
   if (isLoading) {
@@ -113,7 +131,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div
+    <main
       style={{
         display: "flex",
         flexDirection: "column",
@@ -128,16 +146,17 @@ export default function SettingsPage() {
           padding: "14px 20px",
         }}
       >
-        <div
+        <h1
           style={{
             fontSize: 20,
             fontWeight: 700,
             color: "var(--fg-1)",
             fontFamily: "var(--font-sans)",
+            margin: 0,
           }}
         >
           Configuración
-        </div>
+        </h1>
       </div>
 
       <div
@@ -173,43 +192,7 @@ export default function SettingsPage() {
               boxShadow: "var(--shadow-sm)",
             }}
           >
-            {!member ? (
-              <div
-                style={{
-                  padding: "20px 16px",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 12,
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: 14,
-                    color: "var(--fg-2)",
-                    fontFamily: "var(--font-sans)",
-                  }}
-                >
-                  No tenés una pareja configurada todavía.
-                </div>
-                <button
-                  onClick={handleCreateCouple}
-                  disabled={isPending}
-                  style={{
-                    background: "var(--accent)",
-                    color: "white",
-                    border: "none",
-                    borderRadius: 10,
-                    padding: "10px 16px",
-                    fontSize: 14,
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    fontFamily: "var(--font-sans)",
-                  }}
-                >
-                  Crear pareja
-                </button>
-              </div>
-            ) : (
+            {member ? (
               <>
                 <div
                   style={{
@@ -288,63 +271,130 @@ export default function SettingsPage() {
                     >
                       Invitar pareja
                     </div>
-                    <form
-                      onSubmit={handleInvite}
-                      style={{ display: "flex", gap: 8 }}
-                    >
-                      <input
-                        type="email"
-                        value={inviteEmail}
-                        onChange={(e) => setInviteEmail(e.target.value)}
-                        placeholder="email@ejemplo.com"
+                    {inviteExpiresAt &&
+                    new Date(inviteExpiresAt) > new Date() ? (
+                      <div
+                        aria-live="polite"
                         style={{
-                          flex: 1,
-                          border: "1.5px solid var(--border-default)",
+                          background: "var(--bg-sunken)",
+                          border: "1px solid var(--border-subtle)",
                           borderRadius: 10,
                           padding: "10px 12px",
-                          fontSize: 14,
-                          fontFamily: "var(--font-sans)",
-                          background: "var(--bg-elevated)",
-                          color: "var(--fg-1)",
-                          outline: "none",
-                        }}
-                      />
-                      <button
-                        type="submit"
-                        disabled={isPending || !inviteEmail}
-                        style={{
-                          background: "var(--accent)",
-                          color: "white",
-                          border: "none",
-                          borderRadius: 10,
-                          padding: "10px 14px",
                           fontSize: 13,
-                          fontWeight: 600,
-                          cursor: "pointer",
-                          fontFamily: "var(--font-sans)",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        Invitar
-                      </button>
-                    </form>
-                    {inviteMsg && (
-                      <div
-                        style={{
-                          marginTop: 6,
-                          fontSize: 12,
-                          color: inviteMsg.includes("✓")
-                            ? "var(--status-success)"
-                            : "var(--status-danger)",
+                          color: "var(--fg-2)",
                           fontFamily: "var(--font-sans)",
                         }}
                       >
-                        {inviteMsg}
+                        ⏳ Invitación pendiente hasta el{" "}
+                        <strong>
+                          {new Date(inviteExpiresAt).toLocaleDateString(
+                            "es-AR",
+                            {
+                              day: "numeric",
+                              month: "long",
+                            },
+                          )}
+                        </strong>{" "}
+                        . Vas a poder reenviar cuando expire.
                       </div>
+                    ) : (
+                      <>
+                        <form
+                          onSubmit={handleInvite}
+                          style={{ display: "flex", gap: 8 }}
+                        >
+                          <input
+                            type="email"
+                            value={inviteEmail}
+                            onChange={(e) => setInviteEmail(e.target.value)}
+                            placeholder="email@ejemplo.com"
+                            style={{
+                              flex: 1,
+                              border: "1.5px solid var(--border-default)",
+                              borderRadius: 10,
+                              padding: "10px 12px",
+                              fontSize: 14,
+                              fontFamily: "var(--font-sans)",
+                              background: "var(--bg-elevated)",
+                              color: "var(--fg-1)",
+                              outline: "none",
+                            }}
+                          />
+                          <button
+                            type="submit"
+                            disabled={isPending || !inviteEmail}
+                            style={{
+                              background: "var(--accent)",
+                              color: "white",
+                              border: "none",
+                              borderRadius: 10,
+                              padding: "10px 14px",
+                              fontSize: 13,
+                              fontWeight: 600,
+                              cursor: "pointer",
+                              fontFamily: "var(--font-sans)",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            Invitar
+                          </button>
+                        </form>
+                        {inviteMsg && (
+                          <div
+                            aria-live="polite"
+                            style={{
+                              marginTop: 6,
+                              fontSize: 12,
+                              color: inviteMsg.includes("✓")
+                                ? "var(--status-success)"
+                                : "var(--status-danger)",
+                              fontFamily: "var(--font-sans)",
+                            }}
+                          >
+                            {inviteMsg}
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 )}
               </>
+            ) : (
+              <div
+                style={{
+                  padding: "20px 16px",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 12,
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 14,
+                    color: "var(--fg-2)",
+                    fontFamily: "var(--font-sans)",
+                  }}
+                >
+                  No tenés una pareja configurada todavía.
+                </div>
+                <button
+                  onClick={handleCreateCouple}
+                  disabled={isPending}
+                  style={{
+                    background: "var(--accent)",
+                    color: "white",
+                    border: "none",
+                    borderRadius: 10,
+                    padding: "10px 16px",
+                    fontSize: 14,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    fontFamily: "var(--font-sans)",
+                  }}
+                >
+                  Crear pareja
+                </button>
+              </div>
             )}
           </div>
         </section>
@@ -419,6 +469,7 @@ export default function SettingsPage() {
                 <button
                   onClick={handleSaveIncome}
                   disabled={isPending || !myIncome}
+                  aria-busy={isPending}
                   style={{
                     width: "100%",
                     background: "var(--accent)",
@@ -512,6 +563,6 @@ export default function SettingsPage() {
           </div>
         </section>
       </div>
-    </div>
+    </main>
   );
 }
