@@ -12,7 +12,19 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Generated files — never lint these:
+    "public/sw.js",
+    "coverage/**",
   ]),
+  // Allow _ prefix to mark intentionally unused variables
+  {
+    rules: {
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
+      ],
+    },
+  },
   // E2E test files — disable React-specific rules that don't apply to Playwright
   {
     files: ["e2e/**/*.ts"],

@@ -12,7 +12,7 @@ import { subMonths } from "date-fns";
 
 const MONTHS_TO_SHOW = 6;
 
-function useHistoryMonths(coupleId: string | null) {
+function useHistoryMonths(_coupleId: string | null) {
   const today = new Date();
   // Generate last N months (excluding current)
   return Array.from({ length: MONTHS_TO_SHOW }, (_, i) => {
