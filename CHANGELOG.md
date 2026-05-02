@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.5.1](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.5.0...gastos-en-pareja-v1.5.1) (2026-05-02)
+
+
+### 🐛 Bug Fixes
+
+* app-level bugs found during E2E test coverage ([e656426](https://github.com/dpaul20/gastos-en-pareja/commit/e656426bd77f398f87cbb6e5a2b63dcf6afb274c))
+* app-level bugs found during E2E test coverage ([815144f](https://github.com/dpaul20/gastos-en-pareja/commit/815144fca41c2b47bf16b571000a324dbad4a981)), closes [#70](https://github.com/dpaul20/gastos-en-pareja/issues/70)
+
 ## [1.5.0](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.4.1...gastos-en-pareja-v1.5.0) (2026-05-02)
 
 
