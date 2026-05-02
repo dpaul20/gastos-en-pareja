@@ -86,7 +86,10 @@ export async function sendInvitation(coupleId: string, email: string) {
     }),
   });
 
-  if (!res.ok) throw new Error("Error al enviar el email");
+  if (!res.ok) {
+    const body = await res.text().catch(() => "(no body)");
+    throw new Error(`Error al enviar el email (${res.status}): ${body}`);
+  }
   return { token: invitation.token };
 }
 
