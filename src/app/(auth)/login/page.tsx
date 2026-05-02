@@ -1,21 +1,30 @@
 "use client";
 
+import { Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-export default function LoginPage() {
+function LoginContent() {
   const supabase = createClient();
+  const searchParams = useSearchParams();
 
   async function signInWithGoogle() {
+    const next = searchParams.get("next");
+    const redirectPath = next?.startsWith("/") ? next : "/dashboard";
+    const redirectUrl = new URL("/auth/callback", globalThis.location.origin);
+
+    redirectUrl.searchParams.set("next", redirectPath);
+
     await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: redirectUrl.toString(),
       },
     });
   }
 
   return (
-    <div
+    <main
       style={{
         height: "100dvh",
         display: "flex",
@@ -67,7 +76,7 @@ export default function LoginPage() {
         </div>
 
         <div style={{ textAlign: "center" }}>
-          <div
+          <h1
             style={{
               fontSize: 28,
               fontWeight: 700,
@@ -75,10 +84,11 @@ export default function LoginPage() {
               letterSpacing: "-0.02em",
               fontFamily: "DM Sans, system-ui, sans-serif",
               lineHeight: 1.2,
+              margin: 0,
             }}
           >
             Gastos en Pareja
-          </div>
+          </h1>
           <div
             style={{
               fontSize: 15,
@@ -185,13 +195,21 @@ export default function LoginPage() {
             textAlign: "center",
             marginTop: 14,
             fontSize: 12,
-            color: "#9A9AA6",
+            color: "var(--fg-3)",
             fontFamily: "DM Sans, system-ui, sans-serif",
           }}
         >
           Al continuar aceptás los términos de uso
         </div>
       </div>
-    </div>
+    </main>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginContent />
+    </Suspense>
   );
 }

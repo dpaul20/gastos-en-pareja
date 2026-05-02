@@ -31,7 +31,7 @@ function getInitials(name: string) {
 
 // ── SUB-COMPONENTS ────────────────────────────────────────────
 
-function NoCoupleState({ hasMember }: { hasMember: boolean }) {
+function NoCoupleState({ hasMember }: { readonly hasMember: boolean }) {
   return (
     <div
       style={{
@@ -90,8 +90,8 @@ function NewInstancesBanner({
   count,
   onDismiss,
 }: {
-  count: number;
-  onDismiss: () => void;
+  readonly count: number;
+  readonly onDismiss: () => void;
 }) {
   if (count === 0) return null;
   const plural = count > 1;
@@ -141,10 +141,10 @@ function BalanceCard({
   myProfile,
   partnerProfile,
 }: {
-  balance: MonthlyBalance;
-  month: string;
-  myProfile: Profile | undefined;
-  partnerProfile: Profile | undefined;
+  readonly balance: MonthlyBalance;
+  readonly month: string;
+  readonly myProfile: Profile | undefined;
+  readonly partnerProfile: Profile | undefined;
 }) {
   const myInitials = myProfile ? getInitials(myProfile.full_name) : "?";
   const partnerInitials = partnerProfile
@@ -328,7 +328,7 @@ function BalanceCard({
   );
 }
 
-function MonthSummaryCard({ balance }: { balance: MonthlyBalance }) {
+function MonthSummaryCard({ balance }: { readonly balance: MonthlyBalance }) {
   const rows = [
     {
       label: "Cuotas activas",
@@ -456,8 +456,8 @@ function CategoryBreakdownCard({
   breakdown,
   total,
 }: {
-  breakdown: CategoryGroup[];
-  total: number;
+  readonly breakdown: CategoryGroup[];
+  readonly total: number;
 }) {
   if (breakdown.length === 0) return null;
   return (
@@ -622,7 +622,8 @@ export default function DashboardPage() {
   }
 
   return (
-    <div
+    <main
+      aria-label="Inicio"
       style={{
         display: "flex",
         flexDirection: "column",
@@ -707,6 +708,6 @@ export default function DashboardPage() {
           </>
         )}
       </div>
-    </div>
+    </main>
   );
 }

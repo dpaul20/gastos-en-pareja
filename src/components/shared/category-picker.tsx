@@ -14,12 +14,38 @@ export function CategoryPicker({
   categories,
   value,
   onChange,
-}: CategoryPickerProps) {
+}: Readonly<CategoryPickerProps>) {
   return (
-    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+    <fieldset
+      style={{
+        display: "flex",
+        flexWrap: "wrap",
+        gap: 6,
+        margin: 0,
+        padding: 0,
+        border: "none",
+        minInlineSize: 0,
+      }}
+    >
+      <legend
+        style={{
+          position: "absolute",
+          width: 1,
+          height: 1,
+          padding: 0,
+          margin: -1,
+          overflow: "hidden",
+          clip: "rect(0, 0, 0, 0)",
+          whiteSpace: "nowrap",
+          border: 0,
+        }}
+      >
+        Categoría del gasto
+      </legend>
       <button
         type="button"
         onClick={() => onChange(null)}
+        aria-pressed={value === null}
         style={{
           padding: "5px 10px",
           borderRadius: 99,
@@ -40,6 +66,7 @@ export function CategoryPicker({
           key={cat.id}
           type="button"
           onClick={() => onChange(cat.id)}
+          aria-pressed={value === cat.id}
           style={{
             padding: "5px 10px",
             borderRadius: 99,
@@ -56,9 +83,9 @@ export function CategoryPicker({
             gap: 4,
           }}
         >
-          <span>{cat.icon}</span> {cat.name}
+          <span aria-hidden="true">{cat.icon}</span> {cat.name}
         </button>
       ))}
-    </div>
+    </fieldset>
   );
 }
