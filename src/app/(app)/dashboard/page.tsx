@@ -13,6 +13,7 @@ import {
   useCoupleMemberProfiles,
   useCategories,
 } from "@/lib/queries/use-monthly-data";
+import { useMyPendingInvitations } from "@/lib/queries/settings";
 import {
   calculateMonthlyBalance,
   type MonthlyBalance,
@@ -24,7 +25,15 @@ type Profile = { user_id: string; full_name: string };
 
 // ── SUB-COMPONENTS ────────────────────────────────────────────
 
-function NoCoupleState({ hasMember }: { readonly hasMember: boolean }) {
+function NoCoupleState({
+  hasMember,
+  hasPendingInvitation,
+}: {
+  readonly hasMember: boolean;
+  readonly hasPendingInvitation: boolean;
+}) {
+  const showPendingState = hasMember || hasPendingInvitation;
+
   return (
     <div
       style={{
@@ -47,7 +56,7 @@ function NoCoupleState({ hasMember }: { readonly hasMember: boolean }) {
           fontFamily: "var(--font-sans)",
         }}
       >
-        {hasMember ? "Invitación pendiente" : "Creá tu pareja"}
+        {showPendingState ? "Invitación pendiente" : "Creá tu pareja"}
       </div>
       <div
         style={{
@@ -56,7 +65,7 @@ function NoCoupleState({ hasMember }: { readonly hasMember: boolean }) {
           fontFamily: "var(--font-sans)",
         }}
       >
-        {hasMember
+        {showPendingState
           ? "Tu pareja todavía no aceptó la invitación."
           : "Para empezar, configurá tu pareja desde Configuración."}
       </div>
@@ -437,6 +446,7 @@ export default function DashboardPage() {
   const isCurrentMonth = month === getMonthDate();
 
   const { data: member, isLoading: loadingMember } = useCoupleMember();
+  const { data: myPendingInvitations = [] } = useMyPendingInvitations();
   const coupleId = member?.couple_id ?? null;
   const { data, isLoading: loadingData } = useMonthlyData(coupleId, month);
   const { data: profiles = [] } = useCoupleMemberProfiles(
@@ -503,7 +513,12 @@ export default function DashboardPage() {
   }
 
   if (!member || member.couples?.status !== "ACTIVE") {
-    return <NoCoupleState hasMember={!!member} />;
+    return (
+      <NoCoupleState
+        hasMember={!!member}
+        hasPendingInvitation={myPendingInvitations.length > 0}
+      />
+    );
   }
 
   return (

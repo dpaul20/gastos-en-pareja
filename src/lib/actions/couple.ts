@@ -3,6 +3,11 @@
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { sendEmail } from "@/lib/utils/email";
+import {
+  buildInviteUrl,
+  canAcceptInvitationForEmail,
+  normalizeInvitationEmail,
+} from "@/lib/actions/couple-helpers";
 
 export async function createCouple() {
   const supabase = await createClient();
@@ -10,6 +15,31 @@ export async function createCouple() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) throw new Error("No autenticado");
+
+  const normalizedUserEmail = normalizeInvitationEmail(user.email ?? "");
+  if (normalizedUserEmail) {
+    const now = new Date().toISOString();
+    const { data: pendingInvitationForUser, error: pendingInvitationError } =
+      await supabase
+        .from("invitations")
+        .select("token")
+        .eq("email", normalizedUserEmail)
+        .is("accepted_at", null)
+        .gt("expires_at", now)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+    if (pendingInvitationError) {
+      throw new Error("No se pudo verificar tus invitaciones pendientes");
+    }
+
+    if (pendingInvitationForUser) {
+      throw new Error(
+        "Tenés una invitación pendiente. Aceptala antes de crear una pareja nueva.",
+      );
+    }
+  }
 
   const service = await createServiceClient();
   const { data: existingMember, error: existingMemberError } = await service
@@ -61,7 +91,7 @@ export async function sendInvitation(coupleId: string, email: string) {
   } = await supabase.auth.getUser();
   if (!user) throw new Error("No autenticado");
 
-  const normalizedEmail = email.trim().toLowerCase();
+  const normalizedEmail = normalizeInvitationEmail(email);
   if (!normalizedEmail) throw new Error("Ingresá un email válido");
 
   if (user.email?.toLowerCase() === normalizedEmail) {
@@ -135,22 +165,68 @@ export async function sendInvitation(coupleId: string, email: string) {
   // Build invite URL from request headers — no NEXT_PUBLIC_APP_URL needed
   const { headers } = await import("next/headers");
   const h = await headers();
-  const host = h.get("host") ?? "localhost:3000";
-  const proto = process.env.NODE_ENV === "production" ? "https" : "http";
-  const inviteUrl = `${proto}://${host}/invite/${invitation.token}`;
+  const inviteUrl = buildInviteUrl(
+    h.get("host"),
+    invitation.token,
+    process.env.NODE_ENV,
+  );
 
-  await sendEmail({
-    to: normalizedEmail,
-    subject: `${user.email} te invitó a Gastos en Pareja`,
-    html: `
-      <p>Hola,</p>
-      <p><strong>${user.email}</strong> te invitó a compartir los gastos del mes en Gastos en Pareja.</p>
-      <p><a href="${inviteUrl}" style="background:#6C5CE7;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;">Aceptar invitación</a></p>
-      <p style="color:#999;font-size:12px;">El link expira en 7 días.</p>
-    `,
-  });
+  try {
+    await sendEmail({
+      to: normalizedEmail,
+      subject: `${user.email} te invitó a Gastos en Pareja`,
+      html: `
+        <p>Hola,</p>
+        <p><strong>${user.email}</strong> te invitó a compartir los gastos del mes en Gastos en Pareja.</p>
+        <p><a href="${inviteUrl}" style="background:#6C5CE7;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;">Aceptar invitación</a></p>
+        <p style="color:#999;font-size:12px;">El link expira en 7 días.</p>
+      `,
+    });
+  } catch (error) {
+    console.error("Invitation email delivery failed", {
+      coupleId,
+      invitationId: invitation.id,
+      invitee: normalizedEmail,
+      provider: process.env.EMAIL_PROVIDER ?? "brevo",
+      error,
+    });
+    throw new Error(
+      "La invitación se creó, pero no pudimos enviar el email. Verificá la configuración de correo e intentá nuevamente.",
+    );
+  }
 
-  return { token: invitation.token, expiresAt: invitation.expires_at };
+  return {
+    token: invitation.token,
+    expiresAt: invitation.expires_at,
+    deliveredVia:
+      process.env.NODE_ENV === "production" ? "provider" : "dev-log",
+  };
+}
+
+export async function getMyPendingInvitations() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user?.email) {
+    return [];
+  }
+
+  const now = new Date().toISOString();
+  const { data, error } = await supabase
+    .from("invitations")
+    .select("token, couple_id, expires_at, created_at, email")
+    .eq("email", normalizeInvitationEmail(user.email))
+    .is("accepted_at", null)
+    .gt("expires_at", now)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    throw new Error("No se pudieron obtener tus invitaciones pendientes");
+  }
+
+  return data ?? [];
 }
 
 export async function acceptInvitation(token: string) {
@@ -170,8 +246,50 @@ export async function acceptInvitation(token: string) {
     .single();
 
   if (!invitation) throw new Error("Invitación inválida o expirada");
+  if (!canAcceptInvitationForEmail(user.email, invitation.email)) {
+    throw new Error("Esta invitación no corresponde a tu cuenta");
+  }
 
   const service = await createServiceClient();
+
+  const { data: existingMembership, error: existingMembershipError } =
+    await service
+      .from("couple_members")
+      .select("couple_id")
+      .eq("user_id", user.id)
+      .order("joined_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+  if (existingMembershipError) {
+    throw new Error("No se pudo validar tu estado actual de pareja");
+  }
+
+  if (
+    existingMembership?.couple_id &&
+    existingMembership.couple_id !== invitation.couple_id
+  ) {
+    throw new Error(
+      "Ya pertenecés a otra pareja. Salí de esa pareja antes de aceptar una nueva invitación.",
+    );
+  }
+
+  if (existingMembership?.couple_id === invitation.couple_id) {
+    const acceptedAt = invitation.accepted_at ?? new Date().toISOString();
+    await service
+      .from("invitations")
+      .update({ accepted_at: acceptedAt })
+      .eq("id", invitation.id);
+    await service
+      .from("couples")
+      .update({ status: "ACTIVE" })
+      .eq("id", invitation.couple_id);
+
+    revalidatePath("/", "layout");
+    revalidatePath("/dashboard");
+    revalidatePath("/settings");
+    return { coupleId: invitation.couple_id };
+  }
 
   // Add user as MEMBER
   const { error: memberError } = await service.from("couple_members").insert({
@@ -179,21 +297,25 @@ export async function acceptInvitation(token: string) {
     user_id: user.id,
     role: "MEMBER",
   });
-  if (memberError) throw new Error("Ya pertenecés a una pareja");
+  if (memberError) throw new Error("No se pudo aceptar la invitación");
 
   // Mark couple as ACTIVE
-  await service
+  const { error: activateError } = await service
     .from("couples")
     .update({ status: "ACTIVE" })
     .eq("id", invitation.couple_id);
+  if (activateError) throw new Error("No se pudo activar la pareja");
 
   // Mark invitation as accepted
-  await service
+  const { error: acceptedError } = await service
     .from("invitations")
     .update({ accepted_at: new Date().toISOString() })
     .eq("id", invitation.id);
+  if (acceptedError) throw new Error("No se pudo confirmar la invitación");
 
   revalidatePath("/", "layout");
+  revalidatePath("/dashboard");
+  revalidatePath("/settings");
   return { coupleId: invitation.couple_id };
 }
 
