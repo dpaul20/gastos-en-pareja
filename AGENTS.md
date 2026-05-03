@@ -18,11 +18,12 @@ Next.js 16 (App Router) · React 19 · TypeScript · Supabase · TanStack Query 
 
 ## 1. Server vs Client boundary
 
-- Files with data fetching from Supabase that run on the server MUST start with `"use server"`.
+- Server Components (`page.tsx`, `layout.tsx`, etc.) are server-side **by default** — NO directive needed. They fetch data directly from Supabase using `@/lib/supabase/server`.
+- Server Actions MUST start with `"use server"` — these live in `src/lib/actions/` and handle mutations called from the client.
 - Files that use hooks, state, or browser APIs MUST start with `"use client"`.
 - NEVER import `@/lib/supabase/server` inside a `"use client"` file.
 - NEVER import `@/lib/supabase/client` inside a Server Action or Server Component.
-- Server Actions live in `src/lib/actions/`. Client queries live in `src/lib/queries/`.
+- Client queries (TanStack Query hooks) live in `src/lib/queries/`.
 
 ## 2. Server Actions
 
@@ -30,6 +31,7 @@ Next.js 16 (App Router) · React 19 · TypeScript · Supabase · TanStack Query 
 - After mutations, call `revalidatePath()` for every route that displays the changed data.
 - NEVER return raw Supabase errors to the client — throw typed `Error` instances with user-safe messages.
 - Use the shared `getCouple()` helper pattern (already in `expenses.ts`) instead of duplicating couple resolution logic.
+- NEVER wrap `redirect()` or `notFound()` in a `try-catch` — they throw special internal errors that Next.js handles. Catch only your own errors, then call redirect/notFound outside the catch block.
 
 ## 3. Data fetching — TanStack Query
 
@@ -77,11 +79,27 @@ Next.js 16 (App Router) · React 19 · TypeScript · Supabase · TanStack Query 
 - Supabase queries that return `{ data, error }` MUST check `error` before using `data`.
 - In Server Actions, throw — don't return error objects.
 - In Client Components, handle query errors via the `error` property from `useQuery`.
+- Route-level errors are caught by `error.tsx` (must be `'use client'`). It receives `{ error, reset }` props.
+- Root layout errors are caught by `global-error.tsx` — must include `<html>` and `<body>` tags.
 
 ## 10. What NOT to do
 
 - NEVER use `getServerSideProps` or `getStaticProps` — this is App Router.
-- NEVER use `useRouter().push()` for post-mutation navigation — use `revalidatePath()` + server-driven redirects.
+- NEVER use `useRouter().push()` for post-mutation navigation — use `redirect()` from `next/navigation` inside a Server Action for redirects, and `revalidatePath()` to invalidate cache. These are separate concerns: `redirect()` navigates, `revalidatePath()` busts cache. You often need both.
+- NEVER make a Client Component `async` — only Server Components can be async. If you need data in a client component, receive it as props from a Server Component parent.
+- NEVER pass non-serializable values (functions, `Date` objects, class instances, `Map`, `Set`) as props from Server → Client components. Serialize to plain objects/strings first.
 - NEVER commit `console.log` statements.
 - NEVER add `// eslint-disable` comments without a written justification in the same line.
 - NEVER bypass RLS by using the service role key in client-facing code.
+- NEVER create a `route.ts` in the same folder as a `page.tsx` — they conflict. API routes go under `src/app/api/`.
+
+## 11. Next.js framework rules
+
+Before writing any Next.js code, load the `next-best-practices` skill. It covers:
+
+- **Async APIs** — `params`, `searchParams`, `cookies()`, `headers()` are Promises in Next.js 15+
+- **Suspense boundaries** — `useSearchParams()` / `usePathname()` require `<Suspense>` or the page degrades to CSR
+- **RSC boundaries** — async Client Components, non-serializable props detection
+- **Route Handlers vs Server Actions** — decision tree for when to use each
+- **Directives** — `'use client'`, `'use server'`, `'use cache'`
+- **Error boundaries** — `error.tsx`, `global-error.tsx`, `not-found.tsx`
