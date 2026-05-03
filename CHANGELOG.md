@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.5.2](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.5.1...gastos-en-pareja-v1.5.2) (2026-05-03)
+
+
+### 🐛 Bug Fixes
+
+* remove UTF-8 BOM from RLS migration file ([364e10e](https://github.com/dpaul20/gastos-en-pareja/commit/364e10e1cbbaac08f3c804dcfbf26ffd489f9c2c))
+* **rls:** add SET row_security=off to SECURITY DEFINER functions ([dee7045](https://github.com/dpaul20/gastos-en-pareja/commit/dee704594809fd4a47745781939d94e9f4aacf49))
+* **rls:** replace circular couple_members policy with direct user_id check ([cf7d7cb](https://github.com/dpaul20/gastos-en-pareja/commit/cf7d7cbf397ced0a8557649c8d749eb40a69e1e4))
+
 ## [1.5.1](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.5.0...gastos-en-pareja-v1.5.1) (2026-05-02)
 
 
