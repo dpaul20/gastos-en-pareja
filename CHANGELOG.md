@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.5.4](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.5.3...gastos-en-pareja-v1.5.4) (2026-05-03)
+
+
+### 🐛 Bug Fixes
+
+* **couple:** avoid maybeSingle failure with duplicate memberships ([0ea82fa](https://github.com/dpaul20/gastos-en-pareja/commit/0ea82faf4fd2695d898e491853b86e1ed3154121))
+* **couple:** handle duplicate memberships when checking current couple ([cb26632](https://github.com/dpaul20/gastos-en-pareja/commit/cb266328adf86ccd0c4a14654049fdc8001528ac))
+
 ## [1.5.3](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.5.2...gastos-en-pareja-v1.5.3) (2026-05-03)
 
 
