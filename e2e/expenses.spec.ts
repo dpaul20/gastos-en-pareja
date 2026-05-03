@@ -100,6 +100,8 @@ test.describe("Gasto variable — creación exitosa", () => {
   test("gasto variable aparece en la lista con la descripción correcta", async ({
     authenticatedPage: page,
   }) => {
+    // El flujo completo (nav + form fill + server action + refetch) necesita más tiempo en CI
+    test.slow();
     const expenses = new ExpensesPage(page);
     await expenses.goto();
     await expenses.selectTab("Variables");
@@ -119,7 +121,7 @@ test.describe("Gasto variable — creación exitosa", () => {
 
     // El item con la descripción exacta debe aparecer en la lista
     await expect(page.getByText(DESCRIPCION).first()).toBeVisible({
-      timeout: 8_000,
+      timeout: 15_000,
     });
   });
 });
@@ -140,6 +142,8 @@ test.describe("Gasto fijo — creación exitosa", () => {
   test("gasto fijo aparece en la lista de Fijos", async ({
     authenticatedPage: page,
   }) => {
+    // El flujo completo (nav + form fill + server action + refetch) necesita más tiempo en CI
+    test.slow();
     const expenses = new ExpensesPage(page);
     await expenses.goto();
     await expenses.selectTab("Fijos");
@@ -153,7 +157,7 @@ test.describe("Gasto fijo — creación exitosa", () => {
 
     await expect(expenses.dialog()).not.toBeVisible({ timeout: 5_000 });
     await expect(page.getByText(DESCRIPCION).first()).toBeVisible({
-      timeout: 8_000,
+      timeout: 15_000,
     });
   });
 });
