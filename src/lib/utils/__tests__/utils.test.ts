@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { formatARS, getMonthDate, formatMonth } from "@/lib/utils";
+import { getInitials } from "@/lib/utils/initials";
 
 describe("formatARS", () => {
   it("formatea números enteros con separador de miles (ARS)", () => {
@@ -65,5 +66,23 @@ describe("formatMonth", () => {
   it("no incluye el número de día en el resultado", () => {
     const result = formatMonth("2026-04-15");
     expect(result).not.toMatch(/\b15\b/);
+  });
+});
+
+describe("getInitials", () => {
+  it("retorna las dos primeras iniciales en mayúsculas", () => {
+    expect(getInitials("Juan Pérez")).toBe("JP");
+  });
+
+  it("retorna una sola inicial si hay un solo nombre", () => {
+    expect(getInitials("Carlos")).toBe("C");
+  });
+
+  it("trunca a 2 caracteres si hay más de dos palabras", () => {
+    expect(getInitials("María José García")).toBe("MJ");
+  });
+
+  it("retorna string vacío para input vacío", () => {
+    expect(getInitials("")).toBe("");
   });
 });
