@@ -68,6 +68,8 @@ export function useCoupleMember() {
 
   return useQuery({
     queryKey: ["couple-member"],
+    staleTime: 0,
+    refetchOnMount: "always",
     queryFn: async () => {
       const {
         data: { user },

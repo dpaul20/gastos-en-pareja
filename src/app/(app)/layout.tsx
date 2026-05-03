@@ -1,6 +1,8 @@
 import { BottomNav } from "@/components/navigation/bottom-nav";
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
+export default function AppLayout({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
   return (
     <div
       style={{

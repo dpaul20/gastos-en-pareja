@@ -14,7 +14,7 @@ const styles = {
   accent: { bg: "var(--accent-subtle)", color: "var(--accent)" },
 };
 
-export function Badge({ children, variant = "neutral" }: BadgeProps) {
+export function Badge({ children, variant = "neutral" }: Readonly<BadgeProps>) {
   const s = styles[variant];
   return (
     <span

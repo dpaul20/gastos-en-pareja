@@ -142,3 +142,78 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 7
+
+  a11y:
+    name: A11y
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [lint, unit]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - uses: actions/cache@v4
+        id: node-cache
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Install dependencies
+        if: steps.node-cache.outputs.cache-hit != 'true'
+        run: npm ci
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.95.4
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.supabase
+          key: supabase-${{ runner.os }}-${{ hashFiles('supabase/config.toml') }}
+
+      - name: Start Supabase
+        run: supabase start
+
+      - name: Export Supabase env vars
+        run: |
+          source <(supabase status -o env)
+          echo "NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$ANON_KEY"         >> $GITHUB_ENV
+          echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY"      >> $GITHUB_ENV
+          echo "E2E_SUPABASE_SERVICE_KEY=$SERVICE_ROLE_KEY"       >> $GITHUB_ENV
+
+      - name: Create E2E test user
+        run: |
+          curl -sf -X POST http://127.0.0.1:54321/auth/v1/admin/users \
+            -H "apikey: ${{ env.E2E_SUPABASE_SERVICE_KEY }}" \
+            -H "Authorization: Bearer ${{ env.E2E_SUPABASE_SERVICE_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{"email":"test@gastospareja.local","password":"Test1234!","email_confirm":true}'
+
+      - uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Install Playwright browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+
+      - name: Run a11y checks
+        run: npm run test:a11y
+        env:
+          NODE_ENV: development
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-a11y
+          path: playwright-report/
+          retention-days: 7

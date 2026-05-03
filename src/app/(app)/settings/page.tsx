@@ -8,11 +8,141 @@ import {
   useCoupleMember,
   useCoupleMemberProfiles,
 } from "@/lib/queries/use-monthly-data";
-import { usePendingInvitation, useCurrentIncome } from "@/lib/queries/settings";
+import {
+  usePendingInvitation,
+  useCurrentIncome,
+  useMyPendingInvitations,
+} from "@/lib/queries/settings";
 import { upsertIncome } from "@/lib/actions/expenses";
 import { sendInvitation, createCouple } from "@/lib/actions/couple";
 import { getMonthDate, getInitials } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
+
+type PendingInvitationItem = { token: string };
+
+function PendingInvitationsCard({
+  invitations,
+}: {
+  readonly invitations: PendingInvitationItem[];
+}) {
+  if (invitations.length === 0) return null;
+
+  return (
+    <div
+      style={{
+        background: "var(--bg-sunken)",
+        border: "1px solid var(--border-subtle)",
+        borderRadius: 10,
+        padding: "10px 12px",
+        display: "flex",
+        flexDirection: "column",
+        gap: 8,
+      }}
+    >
+      <div
+        style={{
+          fontSize: 13,
+          fontWeight: 600,
+          color: "var(--fg-1)",
+          fontFamily: "var(--font-sans)",
+        }}
+      >
+        Tenés invitaciones pendientes
+      </div>
+
+      {invitations.map((invitation) => (
+        <a
+          key={invitation.token}
+          href={`/invite/${invitation.token}`}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 8,
+            textDecoration: "none",
+            color: "var(--accent)",
+            fontSize: 13,
+            fontWeight: 600,
+            fontFamily: "var(--font-sans)",
+            background: "var(--bg-elevated)",
+            border: "1px solid var(--border-subtle)",
+            borderRadius: 8,
+            padding: "8px 10px",
+          }}
+        >
+          <span>Aceptar invitación</span>
+          <span aria-hidden="true">→</span>
+        </a>
+      ))}
+    </div>
+  );
+}
+
+function NoCoupleCard({
+  onCreateCouple,
+  isPending,
+  pendingInvitations,
+  coupleMessage,
+}: {
+  readonly onCreateCouple: () => void;
+  readonly isPending: boolean;
+  readonly pendingInvitations: PendingInvitationItem[];
+  readonly coupleMessage: string;
+}) {
+  return (
+    <div
+      style={{
+        padding: "20px 16px",
+        display: "flex",
+        flexDirection: "column",
+        gap: 12,
+      }}
+    >
+      <div
+        style={{
+          fontSize: 14,
+          color: "var(--fg-2)",
+          fontFamily: "var(--font-sans)",
+        }}
+      >
+        No tenés una pareja configurada todavía.
+      </div>
+
+      <PendingInvitationsCard invitations={pendingInvitations} />
+
+      <button
+        onClick={onCreateCouple}
+        disabled={isPending || pendingInvitations.length > 0}
+        style={{
+          background: "var(--accent)",
+          color: "white",
+          border: "none",
+          borderRadius: 10,
+          padding: "10px 16px",
+          fontSize: 14,
+          fontWeight: 600,
+          cursor: "pointer",
+          fontFamily: "var(--font-sans)",
+          opacity: isPending || pendingInvitations.length > 0 ? 0.7 : 1,
+        }}
+      >
+        Crear pareja
+      </button>
+      {coupleMessage && (
+        <div
+          aria-live="polite"
+          style={{
+            fontSize: 12,
+            color: "var(--status-danger)",
+            fontFamily: "var(--font-sans)",
+          }}
+        >
+          {coupleMessage}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function SettingsPage() {
   const { data: member, isLoading } = useCoupleMember();
@@ -26,11 +156,13 @@ export default function SettingsPage() {
     member?.couple_id ?? null,
     member?.user_id ?? null,
   );
+  const { data: myPendingInvitations = [] } = useMyPendingInvitations();
   const queryClient = useQueryClient();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteMsg, setInviteMsg] = useState("");
+  const [coupleMsg, setCoupleMsg] = useState("");
   const [myIncome, setMyIncome] = useState("");
   const displayIncome = myIncome || String(currentIncome?.amount ?? "");
 
@@ -49,8 +181,16 @@ export default function SettingsPage() {
 
   async function handleCreateCouple() {
     startTransition(async () => {
-      await createCouple();
-      queryClient.invalidateQueries({ queryKey: ["couple-member"] });
+      try {
+        setCoupleMsg("");
+        await createCouple();
+        queryClient.invalidateQueries({ queryKey: ["couple-member"] });
+        queryClient.invalidateQueries({ queryKey: ["my-pending-invitations"] });
+      } catch (err) {
+        setCoupleMsg(
+          err instanceof Error ? err.message : "No se pudo crear la pareja",
+        );
+      }
     });
   }
 
@@ -63,6 +203,7 @@ export default function SettingsPage() {
         queryClient.invalidateQueries({
           queryKey: ["pending-invitation", member.couple_id],
         });
+        queryClient.invalidateQueries({ queryKey: ["my-pending-invitations"] });
         setInviteMsg("Invitación enviada ✓");
         setInviteEmail("");
       } catch (err) {
@@ -329,41 +470,12 @@ export default function SettingsPage() {
                 )}
               </>
             ) : (
-              <div
-                style={{
-                  padding: "20px 16px",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 12,
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: 14,
-                    color: "var(--fg-2)",
-                    fontFamily: "var(--font-sans)",
-                  }}
-                >
-                  No tenés una pareja configurada todavía.
-                </div>
-                <button
-                  onClick={handleCreateCouple}
-                  disabled={isPending}
-                  style={{
-                    background: "var(--accent)",
-                    color: "white",
-                    border: "none",
-                    borderRadius: 10,
-                    padding: "10px 16px",
-                    fontSize: 14,
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    fontFamily: "var(--font-sans)",
-                  }}
-                >
-                  Crear pareja
-                </button>
-              </div>
+              <NoCoupleCard
+                onCreateCouple={handleCreateCouple}
+                isPending={isPending}
+                pendingInvitations={myPendingInvitations}
+                coupleMessage={coupleMsg}
+              />
             )}
           </div>
         </section>

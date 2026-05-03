@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { getMonthDate } from "@/lib/utils";
+import { getMyPendingInvitations } from "@/lib/actions/couple";
 
 export function usePendingInvitation(coupleId: string | null) {
   const supabase = createClient();
@@ -49,5 +50,12 @@ export function useCurrentIncome(
         .maybeSingle();
       return data ?? null;
     },
+  });
+}
+
+export function useMyPendingInvitations() {
+  return useQuery({
+    queryKey: ["my-pending-invitations"],
+    queryFn: () => getMyPendingInvitations(),
   });
 }

@@ -5,7 +5,7 @@ interface FABProps {
   label?: string;
 }
 
-export function FAB({ onClick, label = "Agregar" }: FABProps) {
+export function FAB({ onClick, label = "Agregar" }: Readonly<FABProps>) {
   return (
     <button
       onClick={onClick}
