@@ -177,6 +177,7 @@ describe("calculateMonthlyBalance", () => {
           user_id: ANNIE_ID,
           description: "Supermercado",
           amount: 100_000,
+          is_shared: true,
           date: "2026-04-15",
           created_at: "",
         },
@@ -203,6 +204,7 @@ describe("calculateMonthlyBalance", () => {
           user_id: ANNIE_ID,
           description: "Supermercado",
           amount: 100_000,
+          is_shared: true,
           date: "2026-04-15",
           created_at: "",
         },
@@ -214,6 +216,57 @@ describe("calculateMonthlyBalance", () => {
         variableExpenses: variables,
       });
       expect(result.debtAmount).toBeCloseTo(64_588, 0);
+    });
+
+    it("calcula capacidad de ahorro como ingreso total menos gastos totales", () => {
+      const variables = [
+        {
+          id: "v1",
+          couple_id: "c1",
+          category_id: null,
+          user_id: ANNIE_ID,
+          description: "Supermercado",
+          amount: 100_000,
+          is_shared: true,
+          date: "2026-04-15",
+          created_at: "",
+        },
+      ];
+      const result = calculateMonthlyBalance({
+        incomes: baseIncomes,
+        installmentPurchases: [],
+        fixedExpenseInstances: [],
+        variableExpenses: variables,
+      });
+
+      expect(result.savingsCapacity).toBe(4_870_000);
+    });
+
+    it("excluye gastos individuales del cálculo de deuda entre pareja", () => {
+      const variables = [
+        {
+          id: "v1",
+          couple_id: "c1",
+          category_id: null,
+          user_id: ANNIE_ID,
+          description: "Personal Annie",
+          amount: 100_000,
+          is_shared: false,
+          date: "2026-04-15",
+          created_at: "",
+        },
+      ];
+      const result = calculateMonthlyBalance({
+        incomes: baseIncomes,
+        installmentPurchases: [],
+        fixedExpenseInstances: [],
+        variableExpenses: variables,
+      });
+
+      expect(result.variableIndividualTotal).toBe(100_000);
+      expect(result.variableSharedTotal).toBe(0);
+      expect(result.debtAmount).toBe(0);
+      expect(result.debtor).toBeNull();
     });
   });
 
@@ -270,6 +323,114 @@ describe("calculateMonthlyBalance", () => {
       if (!deivy) throw new Error("Balance no encontrado");
       expect(deivy.percentage).toBe(1);
       expect(deivy.obligation).toBe(110_608);
+    });
+
+    it("permite capacidad de ahorro negativa cuando los gastos superan ingresos", () => {
+      const result = calculateMonthlyBalance({
+        incomes: [
+          {
+            id: "1",
+            couple_id: "c1",
+            user_id: DEIVY_ID,
+            amount: 100_000,
+            month: "2026-04-01",
+            created_at: "",
+          },
+        ],
+        installmentPurchases: [
+          {
+            id: "p1",
+            couple_id: "c1",
+            category_id: null,
+            auto_renew: false,
+            description: "Compra",
+            total_amount: 500_000,
+            installments: 1,
+            paid_installments: 0,
+            first_payment_date: "2026-04-01",
+            created_at: "",
+          },
+        ],
+        fixedExpenseInstances: [],
+        variableExpenses: [],
+      });
+
+      expect(result.savingsCapacity).toBe(-400_000);
+    });
+  });
+
+  describe("cuotas con renovación automática (auto_renew)", () => {
+    const autoRenewPurchase = {
+      id: "ar1",
+      couple_id: "c1",
+      category_id: null,
+      auto_renew: true,
+      description: "Suscripción mensual",
+      total_amount: 120_000,
+      installments: 12,
+      paid_installments: 12, // completamente pagada, pero se renueva
+      first_payment_date: "2025-01-01",
+      created_at: "",
+    };
+
+    it("incluye cuotas auto_renew aunque estén completamente pagadas", () => {
+      const result = calculateMonthlyBalance({
+        incomes: baseIncomes,
+        installmentPurchases: [autoRenewPurchase],
+        fixedExpenseInstances: [],
+        variableExpenses: [],
+      });
+      // 120.000 / 12 = 10.000 por mes — debe incluirse aunque paid_installments === installments
+      expect(result.installmentTotal).toBe(10_000);
+    });
+
+    it("excluye cuotas sin auto_renew cuando están completamente pagadas", () => {
+      const paidPurchase = {
+        ...autoRenewPurchase,
+        id: "ar2",
+        auto_renew: false,
+      };
+      const result = calculateMonthlyBalance({
+        incomes: baseIncomes,
+        installmentPurchases: [paidPurchase],
+        fixedExpenseInstances: [],
+        variableExpenses: [],
+      });
+      expect(result.installmentTotal).toBe(0);
+    });
+
+    it("las cuotas auto_renew reducen la capacidad de ahorro mensualmente", () => {
+      const result = calculateMonthlyBalance({
+        incomes: baseIncomes,
+        installmentPurchases: [autoRenewPurchase],
+        fixedExpenseInstances: [],
+        variableExpenses: [],
+      });
+      // totalIncome = 4.970.000, installmentTotal = 10.000
+      expect(result.savingsCapacity).toBe(4_960_000);
+    });
+
+    it("combina cuotas auto_renew con cuotas normales activas", () => {
+      const activePurchase = {
+        id: "ar3",
+        couple_id: "c1",
+        category_id: null,
+        auto_renew: false,
+        description: "Notebook",
+        total_amount: 600_000,
+        installments: 6,
+        paid_installments: 3, // 3 restantes
+        first_payment_date: "2026-01-01",
+        created_at: "",
+      };
+      const result = calculateMonthlyBalance({
+        incomes: baseIncomes,
+        installmentPurchases: [autoRenewPurchase, activePurchase],
+        fixedExpenseInstances: [],
+        variableExpenses: [],
+      });
+      // auto_renew: 120.000 / 12 = 10.000; normal: 600.000 / 6 = 100.000; total = 110.000
+      expect(result.installmentTotal).toBe(110_000);
     });
   });
 });

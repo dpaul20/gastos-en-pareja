@@ -18,10 +18,15 @@ export interface PersonBalance {
 }
 
 export interface MonthlyBalance {
+  totalIncome: number;
   totalExpenses: number;
+  sharedExpensesTotal: number;
+  savingsCapacity: number;
   installmentTotal: number;
   fixedTotal: number;
   variableTotal: number;
+  variableSharedTotal: number;
+  variableIndividualTotal: number;
   balances: PersonBalance[];
   debtor: string | null; // userId who owes
   creditor: string | null; // userId who is owed
@@ -43,10 +48,14 @@ export function calculateMonthlyBalance(params: {
 
   const totalIncome = incomes.reduce((sum, i) => sum + Number(i.amount), 0);
 
+  const isSharedExpense = (expense: VariableExpense): boolean =>
+    expense.is_shared ?? true;
+
   // Monthly installment cost = round(total_amount / installments) per purchase
   // Rounding per-purchase avoids accumulated floating point drift
+  // auto_renew purchases are always active regardless of paid_installments
   const installmentTotal = installmentPurchases
-    .filter((p) => p.paid_installments < p.installments)
+    .filter((p) => p.auto_renew || p.paid_installments < p.installments)
     .reduce(
       (sum, p) => sum + Math.round(Number(p.total_amount) / p.installments),
       0,
@@ -63,14 +72,23 @@ export function calculateMonthlyBalance(params: {
     0,
   );
 
+  const variableSharedTotal = variableExpenses
+    .filter(isSharedExpense)
+    .reduce((sum, v) => sum + Number(v.amount), 0);
+
+  const variableIndividualTotal = variableTotal - variableSharedTotal;
+
   const totalExpenses = installmentTotal + fixedTotal + variableTotal;
+  const sharedExpensesTotal =
+    installmentTotal + fixedTotal + variableSharedTotal;
+  const savingsCapacity = totalIncome - totalExpenses;
 
   const balances: PersonBalance[] = incomes.map((income) => {
     const percentage =
       totalIncome > 0 ? Number(income.amount) / totalIncome : 0;
-    const obligation = percentage * totalExpenses;
+    const obligation = percentage * sharedExpensesTotal;
     const actualPaid = variableExpenses
-      .filter((v) => v.user_id === income.user_id)
+      .filter((v) => v.user_id === income.user_id && isSharedExpense(v))
       .reduce((sum, v) => sum + Number(v.amount), 0);
     const netBalance = actualPaid - obligation;
 
@@ -90,10 +108,15 @@ export function calculateMonthlyBalance(params: {
   const debtAmount = debtor ? Math.abs(sorted[0].netBalance) : 0;
 
   return {
+    totalIncome,
     totalExpenses,
+    sharedExpensesTotal,
+    savingsCapacity,
     installmentTotal,
     fixedTotal,
     variableTotal,
+    variableSharedTotal,
+    variableIndividualTotal,
     balances,
     debtor,
     creditor,

@@ -77,6 +77,11 @@ export function MonthSummaryCard({
 
   const rows = [
     {
+      label: "Ingresos",
+      amt: balance.totalIncome,
+      color: "var(--status-success)",
+    },
+    {
       label: "Cuotas activas",
       amt: balance.installmentTotal,
       color: "var(--person-a)",
@@ -90,6 +95,14 @@ export function MonthSummaryCard({
       label: "Variables",
       amt: balance.variableTotal,
       color: "var(--status-warning)",
+    },
+    {
+      label: "Capacidad de ahorro",
+      amt: balance.savingsCapacity,
+      color:
+        balance.savingsCapacity >= 0
+          ? "var(--status-success)"
+          : "var(--status-danger)",
     },
   ];
   return (
