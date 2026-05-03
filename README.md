@@ -20,6 +20,29 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## CI Quality Gates
+
+This repository enforces quality checks in GitHub Actions:
+
+- Lint
+- Unit tests with coverage
+- E2E tests
+- Accessibility checks (`npm run test:a11y`)
+
+Optional integration:
+
+- SonarQube + Quality Gate (runs only when Sonar secrets are configured)
+
+### Required SonarQube Secrets
+
+For the SonarQube workflow to run, configure these repository secrets:
+
+- `SONAR_TOKEN`
+- `SONAR_HOST_URL`
+- `SONAR_PROJECT_KEY`
+
+If secrets are not configured, the SonarQube workflow is skipped.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

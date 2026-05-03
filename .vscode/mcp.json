@@ -1,0 +1,22 @@
+{
+  "servers": {
+    "sonarqube": {
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "--init",
+        "--pull=always",
+        "-e",
+        "SONARQUBE_TOKEN",
+        "-e",
+        "SONARQUBE_URL=https://sonarcloud.io",
+        "-e",
+        "SONARQUBE_ORG=dpaul20",
+        "mcp/sonarqube"
+      ],
+      "envFile": "${workspaceFolder}/.env.local"
+    }
+  }
+}

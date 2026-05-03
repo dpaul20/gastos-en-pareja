@@ -6,7 +6,7 @@ interface Props {
   params: Promise<{ token: string }>;
 }
 
-export default async function InvitePage({ params }: Props) {
+export default async function InvitePage({ params }: Readonly<Props>) {
   const { token } = await params;
   const supabase = await createClient();
   const {

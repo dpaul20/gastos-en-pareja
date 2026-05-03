@@ -104,7 +104,7 @@ export function calculateMonthlyBalance(params: {
   // Who owes whom
   const sorted = [...balances].sort((a, b) => a.netBalance - b.netBalance);
   const debtor = sorted[0]?.netBalance < 0 ? sorted[0].userId : null;
-  const creditor = debtor ? sorted[sorted.length - 1].userId : null;
+  const creditor = debtor ? sorted.at(-1)!.userId : null;
   const debtAmount = debtor ? Math.abs(sorted[0].netBalance) : 0;
 
   return {

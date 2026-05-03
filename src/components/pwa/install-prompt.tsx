@@ -17,8 +17,8 @@ export function InstallPrompt() {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
     };
-    window.addEventListener("beforeinstallprompt", handler);
-    return () => window.removeEventListener("beforeinstallprompt", handler);
+    globalThis.addEventListener("beforeinstallprompt", handler);
+    return () => globalThis.removeEventListener("beforeinstallprompt", handler);
   }, []);
 
   if (!deferredPrompt || dismissed) return null;

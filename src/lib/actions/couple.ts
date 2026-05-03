@@ -284,10 +284,6 @@ export async function acceptInvitation(token: string) {
       .from("couples")
       .update({ status: "ACTIVE" })
       .eq("id", invitation.couple_id);
-
-    revalidatePath("/", "layout");
-    revalidatePath("/dashboard");
-    revalidatePath("/settings");
     return { coupleId: invitation.couple_id };
   }
 
@@ -312,10 +308,6 @@ export async function acceptInvitation(token: string) {
     .update({ accepted_at: new Date().toISOString() })
     .eq("id", invitation.id);
   if (acceptedError) throw new Error("No se pudo confirmar la invitación");
-
-  revalidatePath("/", "layout");
-  revalidatePath("/dashboard");
-  revalidatePath("/settings");
   return { coupleId: invitation.couple_id };
 }
 

@@ -9,7 +9,7 @@
   --color-violet-200: #beb4fe;
   --color-violet-300: #9d8ffc;
   --color-violet-400: #8b79fa;
-  --color-violet-500: #6c5ce7;
+  --color-violet-500: #5849d1;
   --color-violet-600: #5849d1;
   --color-violet-700: #4438b8;
   --color-violet-800: #342c90;
@@ -21,7 +21,7 @@
   --color-teal-200: #85e3cf;
   --color-teal-300: #40d0b4;
   --color-teal-400: #15be9e;
-  --color-teal-500: #00b894;
+  --color-teal-500: #00836a;
   --color-teal-600: #009e7e;
   --color-teal-700: #00836a;
   --color-teal-800: #006652;
@@ -33,7 +33,7 @@
   --color-coral-200: #f8b7ab;
   --color-coral-300: #f2907e;
   --color-coral-400: #eb7460;
-  --color-coral-500: #e17055;
+  --color-coral-500: #a44631;
   --color-coral-600: #c45a41;
   --color-coral-700: #a44631;
   --color-coral-800: #823424;
@@ -78,16 +78,16 @@
   --accent-subtle: var(--color-violet-50);
   --accent-foreground: var(--color-neutral-0);
 
-  --person-a: var(--color-violet-500);
+  --person-a: var(--color-violet-600);
   --person-a-subtle: var(--color-violet-50);
   --person-a-fg: var(--color-neutral-0);
-  --person-b: var(--color-teal-500);
+  --person-b: var(--color-teal-800);
   --person-b-subtle: var(--color-teal-50);
   --person-b-fg: var(--color-neutral-0);
 
   --status-success: var(--color-teal-500);
   --status-success-subtle: var(--color-teal-50);
-  --status-danger: var(--color-coral-500);
+  --status-danger: var(--color-coral-700);
   --status-danger-subtle: var(--color-coral-50);
   --status-warning: var(--color-amber-400);
   --status-warning-subtle: var(--color-amber-50);

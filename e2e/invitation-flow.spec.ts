@@ -7,8 +7,9 @@ import type { Database } from "../src/types/database";
  * Invitation Flow E2E — flujo completo de invitación.
  *
  * Estrategia: usamos el admin client para sembrar la DB directamente
- * y la storageState del usuario test (e2e/auth.json) para navegar como
- * el invitado. No hay dependencia de email ni de OAuth.
+ * y la API de test (/api/test/sign-in) para establecer la sesión del browser.
+ * Este endpoint usa @supabase/ssr y garantiza que los cookies sean leídos
+ * correctamente por los Server Components (como /invite/[token]).
  *
  * Precondición: el test user (test@gastospareja.local) tiene una pareja
  * activa (garantizada por global-setup). Creamos un segundo usuario de
@@ -20,6 +21,10 @@ import type { Database } from "../src/types/database";
 const INVITEE_EMAIL = "invitee-e2e@gastospareja.local";
 // NOSONAR: test-only password, never used in production
 const INVITEE_PASSWORD = "Test1234!"; // NOSONAR
+
+const TEST_EMAIL = "test@gastospareja.local";
+// NOSONAR: test-only password, never used in production
+const TEST_PASSWORD = "Test1234!"; // NOSONAR
 
 test.describe("Flujo de invitación — camino feliz", () => {
   let inviteeUserId: string;
@@ -37,7 +42,6 @@ test.describe("Flujo de invitación — camino feliz", () => {
       (u) => u.email === INVITEE_EMAIL,
     );
     if (existing) {
-      // Limpiar couple_members del invitado si existe
       await admin.from("couple_members").delete().eq("user_id", existing.id);
       await admin.auth.admin.deleteUser(existing.id);
     }
@@ -58,9 +62,7 @@ test.describe("Flujo de invitación — camino feliz", () => {
 
     // Obtener el couple_id del usuario owner (test@gastospareja.local)
     const { data: testUsers } = await admin.auth.admin.listUsers();
-    const owner = testUsers?.users.find(
-      (u) => u.email === "test@gastospareja.local",
-    );
+    const owner = testUsers?.users.find((u) => u.email === TEST_EMAIL);
     if (!owner) throw new Error("Usuario owner no encontrado");
 
     const { data: membership } = await admin
@@ -95,12 +97,10 @@ test.describe("Flujo de invitación — camino feliz", () => {
     const admin = createClient<Database>(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
-    // Cleanup: eliminar couple_member y usuario invitado
     if (inviteeUserId) {
       await admin.from("couple_members").delete().eq("user_id", inviteeUserId);
       await admin.auth.admin.deleteUser(inviteeUserId);
     }
-    // Limpiar invitaciones no aceptadas de este test
     if (coupleId) {
       await admin
         .from("invitations")
@@ -114,33 +114,30 @@ test.describe("Flujo de invitación — camino feliz", () => {
   test("aceptar un token válido redirige al dashboard y activa la pareja", async ({
     browser,
   }) => {
-    // Autenticar como el invitado directamente via Supabase Admin
     const admin = createClient<Database>(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
-    const { data: sessionData, error: sessionError } =
-      await admin.auth.admin.generateLink({
-        type: "magiclink",
-        email: INVITEE_EMAIL,
-      });
-    if (sessionError || !sessionData) {
+
+    // Autenticar al invitado vía la API de test (mismo mecanismo que globalSetup:
+    // usa @supabase/ssr para setear cookies que los Server Components leen correctamente)
+    const context = await browser.newContext({
+      baseURL: "http://localhost:3000",
+    });
+    const page = await context.newPage();
+
+    const signInResp = await page.request.post("/api/test/sign-in", {
+      headers: { "Content-Type": "application/json" },
+      data: { email: INVITEE_EMAIL, password: INVITEE_PASSWORD },
+    });
+    if (!signInResp.ok()) {
+      await context.close();
       throw new Error(
-        `No se pudo generar el link de sesión: ${sessionError?.message}`,
+        `Sign in del invitado falló: ${signInResp.status()} ${await signInResp.text()}`,
       );
     }
 
-    // Crear contexto del browser como invitado — sin storageState guardado,
-    // usamos el magic link para autenticar y luego navegamos al /invite/token
-    const context = await browser.newContext();
-    const page = await context.newPage();
-
-    // Navegar al magic link para establecer la sesión
-    await page.goto(sessionData.properties.action_link);
-    // Esperar redirect al dashboard o callback
-    await page.waitForURL(/\/(dashboard|invite)/, { timeout: 10_000 });
-
-    // Navegar directamente al link de invitación
-    await page.goto(`http://localhost:3000/invite/${invitationToken}`);
+    // Navegar directamente al link de invitación (la sesión ya está establecida)
+    await page.goto(`/invite/${invitationToken}`);
 
     // Debe redirigir al dashboard si la aceptación es exitosa
     await expect(page).toHaveURL(/\/dashboard/, { timeout: 15_000 });
@@ -164,32 +161,47 @@ test.describe("Flujo de invitación — camino feliz", () => {
   });
 
   test("token inválido muestra el mensaje de error de invitación", async ({
-    authenticatedPage: page,
+    browser,
   }) => {
-    // El usuario test ya tiene sesión — navega con un token falso
-    await page.goto("/invite/token-inexistente-xyz");
-
-    // No debe redirigir al dashboard
-    await expect(page).not.toHaveURL(/\/dashboard/, { timeout: 5_000 });
-
-    // Debe mostrar el mensaje de error
-    await expect(page.getByText("Invitación inválida")).toBeVisible({
-      timeout: 10_000,
+    // Crear contexto fresco y autenticar vía la API de test para garantizar
+    // que las cookies de @supabase/ssr sean leídas correctamente por el Server Component
+    const context = await browser.newContext({
+      baseURL: "http://localhost:3000",
     });
+    const page = await context.newPage();
+
+    await page.request.post("/api/test/sign-in", {
+      headers: { "Content-Type": "application/json" },
+      data: { email: TEST_EMAIL, password: TEST_PASSWORD },
+    });
+
+    try {
+      // Navegar con un token inexistente
+      await page.goto("/invite/token-inexistente-xyz");
+
+      // No debe redirigir al dashboard
+      await expect(page).not.toHaveURL(/\/dashboard/, { timeout: 5_000 });
+
+      // Debe mostrar el mensaje de error
+      await expect(
+        page.getByText("Invitación inválida", { exact: true }),
+      ).toBeVisible({
+        timeout: 10_000,
+      });
+    } finally {
+      await context.close();
+    }
   });
 });
 
 test.describe("Flujo de invitación — casos adversariales", () => {
   test("usuario ya pertenece a una pareja — no puede aceptar una segunda invitación", async ({
     adminClient,
-    authenticatedPage: page,
+    browser,
   }) => {
     // El usuario test@gastospareja.local YA tiene pareja (global-setup la crea)
-    // Creamos una segunda invitación dirigida a otro email
     const { data: users } = await adminClient.auth.admin.listUsers();
-    const owner = users?.users.find(
-      (u) => u.email === "test@gastospareja.local",
-    );
+    const owner = users?.users.find((u) => u.email === TEST_EMAIL);
     if (!owner) throw new Error("Owner no encontrado");
 
     // Crear una segunda pareja para generar una invitación cruzada
@@ -208,22 +220,38 @@ test.describe("Flujo de invitación — casos adversariales", () => {
       .insert({
         couple_id: secondCouple.id,
         inviter_id: owner.id,
-        email: "test@gastospareja.local", // invitar al mismo usuario test
+        email: TEST_EMAIL, // invitar al mismo usuario test
         expires_at: expiresAt,
       })
       .select("token")
       .single();
     if (!inv) throw new Error("No se pudo crear invitación para el test");
 
-    await page.goto(`/invite/${inv.token}`);
+    // Crear contexto fresco y autenticar vía la API de test
+    const context = await browser.newContext({
+      baseURL: "http://localhost:3000",
+    });
+    const page = await context.newPage();
 
-    // Debe mostrar error porque el usuario ya tiene pareja
-    await expect(page.getByText("Invitación inválida")).toBeVisible({
-      timeout: 10_000,
+    await page.request.post("/api/test/sign-in", {
+      headers: { "Content-Type": "application/json" },
+      data: { email: TEST_EMAIL, password: TEST_PASSWORD },
     });
 
-    // Cleanup
-    await adminClient.from("invitations").delete().eq("token", inv.token);
-    await adminClient.from("couples").delete().eq("id", secondCouple.id);
+    try {
+      await page.goto(`/invite/${inv.token}`);
+
+      // Debe mostrar error porque el usuario ya tiene pareja
+      await expect(
+        page.getByText("Invitación inválida", { exact: true }),
+      ).toBeVisible({
+        timeout: 10_000,
+      });
+    } finally {
+      await context.close();
+      // Cleanup
+      await adminClient.from("invitations").delete().eq("token", inv.token);
+      await adminClient.from("couples").delete().eq("id", secondCouple.id);
+    }
   });
 });
