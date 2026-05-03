@@ -109,6 +109,7 @@ jobs:
           source <(supabase status -o env)
           echo "NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321" >> $GITHUB_ENV
           echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$ANON_KEY"         >> $GITHUB_ENV
+          echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY"      >> $GITHUB_ENV
           echo "E2E_SUPABASE_SERVICE_KEY=$SERVICE_ROLE_KEY"       >> $GITHUB_ENV
 
       - name: Create E2E test user
