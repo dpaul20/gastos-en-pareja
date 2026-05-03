@@ -16,6 +16,8 @@ export async function createCouple() {
     .from("couple_members")
     .select("couple_id")
     .eq("user_id", user.id)
+    .order("joined_at", { ascending: false })
+    .limit(1)
     .maybeSingle();
 
   if (existingMemberError) {
