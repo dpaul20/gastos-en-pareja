@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useMutation } from "@tanstack/react-query";
 import Link from "next/link";
 import { addMonths, subMonths } from "date-fns";
 import { Avatar } from "@/components/shared/avatar";
 import { MonthHeader } from "@/components/shared/month-header";
-import { formatARS, formatMonth, getMonthDate } from "@/lib/utils";
+import { formatARS, formatMonth, getMonthDate, getInitials } from "@/lib/utils";
 import {
   useCoupleMember,
   useMonthlyData,
@@ -17,17 +18,9 @@ import {
   type MonthlyBalance,
 } from "@/lib/utils/balance";
 import { groupByCategory, type CategoryGroup } from "@/lib/utils/categories";
+import { MonthSummaryCard } from "@/components/shared/month-summary-card";
 import { ensureFixedExpenseInstances } from "@/lib/actions/expenses";
 type Profile = { user_id: string; full_name: string };
-
-function getInitials(name: string) {
-  return name
-    .split(" ")
-    .map((w) => w[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
-}
 
 // ── SUB-COMPONENTS ────────────────────────────────────────────
 
@@ -329,130 +322,6 @@ function BalanceCard({
   );
 }
 
-function MonthSummaryCard({ balance }: { readonly balance: MonthlyBalance }) {
-  const rows = [
-    {
-      label: "Cuotas activas",
-      amt: balance.installmentTotal,
-      color: "var(--person-a)",
-    },
-    {
-      label: "Gastos fijos",
-      amt: balance.fixedTotal,
-      color: "var(--person-b)",
-    },
-    {
-      label: "Variables",
-      amt: balance.variableTotal,
-      color: "var(--status-warning)",
-    },
-  ];
-  return (
-    <div
-      style={{
-        background: "var(--bg-elevated)",
-        borderRadius: 16,
-        border: "1px solid var(--border-subtle)",
-        boxShadow: "var(--shadow-sm)",
-        overflow: "hidden",
-      }}
-    >
-      <div
-        style={{
-          padding: "14px 16px",
-          borderBottom: "1px solid var(--border-subtle)",
-        }}
-      >
-        <div
-          style={{
-            fontSize: 11,
-            fontWeight: 600,
-            color: "var(--fg-3)",
-            textTransform: "uppercase",
-            letterSpacing: "0.05em",
-            fontFamily: "var(--font-sans)",
-          }}
-        >
-          Resumen del mes
-        </div>
-      </div>
-      {rows.map((row, i) => (
-        <div
-          key={row.label}
-          style={{
-            padding: "14px 16px",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            borderBottom:
-              i < rows.length - 1 ? "1px solid var(--border-subtle)" : "none",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div
-              style={{
-                width: 8,
-                height: 8,
-                borderRadius: 99,
-                background: row.color,
-              }}
-            />
-            <span
-              style={{
-                fontSize: 14,
-                color: "var(--fg-2)",
-                fontFamily: "var(--font-sans)",
-              }}
-            >
-              {row.label}
-            </span>
-          </div>
-          <span
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 14,
-              fontWeight: 600,
-              color: "var(--fg-1)",
-            }}
-          >
-            {formatARS(row.amt)}
-          </span>
-        </div>
-      ))}
-      <div
-        style={{
-          padding: "14px 16px",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          background: "var(--bg-sunken)",
-        }}
-      >
-        <span
-          style={{
-            fontSize: 14,
-            fontWeight: 600,
-            color: "var(--fg-1)",
-            fontFamily: "var(--font-sans)",
-          }}
-        >
-          Total
-        </span>
-        <span
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 16,
-            fontWeight: 700,
-            color: "var(--fg-1)",
-          }}
-        >
-          {formatARS(balance.totalExpenses)}
-        </span>
-      </div>
-    </div>
-  );
-}
-
 function CategoryBreakdownCard({
   breakdown,
   total,
@@ -575,44 +444,55 @@ export default function DashboardPage() {
   );
   const { data: categories = [] } = useCategories(coupleId);
 
-  useEffect(() => {
-    if (!coupleId) return;
-    ensureFixedExpenseInstances(coupleId, month).then(({ created }) => {
+  const { mutate: ensureInstances } = useMutation({
+    mutationFn: (vars: { coupleId: string; month: string }) =>
+      ensureFixedExpenseInstances(vars.coupleId, vars.month),
+    onSuccess: ({ created }) => {
       if (created > 0) setNewInstancesBanner(created);
-    });
-  }, [coupleId, month]);
+    },
+  });
 
-  const balance = data
-    ? calculateMonthlyBalance({
-        incomes: data.incomes,
-        installmentPurchases: data.installmentPurchases,
-        fixedExpenseInstances: data.fixedExpenseInstances as Parameters<
-          typeof calculateMonthlyBalance
-        >[0]["fixedExpenseInstances"],
-        variableExpenses: data.variableExpenses,
-      })
-    : null;
+  useEffect(() => {
+    if (coupleId && isCurrentMonth) ensureInstances({ coupleId, month });
+    // ensureInstances is stable (useMutation)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [coupleId, month, isCurrentMonth]);
 
-  const categoryBreakdown =
-    data && balance && balance.totalExpenses > 0
-      ? groupByCategory(
-          [
-            ...data.installmentPurchases.map((p) => ({
-              amount: Math.round(p.total_amount / p.installments),
-              category_id: p.category_id,
-            })),
-            ...data.fixedExpenseInstances.map((fi) => ({
-              amount: fi.fixed_expense_templates.amount,
-              category_id: fi.fixed_expense_templates.category_id,
-            })),
-            ...data.variableExpenses.map((v) => ({
-              amount: v.amount,
-              category_id: v.category_id,
-            })),
-          ],
-          categories,
-        ).slice(0, 5)
-      : [];
+  const balance = useMemo(
+    () =>
+      data
+        ? calculateMonthlyBalance({
+            incomes: data.incomes,
+            installmentPurchases: data.installmentPurchases,
+            fixedExpenseInstances: data.fixedExpenseInstances as Parameters<
+              typeof calculateMonthlyBalance
+            >[0]["fixedExpenseInstances"],
+            variableExpenses: data.variableExpenses,
+          })
+        : null,
+    [data],
+  );
+
+  const categoryBreakdown = useMemo(() => {
+    if (!data || !balance || balance.totalExpenses === 0) return [];
+    return groupByCategory(
+      [
+        ...data.installmentPurchases.map((p) => ({
+          amount: Math.round(p.total_amount / p.installments),
+          category_id: p.category_id,
+        })),
+        ...data.fixedExpenseInstances.map((fi) => ({
+          amount: fi.fixed_expense_templates.amount,
+          category_id: fi.fixed_expense_templates.category_id,
+        })),
+        ...data.variableExpenses.map((v) => ({
+          amount: v.amount,
+          category_id: v.category_id,
+        })),
+      ],
+      categories,
+    ).slice(0, 5);
+  }, [data, balance, categories]);
 
   const currentUserId = member?.user_id;
   const myProfile = profiles.find((p) => p.user_id === currentUserId);

@@ -5,7 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Avatar } from "@/components/shared/avatar";
 import { Badge } from "@/components/shared/badge";
 import { FAB as Fab } from "@/components/shared/fab";
-import { formatARS, getMonthDate } from "@/lib/utils";
+import { formatARS, getMonthDate, getInitials } from "@/lib/utils";
 import {
   useCoupleMember,
   useMonthlyData,
@@ -14,14 +14,288 @@ import {
 } from "@/lib/queries/use-monthly-data";
 import { CategoryPicker } from "@/components/shared/category-picker";
 import {
-  createInstallmentPurchase,
   incrementPaidInstallments,
-  createFixedExpenseTemplate,
   toggleFixedExpenseInstance,
-  createVariableExpense,
 } from "@/lib/actions/expenses";
+import { useExpenseSave, type Tab } from "@/lib/queries/use-expense-save";
 
-type Tab = "cuotas" | "fijos" | "variables";
+type MonthlyData = NonNullable<ReturnType<typeof useMonthlyData>["data"]>;
+type InstallmentPurchase = MonthlyData["installmentPurchases"][number];
+type FixedExpenseInstance = MonthlyData["fixedExpenseInstances"][number];
+type VariableExpense = MonthlyData["variableExpenses"][number];
+
+// ── SUB-COMPONENTS ─────────────────────────────────────────────────────────
+function CuotaItem({ c }: { readonly c: InstallmentPurchase }) {
+  const [, startTransition] = useTransition();
+  const queryClient = useQueryClient();
+  const isPaid = c.paid_installments >= c.installments;
+  const cuota = Math.round(c.total_amount / c.installments);
+  return (
+    <div
+      style={{
+        background: "var(--bg-elevated)",
+        borderRadius: 14,
+        padding: "14px 16px",
+        border: "1px solid var(--border-subtle)",
+        boxShadow: "var(--shadow-sm)",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          marginBottom: 8,
+        }}
+      >
+        <div>
+          <div
+            style={{
+              fontSize: 15,
+              fontWeight: 500,
+              color: "var(--fg-1)",
+              fontFamily: "var(--font-sans)",
+            }}
+          >
+            {c.description}
+          </div>
+          <div
+            style={{
+              fontSize: 12,
+              color: "var(--fg-3)",
+              marginTop: 2,
+              fontFamily: "var(--font-sans)",
+            }}
+          >
+            Cuota {c.paid_installments} de {c.installments}
+            {c.auto_renew ? " 🔄" : ""}
+          </div>
+        </div>
+        <div
+          style={{
+            textAlign: "right",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "flex-end",
+            gap: 4,
+          }}
+        >
+          <div
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 15,
+              fontWeight: 600,
+              color: "var(--fg-1)",
+            }}
+          >
+            {formatARS(cuota)}
+          </div>
+          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+            <Badge variant={isPaid ? "success" : "warning"}>
+              {isPaid ? "Pagado" : "Pendiente"}
+            </Badge>
+            {!isPaid && (
+              <button
+                onClick={() =>
+                  startTransition(async () => {
+                    await incrementPaidInstallments(c.id);
+                    queryClient.invalidateQueries({
+                      queryKey: ["monthly-data"],
+                    });
+                  })
+                }
+                style={{
+                  background: "var(--accent)",
+                  border: "none",
+                  borderRadius: 6,
+                  padding: "3px 8px",
+                  color: "white",
+                  fontSize: 11,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  fontFamily: "var(--font-sans)",
+                }}
+              >
+                +1
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+      <div
+        style={{
+          background: "var(--color-neutral-200)",
+          borderRadius: 99,
+          height: 5,
+          overflow: "hidden",
+        }}
+      >
+        <div
+          style={{
+            width: `${(c.paid_installments / c.installments) * 100}%`,
+            height: "100%",
+            background: isPaid ? "var(--status-success)" : "var(--accent)",
+            borderRadius: 99,
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function FijoItem({
+  fi,
+  isLast,
+}: {
+  readonly fi: FixedExpenseInstance;
+  readonly isLast: boolean;
+}) {
+  const [, startTransition] = useTransition();
+  const queryClient = useQueryClient();
+  return (
+    <div
+      style={{
+        padding: "14px 16px",
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        borderBottom: isLast ? "none" : "1px solid var(--border-subtle)",
+      }}
+    >
+      <div style={{ flex: 1 }}>
+        <div
+          style={{
+            fontSize: 14,
+            fontWeight: 500,
+            color: "var(--fg-1)",
+            fontFamily: "var(--font-sans)",
+          }}
+        >
+          {fi.fixed_expense_templates.description}
+        </div>
+        <div
+          style={{
+            fontSize: 11,
+            color: "var(--fg-3)",
+            marginTop: 1,
+            fontFamily: "var(--font-sans)",
+          }}
+        >
+          Vence día {fi.fixed_expense_templates.due_day}
+        </div>
+      </div>
+      <div
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: 14,
+          fontWeight: 600,
+          color: "var(--fg-1)",
+          marginRight: 8,
+        }}
+      >
+        {formatARS(fi.fixed_expense_templates.amount)}
+      </div>
+      <button
+        onClick={() =>
+          startTransition(async () => {
+            await toggleFixedExpenseInstance(fi.id, !fi.paid);
+            queryClient.invalidateQueries({ queryKey: ["monthly-data"] });
+          })
+        }
+        style={{
+          width: 28,
+          height: 28,
+          borderRadius: 99,
+          cursor: "pointer",
+          background: fi.paid
+            ? "var(--status-success-subtle)"
+            : "var(--bg-sunken)",
+          border: `2px solid ${fi.paid ? "var(--status-success)" : "var(--border-default)"}`,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexShrink: 0,
+        }}
+      >
+        {fi.paid && (
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="var(--status-success)"
+            strokeWidth="2.5"
+          >
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+        )}
+      </button>
+    </div>
+  );
+}
+
+function VariableItem({
+  v,
+  getPersonInitials,
+  getPerson,
+}: {
+  readonly v: VariableExpense;
+  readonly getPersonInitials: (userId: string) => string;
+  readonly getPerson: (userId: string) => "a" | "b";
+}) {
+  return (
+    <div
+      style={{
+        background: "var(--bg-elevated)",
+        borderRadius: 14,
+        padding: "14px 16px",
+        border: "1px solid var(--border-subtle)",
+        boxShadow: "var(--shadow-sm)",
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+      }}
+    >
+      <Avatar
+        initials={getPersonInitials(v.user_id)}
+        person={getPerson(v.user_id)}
+        size="md"
+      />
+      <div style={{ flex: 1 }}>
+        <div
+          style={{
+            fontSize: 14,
+            fontWeight: 500,
+            color: "var(--fg-1)",
+            fontFamily: "var(--font-sans)",
+          }}
+        >
+          {v.description}
+        </div>
+        <div
+          style={{
+            fontSize: 12,
+            color: "var(--fg-3)",
+            marginTop: 2,
+            fontFamily: "var(--font-sans)",
+          }}
+        >
+          {v.date}
+        </div>
+      </div>
+      <div
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: 15,
+          fontWeight: 600,
+          color: "var(--fg-1)",
+        }}
+      >
+        {formatARS(v.amount)}
+      </div>
+    </div>
+  );
+}
 
 function SegmentedControl({
   active,
@@ -322,8 +596,7 @@ function AddSheet({
 export default function ExpensesPage() {
   const [tab, setTab] = useState<Tab>("cuotas");
   const [showForm, setShowForm] = useState(false);
-  const [, startTransition] = useTransition();
-  const queryClient = useQueryClient();
+  const { save } = useExpenseSave(tab);
 
   const { data: member } = useCoupleMember();
   const coupleId = member?.couple_id ?? null;
@@ -333,24 +606,13 @@ export default function ExpensesPage() {
     member?.user_id ?? null,
   );
   const { data: categories = [] } = useCategories(coupleId);
-  const [filterCategory] = useState<string | null>("all");
 
-  const getInitials = (userId: string) => {
+  const getPersonInitials = (userId: string) => {
     const p = profiles.find((pr) => pr.user_id === userId);
-    if (!p) return "?";
-    return p.full_name
-      .split(" ")
-      .map((w: string) => w[0])
-      .join("")
-      .slice(0, 2)
-      .toUpperCase();
+    return p ? getInitials(p.full_name) : "?";
   };
   const getPerson = (userId: string): "a" | "b" =>
     userId === member?.user_id ? "a" : "b";
-
-  function invalidate() {
-    queryClient.invalidateQueries({ queryKey: ["monthly-data"] });
-  }
 
   function handleSave(
     fields: Record<string, string>,
@@ -358,55 +620,12 @@ export default function ExpensesPage() {
     autoRenew: boolean,
   ) {
     setShowForm(false);
-    startTransition(async () => {
-      if (tab === "cuotas") {
-        await createInstallmentPurchase({
-          description: fields.description,
-          total_amount: Number.parseFloat(fields.total_amount),
-          installments: Number.parseInt(fields.installments),
-          first_payment_date:
-            fields.first_payment_date || new Date().toISOString().slice(0, 10),
-          category_id: categoryId ?? undefined,
-          auto_renew: autoRenew || undefined,
-        });
-      } else if (tab === "fijos") {
-        await createFixedExpenseTemplate({
-          description: fields.description,
-          amount: Number.parseFloat(fields.amount),
-          due_day: Number.parseInt(fields.due_day),
-          category_id: categoryId ?? undefined,
-        });
-      } else {
-        await createVariableExpense({
-          description: fields.description,
-          amount: Number.parseFloat(fields.amount),
-          date: fields.date || new Date().toISOString().slice(0, 10),
-          category_id: categoryId ?? undefined,
-        });
-      }
-      invalidate();
-    });
+    save(fields, categoryId, autoRenew);
   }
 
-  const allCuotas = data?.installmentPurchases ?? [];
-  const allFijos = data?.fixedExpenseInstances ?? [];
-  const allVariables = data?.variableExpenses ?? [];
-
-  // Client-side filter by category
-  const cuotas =
-    filterCategory === "all"
-      ? allCuotas
-      : allCuotas.filter((c) => c.category_id === filterCategory);
-  const fijos =
-    filterCategory === "all"
-      ? allFijos
-      : allFijos.filter(
-          (f) => f.fixed_expense_templates?.category_id === filterCategory,
-        );
-  const variables =
-    filterCategory === "all"
-      ? allVariables
-      : allVariables.filter((v) => v.category_id === filterCategory);
+  const cuotas = data?.installmentPurchases ?? [];
+  const fijos = data?.fixedExpenseInstances ?? [];
+  const variables = data?.variableExpenses ?? [];
 
   return (
     <main
@@ -463,128 +682,9 @@ export default function ExpensesPage() {
                 Sin compras en cuotas. Usá el + para agregar.
               </div>
             )}
-            {cuotas.map((c) => {
-              const isPaid = c.paid_installments >= c.installments;
-              const cuota = Math.round(c.total_amount / c.installments);
-              return (
-                <div
-                  key={c.id}
-                  style={{
-                    background: "var(--bg-elevated)",
-                    borderRadius: 14,
-                    padding: "14px 16px",
-                    border: "1px solid var(--border-subtle)",
-                    boxShadow: "var(--shadow-sm)",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "flex-start",
-                      marginBottom: 8,
-                    }}
-                  >
-                    <div>
-                      <div
-                        style={{
-                          fontSize: 15,
-                          fontWeight: 500,
-                          color: "var(--fg-1)",
-                          fontFamily: "var(--font-sans)",
-                        }}
-                      >
-                        {c.description}
-                      </div>
-                      <div
-                        style={{
-                          fontSize: 12,
-                          color: "var(--fg-3)",
-                          marginTop: 2,
-                          fontFamily: "var(--font-sans)",
-                        }}
-                      >
-                        Cuota {c.paid_installments} de {c.installments}
-                        {c.auto_renew ? " 🔄" : ""}
-                      </div>
-                    </div>
-                    <div
-                      style={{
-                        textAlign: "right",
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "flex-end",
-                        gap: 4,
-                      }}
-                    >
-                      <div
-                        style={{
-                          fontFamily: "var(--font-mono)",
-                          fontSize: 15,
-                          fontWeight: 600,
-                          color: "var(--fg-1)",
-                        }}
-                      >
-                        {formatARS(cuota)}
-                      </div>
-                      <div
-                        style={{
-                          display: "flex",
-                          gap: 6,
-                          alignItems: "center",
-                        }}
-                      >
-                        <Badge variant={isPaid ? "success" : "warning"}>
-                          {isPaid ? "Pagado" : "Pendiente"}
-                        </Badge>
-                        {!isPaid && (
-                          <button
-                            onClick={() =>
-                              startTransition(async () => {
-                                await incrementPaidInstallments(c.id);
-                                invalidate();
-                              })
-                            }
-                            style={{
-                              background: "var(--accent)",
-                              border: "none",
-                              borderRadius: 6,
-                              padding: "3px 8px",
-                              color: "white",
-                              fontSize: 11,
-                              fontWeight: 600,
-                              cursor: "pointer",
-                              fontFamily: "var(--font-sans)",
-                            }}
-                          >
-                            +1
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <div
-                    style={{
-                      background: "var(--color-neutral-200)",
-                      borderRadius: 99,
-                      height: 5,
-                      overflow: "hidden",
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: `${(c.paid_installments / c.installments) * 100}%`,
-                        height: "100%",
-                        background: isPaid
-                          ? "var(--status-success)"
-                          : "var(--accent)",
-                        borderRadius: 99,
-                      }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
+            {cuotas.map((c) => (
+              <CuotaItem key={c.id} c={c} />
+            ))}
           </div>
         )}
 
@@ -619,88 +719,11 @@ export default function ExpensesPage() {
                   }}
                 >
                   {fijos.map((fi, i) => (
-                    <div
+                    <FijoItem
                       key={fi.id}
-                      style={{
-                        padding: "14px 16px",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 12,
-                        borderBottom:
-                          i < fijos.length - 1
-                            ? "1px solid var(--border-subtle)"
-                            : "none",
-                      }}
-                    >
-                      <div style={{ flex: 1 }}>
-                        <div
-                          style={{
-                            fontSize: 14,
-                            fontWeight: 500,
-                            color: "var(--fg-1)",
-                            fontFamily: "var(--font-sans)",
-                          }}
-                        >
-                          {fi.fixed_expense_templates.description}
-                        </div>
-                        <div
-                          style={{
-                            fontSize: 11,
-                            color: "var(--fg-3)",
-                            marginTop: 1,
-                            fontFamily: "var(--font-sans)",
-                          }}
-                        >
-                          Vence día {fi.fixed_expense_templates.due_day}
-                        </div>
-                      </div>
-                      <div
-                        style={{
-                          fontFamily: "var(--font-mono)",
-                          fontSize: 14,
-                          fontWeight: 600,
-                          color: "var(--fg-1)",
-                          marginRight: 8,
-                        }}
-                      >
-                        {formatARS(fi.fixed_expense_templates.amount)}
-                      </div>
-                      <button
-                        onClick={() =>
-                          startTransition(async () => {
-                            await toggleFixedExpenseInstance(fi.id, !fi.paid);
-                            invalidate();
-                          })
-                        }
-                        style={{
-                          width: 28,
-                          height: 28,
-                          borderRadius: 99,
-                          cursor: "pointer",
-                          background: fi.paid
-                            ? "var(--status-success-subtle)"
-                            : "var(--bg-sunken)",
-                          border: `2px solid ${fi.paid ? "var(--status-success)" : "var(--border-default)"}`,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          flexShrink: 0,
-                        }}
-                      >
-                        {fi.paid && (
-                          <svg
-                            width="14"
-                            height="14"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="var(--status-success)"
-                            strokeWidth="2.5"
-                          >
-                            <polyline points="20 6 9 17 4 12" />
-                          </svg>
-                        )}
-                      </button>
-                    </div>
+                      fi={fi}
+                      isLast={i === fijos.length - 1}
+                    />
                   ))}
                 </div>
                 <div
@@ -769,57 +792,12 @@ export default function ExpensesPage() {
               </div>
             )}
             {variables.map((v) => (
-              <div
+              <VariableItem
                 key={v.id}
-                style={{
-                  background: "var(--bg-elevated)",
-                  borderRadius: 14,
-                  padding: "14px 16px",
-                  border: "1px solid var(--border-subtle)",
-                  boxShadow: "var(--shadow-sm)",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 12,
-                }}
-              >
-                <Avatar
-                  initials={getInitials(v.user_id)}
-                  person={getPerson(v.user_id)}
-                  size="md"
-                />
-                <div style={{ flex: 1 }}>
-                  <div
-                    style={{
-                      fontSize: 14,
-                      fontWeight: 500,
-                      color: "var(--fg-1)",
-                      fontFamily: "var(--font-sans)",
-                    }}
-                  >
-                    {v.description}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 12,
-                      color: "var(--fg-3)",
-                      marginTop: 2,
-                      fontFamily: "var(--font-sans)",
-                    }}
-                  >
-                    {v.date}
-                  </div>
-                </div>
-                <div
-                  style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 15,
-                    fontWeight: 600,
-                    color: "var(--fg-1)",
-                  }}
-                >
-                  {formatARS(v.amount)}
-                </div>
-              </div>
+                v={v}
+                getPersonInitials={getPersonInitials}
+                getPerson={getPerson}
+              />
             ))}
           </div>
         )}

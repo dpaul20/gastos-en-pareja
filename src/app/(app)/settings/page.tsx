@@ -1,75 +1,45 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { Avatar } from "@/components/shared/avatar";
 import {
   useCoupleMember,
   useCoupleMemberProfiles,
 } from "@/lib/queries/use-monthly-data";
+import { usePendingInvitation, useCurrentIncome } from "@/lib/queries/settings";
 import { upsertIncome } from "@/lib/actions/expenses";
 import { sendInvitation, createCouple } from "@/lib/actions/couple";
-import { getMonthDate } from "@/lib/utils";
+import { getMonthDate, getInitials } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
-
-function getInitials(name: string): string {
-  return name
-    .split(" ")
-    .map((w) => w[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
-}
 
 export default function SettingsPage() {
   const { data: member, isLoading } = useCoupleMember();
   const { data: profiles = [] } = useCoupleMemberProfiles(
     member?.user_id ?? null,
   );
+  const { data: pendingInvitation } = usePendingInvitation(
+    member?.couple_id ?? null,
+  );
+  const { data: currentIncome } = useCurrentIncome(
+    member?.couple_id ?? null,
+    member?.user_id ?? null,
+  );
   const queryClient = useQueryClient();
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteMsg, setInviteMsg] = useState("");
-  const [inviteExpiresAt, setInviteExpiresAt] = useState<string | null>(null);
   const [myIncome, setMyIncome] = useState("");
+  const displayIncome = myIncome || String(currentIncome?.amount ?? "");
 
   const supabase = createClient();
 
-  useEffect(() => {
-    if (!member) return;
-    // Check for existing pending invitation
-    const now = new Date().toISOString();
-    supabase
-      .from("invitations")
-      .select("expires_at")
-      .eq("couple_id", member.couple_id)
-      .is("accepted_at", null)
-      .gt("expires_at", now)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (data) setInviteExpiresAt(data.expires_at);
-      });
-  }, [member, supabase]);
-
-  useEffect(() => {
-    if (!member) return;
-    // Load current month income for this user
-    supabase
-      .from("incomes")
-      .select("amount")
-      .eq("couple_id", member.couple_id)
-      .eq("user_id", member.user_id)
-      .eq("month", getMonthDate())
-      .single()
-      .then(({ data }) => {
-        if (data) setMyIncome(String(data.amount));
-      });
-  }, [member, supabase]);
+  const inviteExpiresAt = pendingInvitation?.expires_at ?? null;
 
   async function handleSaveIncome() {
-    const amount = Number.parseInt(myIncome.replaceAll(/\D/g, ""));
+    const amount = Number.parseInt(displayIncome.replaceAll(/\D/g, ""));
     if (!amount || !member) return;
     startTransition(async () => {
       await upsertIncome(amount, getMonthDate());
@@ -89,11 +59,10 @@ export default function SettingsPage() {
     if (!member || !inviteEmail) return;
     startTransition(async () => {
       try {
-        const { expiresAt } = await sendInvitation(
-          member.couple_id,
-          inviteEmail,
-        );
-        setInviteExpiresAt(expiresAt);
+        await sendInvitation(member.couple_id, inviteEmail);
+        queryClient.invalidateQueries({
+          queryKey: ["pending-invitation", member.couple_id],
+        });
         setInviteMsg("Invitación enviada ✓");
         setInviteEmail("");
       } catch (err) {
@@ -104,7 +73,7 @@ export default function SettingsPage() {
 
   async function handleSignOut() {
     await supabase.auth.signOut();
-    globalThis.location.href = "/login";
+    router.push("/login");
   }
 
   if (isLoading) {
@@ -447,7 +416,7 @@ export default function SettingsPage() {
                     $
                   </span>
                   <input
-                    value={myIncome}
+                    value={displayIncome}
                     onChange={(e) => setMyIncome(e.target.value)}
                     inputMode="numeric"
                     placeholder="0"
