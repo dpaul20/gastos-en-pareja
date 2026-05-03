@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.5](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.5.4...gastos-en-pareja-v1.5.5) (2026-05-03)
+
+
+### 🐛 Bug Fixes
+
+* **husky:** fix pre-push newline so tsc and coverage run as separate commands ([531160b](https://github.com/dpaul20/gastos-en-pareja/commit/531160b0c042b377c04dd471c2aac230cdd54639))
+
 ## [1.5.4](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.5.3...gastos-en-pareja-v1.5.4) (2026-05-03)
 
 
