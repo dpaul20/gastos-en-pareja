@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.5.3](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.5.2...gastos-en-pareja-v1.5.3) (2026-05-03)
+
+
+### 🐛 Bug Fixes
+
+* **ci:** export SUPABASE_SERVICE_ROLE_KEY for Next.js WebServer in E2E job ([73e7f52](https://github.com/dpaul20/gastos-en-pareja/commit/73e7f52cd10eef3997dfa0881db42b1b3203a129))
+* **ci:** export SUPABASE_SERVICE_ROLE_KEY for Next.js WebServer in E2E job ([d44886f](https://github.com/dpaul20/gastos-en-pareja/commit/d44886f295f92e87b0a4f7043ed4a225fb0dcb21))
+
 ## [1.5.2](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.5.1...gastos-en-pareja-v1.5.2) (2026-05-03)
 
 
