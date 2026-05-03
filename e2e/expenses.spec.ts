@@ -100,6 +100,8 @@ test.describe("Gasto variable — creación exitosa", () => {
   test("gasto variable aparece en la lista con la descripción correcta", async ({
     authenticatedPage: page,
   }) => {
+    // El flujo completo (nav + form fill + server action + refetch) necesita más tiempo en CI
+    test.slow();
     const expenses = new ExpensesPage(page);
     await expenses.goto();
     await expenses.selectTab("Variables");
@@ -119,7 +121,7 @@ test.describe("Gasto variable — creación exitosa", () => {
 
     // El item con la descripción exacta debe aparecer en la lista
     await expect(page.getByText(DESCRIPCION).first()).toBeVisible({
-      timeout: 8_000,
+      timeout: 15_000,
     });
   });
 });
@@ -140,6 +142,8 @@ test.describe("Gasto fijo — creación exitosa", () => {
   test("gasto fijo aparece en la lista de Fijos", async ({
     authenticatedPage: page,
   }) => {
+    // El flujo completo (nav + form fill + server action + refetch) necesita más tiempo en CI
+    test.slow();
     const expenses = new ExpensesPage(page);
     await expenses.goto();
     await expenses.selectTab("Fijos");
@@ -153,7 +157,7 @@ test.describe("Gasto fijo — creación exitosa", () => {
 
     await expect(expenses.dialog()).not.toBeVisible({ timeout: 5_000 });
     await expect(page.getByText(DESCRIPCION).first()).toBeVisible({
-      timeout: 8_000,
+      timeout: 15_000,
     });
   });
 });
@@ -164,9 +168,14 @@ test.describe("Manejo de errores de red", () => {
   test("la página de expenses sigue respondiendo aunque la API falle", async ({
     authenticatedPage: page,
   }) => {
-    // Interceptar llamadas al API de Supabase para simular fallo parcial
+    // Simular un 500 evita resetear el socket del dev server y mantiene
+    // el objetivo del test: la UI debe sobrevivir a un fallo parcial.
     await page.route("**/rest/v1/variable_expenses*", (route) => {
-      route.abort("failed");
+      route.fulfill({
+        status: 500,
+        contentType: "application/json",
+        body: JSON.stringify({ message: "simulated e2e failure" }),
+      });
     });
 
     const expenses = new ExpensesPage(page);

@@ -50,3 +50,6 @@ next-env.d.ts
 
 # Serwist generated service worker
 /public/sw.js
+
+# Design system docs (generated, not versioned)
+/docs/gastos-en-pareja-design-system/

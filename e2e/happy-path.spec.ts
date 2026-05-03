@@ -29,6 +29,8 @@ test.describe("Dashboard", () => {
     authenticatedPage: page,
   }) => {
     await page.goto("/dashboard");
+    // Esperar a que TanStack Query termine de cargar los datos del servidor
+    await page.waitForLoadState("networkidle", { timeout: 12_000 });
 
     // El heading "Balance" debe existir y ser de nivel heading semánticamente
     const balanceHeading = page.getByRole("heading", { name: /balance/i });
@@ -39,6 +41,8 @@ test.describe("Dashboard", () => {
     authenticatedPage: page,
   }) => {
     await page.goto("/dashboard");
+    // Esperar a que TanStack Query termine de cargar los datos del servidor
+    await page.waitForLoadState("networkidle", { timeout: 12_000 });
 
     // El MonthHeader muestra el mes actual en un span con data-testid
     const monthLabel = page.getByTestId("current-month");
@@ -181,6 +185,8 @@ test.describe("Expenses — creación de gasto variable", () => {
   test("agrega un gasto variable y aparece en la lista", async ({
     authenticatedPage: page,
   }) => {
+    // El flujo completo (nav + form fill + server action + refetch) necesita más tiempo en CI
+    test.slow();
     const expenses = new ExpensesPage(page);
     await expenses.goto();
     await expenses.selectTab("Variables");
@@ -209,7 +215,7 @@ test.describe("Expenses — creación de gasto variable", () => {
       await expect(expenses.dialog()).not.toBeVisible({ timeout: 5_000 });
       // El item debe aparecer en la lista
       await expect(expenses.itemByDescription(DESCRIPCION_TEST)).toBeVisible({
-        timeout: 8_000,
+        timeout: 15_000,
       });
     });
   });

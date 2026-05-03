@@ -11,13 +11,12 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  ci:
-    name: Lint · Unit · E2E
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 10
 
     steps:
-      # ── Checkout & Node ────────────────────────────────────────────────────
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
@@ -25,26 +24,87 @@ jobs:
           node-version: 20
           cache: npm
 
+      - uses: actions/cache@v4
+        id: node-cache
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
       - name: Install dependencies
+        if: steps.node-cache.outputs.cache-hit != 'true'
         run: npm ci
 
-      # ── Lint & Unit tests (no infra needed) ───────────────────────────────
+      - uses: actions/cache@v4
+        with:
+          path: .eslintcache
+          key: eslint-${{ runner.os }}-${{ hashFiles('package-lock.json', 'eslint.config.mjs') }}
+
       - name: Lint
-        run: npm run lint
+        run: npx eslint --cache --cache-location .eslintcache
+
+  unit:
+    name: Unit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - uses: actions/cache@v4
+        id: node-cache
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Install dependencies
+        if: steps.node-cache.outputs.cache-hit != 'true'
+        run: npm ci
 
       - name: Unit tests
-        run: npm run test
+        run: npm run test:coverage
 
-      # ── Supabase local ────────────────────────────────────────────────────
+  e2e:
+    name: E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [lint, unit]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - uses: actions/cache@v4
+        id: node-cache
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Install dependencies
+        if: steps.node-cache.outputs.cache-hit != 'true'
+        run: npm ci
+
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.95.4
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.supabase
+          key: supabase-${{ runner.os }}-${{ hashFiles('supabase/config.toml') }}
 
       - name: Start Supabase
         run: supabase start
 
       - name: Export Supabase env vars
-        # supabase status -o env emits: ANON_KEY=..., SERVICE_ROLE_KEY=..., etc.
         run: |
           source <(supabase status -o env)
           echo "NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321" >> $GITHUB_ENV
@@ -52,35 +112,28 @@ jobs:
           echo "E2E_SUPABASE_SERVICE_KEY=$SERVICE_ROLE_KEY"       >> $GITHUB_ENV
 
       - name: Create E2E test user
-        # global-setup.ts verifies the user exists before signing in;
-        # email_confirm:true skips the confirmation email.
-        env:
-          # SERVICE_ROLE_KEY not yet in $GITHUB_ENV at this point — read from supabase status again
-          SUPABASE_SERVICE_KEY: ${{ env.E2E_SUPABASE_SERVICE_KEY }}
         run: |
-          SERVICE_KEY=$(supabase status -o json | python3 -c "import sys,json; print(json.load(sys.stdin)['SERVICE_ROLE_KEY'])")
           curl -sf -X POST http://127.0.0.1:54321/auth/v1/admin/users \
-            -H "apikey: $SERVICE_KEY" \
-            -H "Authorization: Bearer $SERVICE_KEY" \
+            -H "apikey: ${{ env.E2E_SUPABASE_SERVICE_KEY }}" \
+            -H "Authorization: Bearer ${{ env.E2E_SUPABASE_SERVICE_KEY }}" \
             -H "Content-Type: application/json" \
-            -d '{
-              "email": "test@gastospareja.local",
-              "password": "Test1234!",
-              "email_confirm": true
-            }'
+            -d '{"email":"test@gastospareja.local","password":"Test1234!","email_confirm":true}'
 
-      # ── Playwright ────────────────────────────────────────────────────────
+      - uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
       - name: Install Playwright browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps chromium
 
       - name: Run E2E tests
         run: npm run test:e2e
         env:
-          # webServer in playwright.config.ts runs `npm run dev`
-          # NODE_ENV=development is required so /api/test/sign-in responds
           NODE_ENV: development
 
-      # ── Artifacts on failure ──────────────────────────────────────────────
       - name: Upload Playwright report
         if: failure()
         uses: actions/upload-artifact@v4
