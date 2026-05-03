@@ -618,6 +618,10 @@ export default function DashboardPage() {
   const myProfile = profiles.find((p) => p.user_id === currentUserId);
   const partnerProfile = profiles.find((p) => p.user_id !== currentUserId);
 
+  if (loadingMember) {
+    return null;
+  }
+
   if (!member || member.couples?.status !== "ACTIVE") {
     return <NoCoupleState hasMember={!!member} />;
   }

@@ -18,7 +18,9 @@ export default async function globalSetup(_config: FullConfig) {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  const { data: users } = await admin.auth.admin.listUsers();
+  const { data: users, error: listError } = await admin.auth.admin.listUsers();
+  if (listError) throw new Error(`Failed to list users: ${listError.message}`);
+
   const testUser = users?.users.find((u) => u.email === TEST_EMAIL);
   if (!testUser)
     throw new Error(
@@ -26,28 +28,59 @@ export default async function globalSetup(_config: FullConfig) {
     );
 
   const userId = testUser.id;
-  const { data: existing } = await admin
+
+  // Use maybeSingle() to avoid PGRST116 error when 0 rows exist
+  const { data: existing, error: existingError } = await admin
     .from("couple_members")
     .select("couple_id")
     .eq("user_id", userId)
-    .single();
+    .maybeSingle();
 
-  if (!existing) {
-    const { data: couple } = await admin
+  if (existingError)
+    throw new Error(
+      `Failed to check existing couple_member: ${existingError.message}`,
+    );
+
+  if (existing) {
+    const { error: updateError } = await admin
+      .from("couples")
+      .update({ status: "ACTIVE" })
+      .eq("id", existing.couple_id);
+
+    if (updateError)
+      throw new Error(`Failed to update couple status: ${updateError.message}`);
+  } else {
+    const { data: couple, error: coupleError } = await admin
       .from("couples")
       .insert({ status: "ACTIVE" })
       .select()
       .single();
-    if (couple) {
-      await admin
-        .from("couple_members")
-        .insert({ couple_id: couple.id, user_id: userId, role: "OWNER" });
-    }
-  } else {
-    await admin
-      .from("couples")
-      .update({ status: "ACTIVE" })
-      .eq("id", existing.couple_id);
+
+    if (coupleError || !couple)
+      throw new Error(
+        `Failed to create couple: ${coupleError?.message ?? "no data returned"}`,
+      );
+
+    const { error: memberError } = await admin
+      .from("couple_members")
+      .insert({ couple_id: couple.id, user_id: userId, role: "OWNER" });
+
+    if (memberError)
+      throw new Error(
+        `Failed to create couple_member: ${memberError.message} (code: ${memberError.code})`,
+      );
+
+    // Verify the row was actually inserted
+    const { data: verify, error: verifyError } = await admin
+      .from("couple_members")
+      .select("couple_id")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (verifyError || !verify)
+      throw new Error(
+        `couple_member not found after insert — verify error: ${verifyError?.message ?? "row missing"}`,
+      );
   }
 
   // 2. Sign in via the dev-only test endpoint (lets @supabase/ssr set cookies naturally)
