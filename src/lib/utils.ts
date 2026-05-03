@@ -13,6 +13,8 @@ export function getMonthDate(date = new Date()): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-01`;
 }
 
+export { getInitials } from "./utils/initials";
+
 export function formatMonth(isoDate: string): string {
   const [year, month] = isoDate.split("-");
   const d = new Date(Number(year), Number(month) - 1);

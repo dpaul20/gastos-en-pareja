@@ -2,19 +2,20 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
-import type { Database } from "@/types/database";
+import { getCoupleMemberProfiles } from "@/lib/actions/couple";
 
-type CoupleMemberProfile =
-  Database["public"]["Functions"]["get_couple_member_profiles"]["Returns"][number];
-
-export function useMonthlyData(coupleId: string | null, month: string) {
-  const supabase = createClient();
-
-  return useQuery({
-    queryKey: ["monthly-data", coupleId, month],
+export function monthlyDataQueryOptions(
+  coupleId: string | null,
+  month: string,
+) {
+  return {
+    queryKey: ["monthly-data", coupleId, month] as const,
     enabled: !!coupleId,
+    staleTime: 0,
     queryFn: async () => {
       if (!coupleId) return null;
+
+      const supabase = createClient();
 
       const [incomes, purchases, instances, variables] = await Promise.all([
         supabase
@@ -51,7 +52,15 @@ export function useMonthlyData(coupleId: string | null, month: string) {
         variableExpenses: variables.data ?? [],
       };
     },
-  });
+  };
+}
+
+export type MonthlyData = Awaited<
+  ReturnType<ReturnType<typeof monthlyDataQueryOptions>["queryFn"]>
+>;
+
+export function useMonthlyData(coupleId: string | null, month: string) {
+  return useQuery(monthlyDataQueryOptions(coupleId, month));
 }
 
 export function useCoupleMember() {
@@ -69,7 +78,9 @@ export function useCoupleMember() {
         .from("couple_members")
         .select("*, couples(*)")
         .eq("user_id", user.id)
-        .single();
+        .order("joined_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
       return data ?? null;
     },
@@ -94,16 +105,7 @@ export function useCoupleMemberProfiles(userId: string | null) {
   return useQuery({
     queryKey: ["couple-member-profiles", userId],
     enabled: !!userId,
-    queryFn: async () => {
-      if (!userId) return [];
-      const response = await fetch("/api/couple/member-profiles", {
-        cache: "no-store",
-      });
-
-      if (!response.ok) return [];
-
-      return (await response.json()) as CoupleMemberProfile[];
-    },
+    queryFn: () => getCoupleMemberProfiles(),
   });
 }
 

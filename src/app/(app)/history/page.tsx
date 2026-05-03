@@ -1,39 +1,31 @@
 "use client";
 
 import { useState } from "react";
+import { useQueries } from "@tanstack/react-query";
 import { Badge } from "@/components/shared/badge";
-import { formatARS, formatMonth, getMonthDate } from "@/lib/utils";
+import { formatARS, formatMonth } from "@/lib/utils";
 import {
   useCoupleMember,
-  useMonthlyData,
+  monthlyDataQueryOptions,
+  type MonthlyData,
 } from "@/lib/queries/use-monthly-data";
 import { calculateMonthlyBalance } from "@/lib/utils/balance";
-import { subMonths } from "date-fns";
-
-const MONTHS_TO_SHOW = 6;
-
-function useHistoryMonths(_coupleId: string | null) {
-  const today = new Date();
-  // Generate last N months (excluding current)
-  return Array.from({ length: MONTHS_TO_SHOW }, (_, i) => {
-    const d = subMonths(today, i + 1);
-    return getMonthDate(d);
-  });
-}
+import { getHistoryMonths } from "@/lib/queries/history";
+import { MonthSummaryCard } from "@/components/shared/month-summary-card";
 
 function MonthCard({
-  coupleId,
   month,
+  data,
+  isLoading,
   onClick,
   hideIfEmpty = false,
 }: {
-  readonly coupleId: string;
   readonly month: string;
+  readonly data: MonthlyData | undefined;
+  readonly isLoading: boolean;
   readonly onClick: () => void;
   readonly hideIfEmpty?: boolean;
 }) {
-  const { data, isLoading } = useMonthlyData(coupleId, month);
-
   const balance = data
     ? calculateMonthlyBalance({
         incomes: data.incomes,
@@ -183,16 +175,16 @@ function MonthCard({
 }
 
 function MonthDetail({
-  coupleId,
   month,
+  data,
+  isLoading = false,
   onBack,
 }: {
-  readonly coupleId: string;
   readonly month: string;
+  readonly data: MonthlyData | undefined;
+  readonly isLoading?: boolean;
   readonly onBack: () => void;
 }) {
-  const { data } = useMonthlyData(coupleId, month);
-
   const balance = data
     ? calculateMonthlyBalance({
         incomes: data.incomes,
@@ -340,60 +332,10 @@ function MonthDetail({
                 ))}
               </div>
             </div>
-            {[
-              {
-                label: "Cuotas activas",
-                amt: balance.installmentTotal,
-                color: "var(--person-a)",
-              },
-              {
-                label: "Gastos fijos",
-                amt: balance.fixedTotal,
-                color: "var(--person-b)",
-              },
-              {
-                label: "Variables",
-                amt: balance.variableTotal,
-                color: "var(--status-warning)",
-              },
-              {
-                label: "Total",
-                amt: balance.totalExpenses,
-                color: "var(--fg-1)",
-              },
-            ].map((r) => (
-              <div
-                key={r.label}
-                style={{
-                  background: "var(--bg-elevated)",
-                  borderRadius: 14,
-                  padding: "14px 16px",
-                  border: "1px solid var(--border-subtle)",
-                  display: "flex",
-                  justifyContent: "space-between",
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: 14,
-                    color: "var(--fg-2)",
-                    fontFamily: "var(--font-sans)",
-                  }}
-                >
-                  {r.label}
-                </span>
-                <span
-                  style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 14,
-                    fontWeight: 700,
-                    color: r.color,
-                  }}
-                >
-                  {formatARS(r.amt)}
-                </span>
-              </div>
-            ))}
+            <MonthSummaryCard
+              balance={balance ?? undefined}
+              isLoading={isLoading}
+            />
           </>
         )}
       </div>
@@ -405,13 +347,23 @@ export default function HistoryPage() {
   const [selected, setSelected] = useState<string | null>(null);
   const { data: member } = useCoupleMember();
   const coupleId = member?.couple_id ?? null;
-  const months = useHistoryMonths(coupleId);
+  const months = getHistoryMonths();
+
+  const queries = useQueries({
+    queries: coupleId
+      ? months.map((month) => monthlyDataQueryOptions(coupleId, month))
+      : [],
+  });
+
+  const isLoading = queries.some((q) => q.isLoading);
 
   if (selected && coupleId) {
+    const idx = months.indexOf(selected);
     return (
       <MonthDetail
-        coupleId={coupleId}
         month={selected}
+        data={queries[idx]?.data ?? undefined}
+        isLoading={queries[idx]?.isLoading ?? false}
         onBack={() => setSelected(null)}
       />
     );
@@ -444,6 +396,18 @@ export default function HistoryPage() {
         >
           Historial
         </h1>
+        {isLoading && (
+          <div
+            style={{
+              fontSize: 12,
+              color: "var(--fg-3)",
+              marginTop: 4,
+              fontFamily: "var(--font-sans)",
+            }}
+          >
+            Cargando…
+          </div>
+        )}
       </div>
       <div
         style={{
@@ -455,11 +419,12 @@ export default function HistoryPage() {
         }}
       >
         {coupleId ? (
-          months.map((month) => (
+          months.map((month, i) => (
             <MonthCard
               key={month}
-              coupleId={coupleId}
               month={month}
+              data={queries[i]?.data ?? null}
+              isLoading={queries[i]?.isLoading ?? false}
               onClick={() => setSelected(month)}
               hideIfEmpty
             />

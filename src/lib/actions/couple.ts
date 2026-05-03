@@ -196,3 +196,19 @@ export async function acceptInvitation(token: string) {
   revalidatePath("/", "layout");
   return { coupleId: invitation.couple_id };
 }
+
+export async function getCoupleMemberProfiles() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const service = await createServiceClient();
+  const { data, error } = await service.rpc("get_couple_member_profiles", {
+    p_user_id: user.id,
+  });
+
+  if (error) return [];
+  return data ?? [];
+}
