@@ -5,7 +5,6 @@ on:
   push:
     branches:
       - master
-      - "release-please--**"
 
 concurrency:
   group: sonarqube-${{ github.ref }}
