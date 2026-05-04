@@ -596,7 +596,13 @@ function AddSheet({
 export default function ExpensesPage() {
   const [tab, setTab] = useState<Tab>("cuotas");
   const [showForm, setShowForm] = useState(false);
+  const [filterCategory, setFilterCategory] = useState<string | null>(null);
   const { save } = useExpenseSave(tab);
+
+  function handleTabChange(newTab: Tab) {
+    setTab(newTab);
+    setFilterCategory(null);
+  }
 
   const { data: member } = useCoupleMember();
   const coupleId = member?.couple_id ?? null;
@@ -623,9 +629,21 @@ export default function ExpensesPage() {
     save(fields, categoryId, autoRenew);
   }
 
-  const cuotas = data?.installmentPurchases ?? [];
-  const fijos = data?.fixedExpenseInstances ?? [];
-  const variables = data?.variableExpenses ?? [];
+  const allCuotas = data?.installmentPurchases ?? [];
+  const allFijos = data?.fixedExpenseInstances ?? [];
+  const allVariables = data?.variableExpenses ?? [];
+
+  const cuotas = filterCategory
+    ? allCuotas.filter((c) => c.category_id === filterCategory)
+    : allCuotas;
+  const fijos = filterCategory
+    ? allFijos.filter(
+        (fi) => fi.fixed_expense_templates?.category_id === filterCategory,
+      )
+    : allFijos;
+  const variables = filterCategory
+    ? allVariables.filter((v) => v.category_id === filterCategory)
+    : allVariables;
 
   return (
     <main
@@ -655,7 +673,64 @@ export default function ExpensesPage() {
         >
           Gastos
         </h1>
-        <SegmentedControl active={tab} onChange={setTab} />
+        <SegmentedControl active={tab} onChange={handleTabChange} />
+        {categories.length > 0 && (
+          <div
+            style={{
+              display: "flex",
+              gap: 6,
+              overflowX: "auto",
+              padding: "8px 16px 10px",
+              scrollbarWidth: "none",
+            }}
+          >
+            <button
+              onClick={() => setFilterCategory(null)}
+              style={{
+                flexShrink: 0,
+                padding: "4px 12px",
+                borderRadius: 20,
+                border: "1px solid var(--border-subtle)",
+                background:
+                  filterCategory === null
+                    ? "var(--accent)"
+                    : "var(--bg-sunken)",
+                color: filterCategory === null ? "#fff" : "var(--fg-2)",
+                fontSize: 12,
+                fontWeight: 600,
+                fontFamily: "var(--font-sans)",
+                cursor: "pointer",
+              }}
+            >
+              Todos
+            </button>
+            {categories.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() =>
+                  setFilterCategory(filterCategory === cat.id ? null : cat.id)
+                }
+                style={{
+                  flexShrink: 0,
+                  padding: "4px 12px",
+                  borderRadius: 20,
+                  border: "1px solid var(--border-subtle)",
+                  background:
+                    filterCategory === cat.id
+                      ? "var(--accent)"
+                      : "var(--bg-sunken)",
+                  color: filterCategory === cat.id ? "#fff" : "var(--fg-2)",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  fontFamily: "var(--font-sans)",
+                  cursor: "pointer",
+                }}
+              >
+                {cat.icon} {cat.name}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <div style={{ flex: 1, overflowY: "auto" }}>

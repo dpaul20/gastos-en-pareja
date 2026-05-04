@@ -20,6 +20,14 @@ import {
 } from "@/lib/utils/balance";
 import { groupByCategory, type CategoryGroup } from "@/lib/utils/categories";
 import { MonthSummaryCard } from "@/components/shared/month-summary-card";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  ResponsiveContainer,
+  Tooltip,
+} from "recharts";
 import { ensureFixedExpenseInstances } from "@/lib/actions/expenses";
 type Profile = { user_id: string; full_name: string };
 
@@ -331,14 +339,74 @@ function BalanceCard({
   );
 }
 
+interface CategoryBarShapeProps {
+  readonly x?: number;
+  readonly y?: number;
+  readonly width?: number;
+  readonly height?: number;
+  readonly color?: string;
+}
+
+function CategoryBarShape({
+  x = 0,
+  y = 0,
+  width = 0,
+  height = 0,
+  color = "#B2BEC3",
+}: CategoryBarShapeProps) {
+  return (
+    <rect
+      x={x}
+      y={y}
+      width={Math.max(0, width)}
+      height={height}
+      fill={color}
+      rx={4}
+    />
+  );
+}
+
+interface CategoryTooltipProps {
+  readonly active?: boolean;
+  readonly payload?: Array<{ value: number }>;
+}
+
+function CategoryTooltip({ active, payload }: CategoryTooltipProps) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div
+      style={{
+        background: "var(--bg-elevated)",
+        border: "1px solid var(--border-subtle)",
+        borderRadius: 8,
+        padding: "6px 10px",
+        fontSize: 13,
+        fontFamily: "var(--font-mono)",
+        fontWeight: 600,
+        color: "var(--fg-1)",
+      }}
+    >
+      {formatARS(payload[0].value)}
+    </div>
+  );
+}
+
 function CategoryBreakdownCard({
   breakdown,
-  total,
 }: {
   readonly breakdown: CategoryGroup[];
-  readonly total: number;
 }) {
   if (breakdown.length === 0) return null;
+
+  const chartData = breakdown.map((g) => ({
+    name: g.category ? `${g.category.icon} ${g.category.name}` : "📦 Sin cat.",
+    total: g.total,
+    color: g.category?.color ?? "#B2BEC3",
+  }));
+
+  const rowHeight = 36;
+  const chartHeight = breakdown.length * rowHeight + 16;
+
   return (
     <div
       style={{
@@ -368,70 +436,38 @@ function CategoryBreakdownCard({
           Por categoría
         </div>
       </div>
-      <div
-        style={{
-          padding: "12px 16px",
-          display: "flex",
-          flexDirection: "column",
-          gap: 8,
-        }}
-      >
-        {breakdown.map((g) => {
-          const pct = total > 0 ? Math.round((g.total / total) * 100) : 0;
-          const color = g.category?.color ?? "#B2BEC3";
-          const label = g.category
-            ? `${g.category.icon} ${g.category.name}`
-            : "📦 Sin categorizar";
-          return (
-            <div key={g.category?.id ?? "uncategorized"}>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  marginBottom: 3,
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: 12,
-                    color: "var(--fg-2)",
-                    fontFamily: "var(--font-sans)",
-                  }}
-                >
-                  {label}
-                </span>
-                <span
-                  style={{
-                    fontSize: 12,
-                    fontWeight: 600,
-                    color: "var(--fg-1)",
-                    fontFamily: "var(--font-mono)",
-                  }}
-                >
-                  {formatARS(g.total)}
-                </span>
-              </div>
-              <div
-                style={{
-                  background: "var(--bg-sunken)",
-                  borderRadius: 99,
-                  height: 5,
-                  overflow: "hidden",
-                }}
-              >
-                <div
-                  style={{
-                    width: `${pct}%`,
-                    height: "100%",
-                    background: color,
-                    borderRadius: 99,
-                    transition: "width 400ms",
-                  }}
-                />
-              </div>
-            </div>
-          );
-        })}
+      <div style={{ padding: "12px 8px 12px 0" }}>
+        <ResponsiveContainer width="100%" height={chartHeight}>
+          <BarChart
+            data={chartData}
+            layout="vertical"
+            margin={{ top: 0, right: 16, bottom: 0, left: 8 }}
+          >
+            <XAxis type="number" hide domain={[0, "dataMax"]} />
+            <YAxis
+              type="category"
+              dataKey="name"
+              width={110}
+              tick={{
+                fontSize: 12,
+                fill: "var(--fg-2)",
+                fontFamily: "var(--font-sans)",
+              }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <Tooltip
+              cursor={{ fill: "var(--bg-sunken)", opacity: 0.5 }}
+              content={<CategoryTooltip />}
+            />
+            <Bar
+              dataKey="total"
+              radius={[0, 6, 6, 0]}
+              maxBarSize={20}
+              shape={<CategoryBarShape />}
+            />
+          </BarChart>
+        </ResponsiveContainer>
       </div>
     </div>
   );
@@ -463,10 +499,10 @@ export default function DashboardPage() {
   });
 
   useEffect(() => {
-    if (coupleId && isCurrentMonth) ensureInstances({ coupleId, month });
+    if (coupleId) ensureInstances({ coupleId, month });
     // ensureInstances is stable (useMutation)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [coupleId, month, isCurrentMonth]);
+  }, [coupleId, month]);
 
   const balance = useMemo(
     () =>
@@ -580,10 +616,7 @@ export default function DashboardPage() {
               />
             )}
             {balance && <MonthSummaryCard balance={balance} />}
-            <CategoryBreakdownCard
-              breakdown={categoryBreakdown}
-              total={balance?.totalExpenses ?? 0}
-            />
+            <CategoryBreakdownCard breakdown={categoryBreakdown} />
             <Link
               href="/expenses"
               style={{
