@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.7.0](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.6.0...gastos-en-pareja-v1.7.0) (2026-05-04)
+
+
+### ✨ Features
+
+* **categorias:** complete category filter and recharts breakdown ([935651b](https://github.com/dpaul20/gastos-en-pareja/commit/935651b1b43bfba10098cbef605b0969be7b58d1))
+* complete categorias-gastos and gastos-recurrentes SDD gaps ([f0287aa](https://github.com/dpaul20/gastos-en-pareja/commit/f0287aaace05f7efc911533ec5eb86b50bdfd5ae))
+
 ## [1.6.0](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.5.5...gastos-en-pareja-v1.6.0) (2026-05-04)
 
 
