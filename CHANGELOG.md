@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.6.0](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.5.5...gastos-en-pareja-v1.6.0) (2026-05-04)
+
+
+### ✨ Features
+
+* **#89:** fix sonar issues, add a11y and invitation e2e tests, sonarcloud ci ([72be51c](https://github.com/dpaul20/gastos-en-pareja/commit/72be51c0c20e90ad5844068566ae4519e740c372))
+* **#89:** invitation flow gaps, balance model improvements, auto_renew fix ([55fb6ce](https://github.com/dpaul20/gastos-en-pareja/commit/55fb6ce3e2fb2e9b209e490dd2cd26172f02a0a6))
+* **balance:** add savings capacity, is_shared split and auto_renew fix ([1eb6773](https://github.com/dpaul20/gastos-en-pareja/commit/1eb677343baeb9a0ec9b92328f781629a8403ebb)), closes [#89](https://github.com/dpaul20/gastos-en-pareja/issues/89)
+* **db:** add is_shared to variable_expenses and seed vision categories ([b789e77](https://github.com/dpaul20/gastos-en-pareja/commit/b789e7760f2cb44b4380d137c71c69595dccd3b8)), closes [#89](https://github.com/dpaul20/gastos-en-pareja/issues/89)
+
+
+### 🐛 Bug Fixes
+
+* **couple:** harden invitation flow with email validation and pending discovery ([48332e4](https://github.com/dpaul20/gastos-en-pareja/commit/48332e44e660df1e4c9d1ef4db455c93b6394e16)), closes [#89](https://github.com/dpaul20/gastos-en-pareja/issues/89)
+* **husky:** separate pre-push commands with newlines ([8f49d8a](https://github.com/dpaul20/gastos-en-pareja/commit/8f49d8a7210381cf0163d06453db2116f2f69782))
+
 ## [1.5.5](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.5.4...gastos-en-pareja-v1.5.5) (2026-05-03)
 
 
