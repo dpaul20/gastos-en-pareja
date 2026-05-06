@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.8.0](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.7.0...gastos-en-pareja-v1.8.0) (2026-05-06)
+
+
+### ✨ Features
+
+* **expenses:** extract expense components and rewrite add-sheet form ([f5916a3](https://github.com/dpaul20/gastos-en-pareja/commit/f5916a3042ff6015780f684ac0154f1b7f7d946d))
+* extract sub-components, add shadcn UI primitives, and rewrite add-sheet form ([b488674](https://github.com/dpaul20/gastos-en-pareja/commit/b4886749c34e2b98fca7704467d21bff9a9f0b50))
+* **ui:** extract sub-components, add shadcn UI, and set up DS tokens ([86c8816](https://github.com/dpaul20/gastos-en-pareja/commit/86c88160520a65a5d641606e4089ace4fe09bbd5))
+
+
+### 🐛 Bug Fixes
+
+* **e2e:** correct form field labels to match test selectors ([95e4c93](https://github.com/dpaul20/gastos-en-pareja/commit/95e4c9361d3daf7cb0010026869f02ffd4793db1))
+* **e2e:** update add-sheet dialog selector to use data-testid ([8fe1016](https://github.com/dpaul20/gastos-en-pareja/commit/8fe1016be71868b497969396ddf9366f3413eaf7))
+
 ## [1.7.0](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.6.0...gastos-en-pareja-v1.7.0) (2026-05-04)
 
 
