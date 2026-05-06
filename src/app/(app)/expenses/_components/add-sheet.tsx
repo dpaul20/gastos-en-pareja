@@ -217,6 +217,7 @@ export function AddSheet({
   return (
     <Sheet open onOpenChange={(open) => !open && onClose()}>
       <SheetContent
+        data-testid="add-sheet-dialog"
         side="bottom"
         showCloseButton={false}
         style={{
