@@ -40,7 +40,7 @@ export class ExpensesPage {
   }
 
   dialog(): Locator {
-    return this.page.getByRole("dialog", { name: "Agregar gasto" });
+    return this.page.getByTestId("add-sheet-dialog");
   }
 
   /** Returns a labeled input INSIDE the add-sheet dialog */

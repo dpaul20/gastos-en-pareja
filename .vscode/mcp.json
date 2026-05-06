@@ -17,6 +17,10 @@
         "mcp/sonarqube"
       ],
       "envFile": "${workspaceFolder}/.env.local"
+    },
+    "shadcn": {
+      "command": "npx",
+      "args": ["shadcn@latest", "mcp"]
     }
   }
 }

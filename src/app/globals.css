@@ -203,3 +203,30 @@ body {
   background: var(--bg-base);
   -webkit-font-smoothing: antialiased;
 }
+
+/* ── SHADCN TOKEN BRIDGE ──────────────────────────────────── */
+/* Maps shadcn/ui expected CSS vars to our design tokens.     */
+/* Do NOT remove — required for all shadcn/ui components.     */
+
+:root {
+  --background: var(--bg-base);
+  --foreground: var(--fg-1);
+  --card: var(--bg-elevated);
+  --card-foreground: var(--fg-1);
+  --popover: var(--bg-elevated);
+  --popover-foreground: var(--fg-1);
+  --primary: var(--accent);
+  --primary-foreground: var(--accent-foreground);
+  --secondary: var(--bg-sunken);
+  --secondary-foreground: var(--fg-2);
+  --muted: var(--bg-sunken);
+  --muted-foreground: var(--fg-2);
+  --accent-shadcn: var(--accent-subtle);
+  --accent-shadcn-foreground: var(--accent);
+  --destructive: var(--status-danger);
+  --destructive-foreground: var(--fg-inverse);
+  --border: var(--border-default);
+  --input: var(--bg-sunken);
+  --ring: var(--accent);
+  --radius: var(--radius-md);
+}

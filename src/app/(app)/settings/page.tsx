@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -17,132 +17,7 @@ import { upsertIncome } from "@/lib/actions/expenses";
 import { sendInvitation, createCouple } from "@/lib/actions/couple";
 import { getMonthDate, getInitials } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
-
-type PendingInvitationItem = { token: string };
-
-function PendingInvitationsCard({
-  invitations,
-}: {
-  readonly invitations: PendingInvitationItem[];
-}) {
-  if (invitations.length === 0) return null;
-
-  return (
-    <div
-      style={{
-        background: "var(--bg-sunken)",
-        border: "1px solid var(--border-subtle)",
-        borderRadius: 10,
-        padding: "10px 12px",
-        display: "flex",
-        flexDirection: "column",
-        gap: 8,
-      }}
-    >
-      <div
-        style={{
-          fontSize: 13,
-          fontWeight: 600,
-          color: "var(--fg-1)",
-          fontFamily: "var(--font-sans)",
-        }}
-      >
-        Tenés invitaciones pendientes
-      </div>
-
-      {invitations.map((invitation) => (
-        <a
-          key={invitation.token}
-          href={`/invite/${invitation.token}`}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 8,
-            textDecoration: "none",
-            color: "var(--accent)",
-            fontSize: 13,
-            fontWeight: 600,
-            fontFamily: "var(--font-sans)",
-            background: "var(--bg-elevated)",
-            border: "1px solid var(--border-subtle)",
-            borderRadius: 8,
-            padding: "8px 10px",
-          }}
-        >
-          <span>Aceptar invitación</span>
-          <span aria-hidden="true">→</span>
-        </a>
-      ))}
-    </div>
-  );
-}
-
-function NoCoupleCard({
-  onCreateCouple,
-  isPending,
-  pendingInvitations,
-  coupleMessage,
-}: {
-  readonly onCreateCouple: () => void;
-  readonly isPending: boolean;
-  readonly pendingInvitations: PendingInvitationItem[];
-  readonly coupleMessage: string;
-}) {
-  return (
-    <div
-      style={{
-        padding: "20px 16px",
-        display: "flex",
-        flexDirection: "column",
-        gap: 12,
-      }}
-    >
-      <div
-        style={{
-          fontSize: 14,
-          color: "var(--fg-2)",
-          fontFamily: "var(--font-sans)",
-        }}
-      >
-        No tenés una pareja configurada todavía.
-      </div>
-
-      <PendingInvitationsCard invitations={pendingInvitations} />
-
-      <button
-        onClick={onCreateCouple}
-        disabled={isPending || pendingInvitations.length > 0}
-        style={{
-          background: "var(--accent)",
-          color: "white",
-          border: "none",
-          borderRadius: 10,
-          padding: "10px 16px",
-          fontSize: 14,
-          fontWeight: 600,
-          cursor: "pointer",
-          fontFamily: "var(--font-sans)",
-          opacity: isPending || pendingInvitations.length > 0 ? 0.7 : 1,
-        }}
-      >
-        Crear pareja
-      </button>
-      {coupleMessage && (
-        <div
-          aria-live="polite"
-          style={{
-            fontSize: 12,
-            color: "var(--status-danger)",
-            fontFamily: "var(--font-sans)",
-          }}
-        >
-          {coupleMessage}
-        </div>
-      )}
-    </div>
-  );
-}
+import { NoCoupleCard } from "./_components/no-couple-card";
 
 export default function SettingsPage() {
   const { data: member, isLoading } = useCoupleMember();
@@ -435,7 +310,7 @@ export default function SettingsPage() {
                             disabled={isPending || !inviteEmail}
                             style={{
                               background: "var(--accent)",
-                              color: "white",
+                              color: "var(--accent-foreground)",
                               border: "none",
                               borderRadius: 10,
                               padding: "10px 14px",
@@ -554,7 +429,7 @@ export default function SettingsPage() {
                   style={{
                     width: "100%",
                     background: "var(--accent)",
-                    color: "white",
+                    color: "var(--accent-foreground)",
                     border: "none",
                     borderRadius: 10,
                     padding: "11px",
