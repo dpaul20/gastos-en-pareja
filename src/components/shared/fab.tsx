@@ -1,5 +1,7 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
+
 interface FABProps {
   onClick: () => void;
   label?: string;
@@ -7,9 +9,10 @@ interface FABProps {
 
 export function FAB({ onClick, label = "Agregar" }: Readonly<FABProps>) {
   return (
-    <button
+    <Button
       onClick={onClick}
       aria-label={label}
+      size="icon"
       style={{
         position: "fixed",
         bottom: `calc(var(--bottom-nav-height) + 16px)`,
@@ -17,21 +20,13 @@ export function FAB({ onClick, label = "Agregar" }: Readonly<FABProps>) {
         width: 56,
         height: 56,
         borderRadius: 9999,
-        background: "var(--accent)",
-        border: "none",
-        color: "white",
+        boxShadow: "0 4px 16px rgba(108,92,231,0.45)",
+        zIndex: 90,
         fontSize: 28,
         fontWeight: 300,
-        cursor: "pointer",
-        boxShadow: "0 4px 16px rgba(108,92,231,0.45)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        zIndex: 90,
-        transition: "transform 150ms",
       }}
     >
       +
-    </button>
+    </Button>
   );
 }
