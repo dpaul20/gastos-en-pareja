@@ -276,7 +276,7 @@ export function AddSheet({
                 mono
               />
               <InputField
-                label="Primer pago"
+                label="Primer pago (AAAA-MM-DD)"
                 id="field-first-payment-date"
                 registration={register("first_payment_date")}
                 error={errors.first_payment_date?.message}
@@ -296,7 +296,7 @@ export function AddSheet({
 
           {tab === "fijos" && (
             <InputField
-              label="Día de vencimiento (1–31)"
+              label="Día de vencimiento (1-31)"
               id="field-due-day"
               registration={register("due_day")}
               error={errors.due_day?.message}
@@ -306,7 +306,7 @@ export function AddSheet({
 
           {tab === "variables" && (
             <InputField
-              label="Fecha"
+              label="Fecha (AAAA-MM-DD)"
               id="field-date"
               registration={register("date")}
               error={errors.date?.message}
