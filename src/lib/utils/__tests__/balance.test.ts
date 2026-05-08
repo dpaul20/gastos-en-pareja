@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { calculateMonthlyBalance } from "../balance";
+import { calculateMonthlyBalance, effectiveFixedAmount } from "../balance";
 
 const DEIVY_ID = "user-deivy";
 const ANNIE_ID = "user-annie";
@@ -28,6 +28,7 @@ const baseInstallments = [
     id: "p1",
     couple_id: "c1",
     category_id: null,
+    credit_card: null,
     auto_renew: false,
     description: "Aire Acondicionado",
     total_amount: 1_320_004,
@@ -40,6 +41,7 @@ const baseInstallments = [
     id: "p2",
     couple_id: "c1",
     category_id: null,
+    credit_card: null,
     auto_renew: false,
     description: "Ventiladores",
     total_amount: 500_475,
@@ -98,6 +100,7 @@ describe("calculateMonthlyBalance", () => {
           id: "p3",
           couple_id: "c1",
           category_id: null,
+          credit_card: null,
           auto_renew: false,
           description: "Calefon (pagado)",
           total_amount: 578_000,
@@ -127,6 +130,7 @@ describe("calculateMonthlyBalance", () => {
           month: "2026-04-01",
           paid: true,
           created_at: "",
+          amount_override: null as number | null,
           fixed_expense_templates: {
             id: "t1",
             couple_id: "c1",
@@ -145,6 +149,7 @@ describe("calculateMonthlyBalance", () => {
           month: "2026-04-01",
           paid: false,
           created_at: "",
+          amount_override: null as number | null,
           fixed_expense_templates: {
             id: "t2",
             couple_id: "c1",
@@ -342,6 +347,7 @@ describe("calculateMonthlyBalance", () => {
             id: "p1",
             couple_id: "c1",
             category_id: null,
+            credit_card: null,
             auto_renew: false,
             description: "Compra",
             total_amount: 500_000,
@@ -359,11 +365,101 @@ describe("calculateMonthlyBalance", () => {
     });
   });
 
+  describe("gastos fijos con override de monto", () => {
+    const baseTemplate = {
+      id: "t1",
+      couple_id: "c1",
+      category_id: null,
+      description: "Luz",
+      amount: 100_000,
+      due_day: 15,
+      active: true,
+      created_at: "",
+    };
+    const baseInstance = {
+      id: "fi1",
+      template_id: "t1",
+      couple_id: "c1",
+      month: "2026-04-01",
+      paid: false,
+      created_at: "",
+      amount_override: null as number | null,
+      fixed_expense_templates: baseTemplate,
+    };
+
+    it("lista mixta suma override y template correctamente", () => {
+      const fixedInstances = [
+        { ...baseInstance, id: "fi1", amount_override: 50_000 },
+        {
+          ...baseInstance,
+          id: "fi2",
+          amount_override: null,
+          fixed_expense_templates: {
+            ...baseTemplate,
+            id: "t2",
+            amount: 100_000,
+          },
+        },
+        { ...baseInstance, id: "fi3", amount_override: 200_000 },
+      ];
+      const result = calculateMonthlyBalance({
+        incomes: baseIncomes,
+        installmentPurchases: [],
+        fixedExpenseInstances: fixedInstances,
+        variableExpenses: [],
+      });
+      expect(result.fixedTotal).toBe(350_000);
+    });
+
+    it("todos con amount_override null usa template amounts (regresión)", () => {
+      const fixedInstances = [
+        { ...baseInstance, id: "fi1", amount_override: null },
+        {
+          ...baseInstance,
+          id: "fi2",
+          amount_override: null,
+          fixed_expense_templates: {
+            ...baseTemplate,
+            id: "t2",
+            amount: 68_740,
+          },
+        },
+      ];
+      const result = calculateMonthlyBalance({
+        incomes: baseIncomes,
+        installmentPurchases: [],
+        fixedExpenseInstances: fixedInstances,
+        variableExpenses: [],
+      });
+      expect(result.fixedTotal).toBe(168_740);
+    });
+
+    it("instancia con override null después de tener valor usa template (no closure leak)", () => {
+      const withOverride = { ...baseInstance, amount_override: 800 };
+      const withNull = { ...baseInstance, amount_override: null };
+      const resultWithOverride = calculateMonthlyBalance({
+        incomes: baseIncomes,
+        installmentPurchases: [],
+        fixedExpenseInstances: [withOverride],
+        variableExpenses: [],
+      });
+      const resultWithNull = calculateMonthlyBalance({
+        incomes: baseIncomes,
+        installmentPurchases: [],
+        fixedExpenseInstances: [withNull],
+        variableExpenses: [],
+      });
+      expect(resultWithOverride.fixedTotal).toBe(800);
+      expect(resultWithNull.fixedTotal).toBe(100_000);
+    });
+  });
+
   describe("cuotas con renovación automática (auto_renew)", () => {
     const autoRenewPurchase = {
       id: "ar1",
       couple_id: "c1",
       category_id: null,
+      credit_card: null,
       auto_renew: true,
       description: "Suscripción mensual",
       total_amount: 120_000,
@@ -415,6 +511,7 @@ describe("calculateMonthlyBalance", () => {
         id: "ar3",
         couple_id: "c1",
         category_id: null,
+        credit_card: null,
         auto_renew: false,
         description: "Notebook",
         total_amount: 600_000,
@@ -432,5 +529,47 @@ describe("calculateMonthlyBalance", () => {
       // auto_renew: 120.000 / 12 = 10.000; normal: 600.000 / 6 = 100.000; total = 110.000
       expect(result.installmentTotal).toBe(110_000);
     });
+  });
+});
+
+describe("effectiveFixedAmount", () => {
+  const baseTemplate = {
+    id: "t1",
+    couple_id: "c1",
+    category_id: null,
+    description: "Internet",
+    amount: 12_000,
+    due_day: 10,
+    active: true,
+    created_at: "",
+  };
+  const baseInstance = {
+    id: "fi1",
+    template_id: "t1",
+    couple_id: "c1",
+    month: "2026-04-01",
+    paid: false,
+    created_at: "",
+    amount_override: null as number | null,
+    fixed_expense_templates: baseTemplate,
+  };
+
+  it("devuelve template.amount cuando amount_override es null (guardia de regresión)", () => {
+    const instance = { ...baseInstance, amount_override: null };
+    expect(effectiveFixedAmount(instance)).toBe(12_000);
+  });
+
+  it("devuelve amount_override cuando está presente (número)", () => {
+    const instance = { ...baseInstance, amount_override: 12345.67 };
+    expect(effectiveFixedAmount(instance)).toBe(12345.67);
+  });
+
+  it("castea correctamente string numérico de Supabase JSON a número", () => {
+    // Supabase retorna numeric como string en el JSON wire protocol
+    const instance = {
+      ...baseInstance,
+      amount_override: "9999.99" as unknown as number | null,
+    };
+    expect(effectiveFixedAmount(instance)).toBe(9999.99);
   });
 });

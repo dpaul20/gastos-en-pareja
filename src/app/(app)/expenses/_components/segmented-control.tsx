@@ -2,6 +2,18 @@
 
 import type { Tab } from "@/lib/queries/use-expense-save";
 
+export const TAB_LABEL: Record<Tab, string> = {
+  cuotas: "Cuotas",
+  fijos: "Servicios",
+  variables: "Compras",
+};
+
+const TAB_TESTID: Record<Tab, string> = {
+  cuotas: "tab-cuotas",
+  fijos: "tab-servicios",
+  variables: "tab-compras",
+};
+
 export function SegmentedControl({
   active,
   onChange,
@@ -29,6 +41,7 @@ export function SegmentedControl({
         {(["cuotas", "fijos", "variables"] as Tab[]).map((t) => (
           <button
             key={t}
+            data-testid={TAB_TESTID[t]}
             onClick={() => onChange(t)}
             style={{
               flex: 1,
@@ -43,11 +56,10 @@ export function SegmentedControl({
               fontFamily: "var(--font-sans)",
               boxShadow: active === t ? "var(--shadow-sm)" : "none",
               transition: "all 150ms",
-              textTransform: "capitalize",
               minHeight: 36,
             }}
           >
-            {t.charAt(0).toUpperCase() + t.slice(1)}
+            {TAB_LABEL[t]}
           </button>
         ))}
       </div>

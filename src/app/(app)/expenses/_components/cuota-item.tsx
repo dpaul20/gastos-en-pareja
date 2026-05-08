@@ -52,6 +52,7 @@ export function CuotaItem({ c }: { readonly c: InstallmentPurchase }) {
               fontFamily: "var(--font-sans)",
             }}
           >
+            {c.credit_card && <span>{c.credit_card} · </span>}
             Cuota {c.paid_installments} de {c.installments}
             {c.auto_renew ? " 🔄" : ""}
           </div>

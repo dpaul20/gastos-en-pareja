@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
-import { getMonthDate } from "@/lib/utils";
+import { getMonthDate, getPreviousMonthDate } from "@/lib/utils";
 import { getMyPendingInvitations } from "@/lib/actions/couple";
 
 export function usePendingInvitation(coupleId: string | null) {
@@ -28,27 +28,35 @@ export function usePendingInvitation(coupleId: string | null) {
   });
 }
 
-export function useCurrentIncome(
+export interface IncomeWithCarry {
+  current: { amount: number } | null;
+  previous: { amount: number } | null;
+}
+
+export function useIncomeWithCarry(
   coupleId: string | null,
   userId: string | null,
 ) {
   const supabase = createClient();
+  const currentMonth = getMonthDate();
+  const previousMonth = getPreviousMonthDate();
 
-  return useQuery({
-    queryKey: ["current-income", coupleId, userId],
+  return useQuery<IncomeWithCarry>({
+    queryKey: ["income-with-carry", coupleId, userId, currentMonth],
     enabled: !!coupleId && !!userId,
     queryFn: async () => {
-      if (!coupleId || !userId) return null;
-      const { data } = await supabase
+      if (!coupleId || !userId) return { current: null, previous: null };
+      const { data, error } = await supabase
         .from("incomes")
-        .select("amount")
+        .select("amount, month")
         .eq("couple_id", coupleId)
         .eq("user_id", userId)
-        .eq("month", getMonthDate())
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      return data ?? null;
+        .in("month", [currentMonth, previousMonth]);
+      if (error) throw error;
+      return {
+        current: (data ?? []).find((r) => r.month === currentMonth) ?? null,
+        previous: (data ?? []).find((r) => r.month === previousMonth) ?? null,
+      };
     },
   });
 }

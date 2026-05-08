@@ -115,16 +115,16 @@ test.describe("Expenses — tabs del segmented control", () => {
     await expenses.goto();
 
     await expect(expenses.tabButton("Cuotas")).toBeVisible();
-    await expect(expenses.tabButton("Fijos")).toBeVisible();
-    await expect(expenses.tabButton("Variables")).toBeVisible();
+    await expect(expenses.tabButton("Servicios")).toBeVisible();
+    await expect(expenses.tabButton("Compras")).toBeVisible();
   });
 
-  test("el dialog de Variables tiene los campos correctos", async ({
+  test("el dialog de Compras tiene los campos correctos", async ({
     authenticatedPage: page,
   }) => {
     const expenses = new ExpensesPage(page);
     await expenses.goto();
-    await expenses.selectTab("Variables");
+    await expenses.selectTab("Compras");
     await expenses.openAddSheet();
 
     // Verificar que los campos esperados existen con sus labels accesibles
@@ -134,7 +134,7 @@ test.describe("Expenses — tabs del segmented control", () => {
 
     // El dialog title anuncia el tipo de gasto
     await expect(
-      expenses.dialog().getByText("Nuevo gasto — variables"),
+      expenses.dialog().getByText("Nuevo gasto — Compras"),
     ).toBeVisible();
   });
 
@@ -153,12 +153,12 @@ test.describe("Expenses — tabs del segmented control", () => {
     ).toBeVisible();
   });
 
-  test("el dialog de Fijos tiene el campo de vencimiento", async ({
+  test("el dialog de Servicios tiene el campo de vencimiento", async ({
     authenticatedPage: page,
   }) => {
     const expenses = new ExpensesPage(page);
     await expenses.goto();
-    await expenses.selectTab("Fijos");
+    await expenses.selectTab("Servicios");
     await expenses.openAddSheet();
 
     await expect(
@@ -189,12 +189,12 @@ test.describe("Expenses — creación de gasto variable", () => {
     test.slow();
     const expenses = new ExpensesPage(page);
     await expenses.goto();
-    await expenses.selectTab("Variables");
+    await expenses.selectTab("Compras");
 
     await test.step("abrir el formulario", async () => {
       await expenses.openAddSheet();
       await expect(
-        expenses.dialog().getByText("Nuevo gasto — variables"),
+        expenses.dialog().getByText("Nuevo gasto — Compras"),
       ).toBeVisible();
     });
 
@@ -226,6 +226,7 @@ test.describe("Expenses — creación de gasto variable", () => {
 test.describe("Cerrar sesión", () => {
   test("redirige a /login y ya no se puede acceder a rutas protegidas", async ({
     authenticatedPage: page,
+    browser,
   }) => {
     await page.goto("/settings");
     // El botón "Cerrar sesión" debe existir como botón accesible
@@ -240,5 +241,20 @@ test.describe("Cerrar sesión", () => {
     // Una ruta protegida ya no es accesible con esta sesión
     await page.goto("/dashboard");
     await expect(page).toHaveURL(/\/login/);
+
+    // Restore auth.json — sign-out revokes the session server-side, which
+    // would break subsequent tests that load the same storage state.
+    const freshCtx = await browser.newContext({
+      baseURL: "http://localhost:3000",
+    });
+    const freshPage = await freshCtx.newPage();
+    const res = await freshPage.request.post("/api/test/sign-in", {
+      headers: { "Content-Type": "application/json" },
+      data: { email: "test@gastospareja.local", password: "Test1234!" },
+    });
+    if (res.ok()) {
+      await freshCtx.storageState({ path: "e2e/auth.json" });
+    }
+    await freshCtx.close();
   });
 });

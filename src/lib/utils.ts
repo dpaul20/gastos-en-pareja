@@ -13,6 +13,13 @@ export function getMonthDate(date = new Date()): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-01`;
 }
 
+export function getPreviousMonthDate(reference = new Date()): string {
+  const prev = new Date(
+    Date.UTC(reference.getFullYear(), reference.getMonth() - 1, 1),
+  );
+  return `${prev.getUTCFullYear()}-${String(prev.getUTCMonth() + 1).padStart(2, "0")}-01`;
+}
+
 export { getInitials } from "./utils/initials";
 
 export function formatMonth(isoDate: string): string {

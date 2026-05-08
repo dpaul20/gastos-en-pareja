@@ -9,6 +9,12 @@ type FixedExpenseInstance =
   };
 type VariableExpense = Database["public"]["Tables"]["variable_expenses"]["Row"];
 
+export function effectiveFixedAmount(instance: FixedExpenseInstance): number {
+  return Number(
+    instance.amount_override ?? instance.fixed_expense_templates.amount,
+  );
+}
+
 export interface PersonBalance {
   userId: string;
   percentage: number;
@@ -61,9 +67,9 @@ export function calculateMonthlyBalance(params: {
       0,
     );
 
-  // Fixed expenses: sum amounts from active templates for this month
+  // Fixed expenses: sum effective amounts (override ?? template) for this month
   const fixedTotal = fixedExpenseInstances.reduce(
-    (sum, i) => sum + Number(i.fixed_expense_templates.amount),
+    (sum, i) => sum + effectiveFixedAmount(i),
     0,
   );
 

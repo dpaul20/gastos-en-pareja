@@ -29,6 +29,7 @@ export function useExpenseSave(tab: Tab) {
             fields.first_payment_date || new Date().toISOString().slice(0, 10),
           category_id: categoryId ?? undefined,
           auto_renew: autoRenew || undefined,
+          credit_card: fields.credit_card?.trim() || null,
         });
       } else if (tab === "fijos") {
         await createFixedExpenseTemplate({
