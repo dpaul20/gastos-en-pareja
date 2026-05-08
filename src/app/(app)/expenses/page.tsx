@@ -119,7 +119,7 @@ function TypeSelectorSheet({
           maxWidth: 390,
           margin: "0 auto",
           borderRadius: "20px 20px 0 0",
-          padding: "20px 20px 40px",
+          padding: "20px 20px max(56px, env(safe-area-inset-bottom, 56px))",
           background: "var(--bg-elevated)",
           border: "none",
         }}
@@ -929,10 +929,12 @@ export default function ExpensesPage() {
         )}
       </div>
 
-      <Fab
-        onClick={() => setFlow({ step: "type-selector" })}
-        label="Agregar gasto"
-      />
+      {flow.step === "idle" && (
+        <Fab
+          onClick={() => setFlow({ step: "type-selector" })}
+          label="Agregar gasto"
+        />
+      )}
 
       {/* TYPE SELECTOR */}
       {flow.step === "type-selector" && (
