@@ -7,11 +7,6 @@ export type Json =
   | Json[];
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.5";
-  };
   public: {
     Tables: {
       couple_members: {
@@ -104,6 +99,7 @@ export type Database = {
       };
       fixed_expense_instances: {
         Row: {
+          amount_override: number | null;
           couple_id: string;
           created_at: string;
           id: string;
@@ -112,6 +108,7 @@ export type Database = {
           template_id: string;
         };
         Insert: {
+          amount_override?: number | null;
           couple_id: string;
           created_at?: string;
           id?: string;
@@ -120,6 +117,7 @@ export type Database = {
           template_id: string;
         };
         Update: {
+          amount_override?: number | null;
           couple_id?: string;
           created_at?: string;
           id?: string;
@@ -233,6 +231,7 @@ export type Database = {
           category_id: string | null;
           couple_id: string;
           created_at: string;
+          credit_card: string | null;
           description: string;
           first_payment_date: string;
           id: string;
@@ -245,6 +244,7 @@ export type Database = {
           category_id?: string | null;
           couple_id: string;
           created_at?: string;
+          credit_card?: string | null;
           description: string;
           first_payment_date: string;
           id?: string;
@@ -257,6 +257,7 @@ export type Database = {
           category_id?: string | null;
           couple_id?: string;
           created_at?: string;
+          credit_card?: string | null;
           description?: string;
           first_payment_date?: string;
           id?: string;
@@ -388,7 +389,6 @@ export type Database = {
           user_id: string;
         }[];
       };
-      is_couple_member: { Args: { p_couple_id: string }; Returns: boolean };
     };
     Enums: {
       couple_status: "PENDING" | "ACTIVE";

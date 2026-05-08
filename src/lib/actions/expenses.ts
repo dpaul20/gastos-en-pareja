@@ -49,12 +49,16 @@ export async function createInstallmentPurchase(data: {
   first_payment_date: string;
   category_id?: string;
   auto_renew?: boolean;
+  credit_card?: string | null;
 }) {
   const { supabase, coupleId } = await getCouple();
 
-  await supabase
+  const { error } = await supabase
     .from("installment_purchases")
     .insert({ ...data, couple_id: coupleId });
+
+  if (error) throw new Error("No se pudo guardar la cuota");
+
   revalidatePath("/expenses");
   revalidatePath("/dashboard");
 }
@@ -138,6 +142,27 @@ export async function toggleFixedExpenseInstance(
     .from("fixed_expense_instances")
     .update({ paid })
     .eq("id", instanceId);
+  revalidatePath("/expenses");
+  revalidatePath("/dashboard");
+}
+
+export async function updateFixedExpenseInstanceAmount(
+  instanceId: string,
+  amount: number | null,
+): Promise<void> {
+  if (amount !== null && (!Number.isFinite(amount) || amount <= 0)) {
+    throw new Error("El monto debe ser mayor a cero");
+  }
+
+  const { supabase } = await getCouple();
+
+  const { error } = await supabase
+    .from("fixed_expense_instances")
+    .update({ amount_override: amount })
+    .eq("id", instanceId);
+
+  if (error) throw new Error("No se pudo actualizar el monto");
+
   revalidatePath("/expenses");
   revalidatePath("/dashboard");
 }
