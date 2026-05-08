@@ -5,7 +5,7 @@ import { useMutation } from "@tanstack/react-query";
 import { addMonths, subMonths } from "date-fns";
 import { MonthHeader } from "@/components/shared/month-header";
 import Link from "next/link";
-import { formatMonth, getMonthDate } from "@/lib/utils";
+import { formatMonth, getMonthDate, formatARS } from "@/lib/utils";
 import {
   useCoupleMember,
   useMonthlyData,
@@ -13,7 +13,10 @@ import {
   useCategories,
 } from "@/lib/queries/use-monthly-data";
 import { useMyPendingInvitations } from "@/lib/queries/settings";
-import { calculateMonthlyBalance } from "@/lib/utils/balance";
+import {
+  calculateMonthlyBalance,
+  effectiveFixedAmount,
+} from "@/lib/utils/balance";
 import { groupByCategory } from "@/lib/utils/categories";
 import { MonthSummaryCard } from "@/components/shared/month-summary-card";
 import { ensureFixedExpenseInstances } from "@/lib/actions/expenses";
@@ -21,6 +24,63 @@ import { NoCoupleState } from "./_components/no-couple-state";
 import { NewInstancesBanner } from "./_components/new-instances-banner";
 import { BalanceCard } from "./_components/balance-card";
 import { CategoryBreakdownCard } from "./_components/category-breakdown-card";
+import { UpcomingDuesWidget } from "./_components/upcoming-dues-widget";
+
+// ── SUB-COMPONENTS ───────────────────────────────────────────────────────────
+
+type FixedInstance = Parameters<typeof effectiveFixedAmount>[0];
+
+function MonthlyFixedSummary({
+  instances,
+}: {
+  readonly instances: FixedInstance[];
+}) {
+  const total = instances.length;
+  const paid = instances.filter((i) => i.paid).length;
+  const paidAmount = instances
+    .filter((i) => i.paid)
+    .reduce((sum, i) => sum + effectiveFixedAmount(i), 0);
+  const pendingAmount = instances
+    .filter((i) => !i.paid)
+    .reduce((sum, i) => sum + effectiveFixedAmount(i), 0);
+
+  return (
+    <div
+      style={{
+        background: "var(--bg-elevated)",
+        borderRadius: 16,
+        border: "1px solid var(--border-subtle)",
+        padding: "12px 16px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 8,
+      }}
+    >
+      <div style={{ fontSize: 13, color: "var(--fg-2)", fontWeight: 500 }}>
+        {paid} de {total} servicios pagados
+      </div>
+      <div style={{ display: "flex", gap: 12 }}>
+        <span
+          style={{ fontSize: 12, color: "var(--color-teal)", fontWeight: 600 }}
+        >
+          {formatARS(paidAmount)}
+        </span>
+        {pendingAmount > 0 && (
+          <span
+            style={{
+              fontSize: 12,
+              color: "var(--color-coral)",
+              fontWeight: 600,
+            }}
+          >
+            {formatARS(pendingAmount)} pendiente
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
 
 // ── PAGE ──────────────────────────────────────────────────────────────────────
 
@@ -156,6 +216,17 @@ export default function DashboardPage() {
               count={newInstancesBanner}
               onDismiss={() => setNewInstancesBanner(0)}
             />
+            {isCurrentMonth && data?.fixedExpenseInstances && coupleId && (
+              <UpcomingDuesWidget
+                instances={
+                  data.fixedExpenseInstances as Parameters<
+                    typeof UpcomingDuesWidget
+                  >[0]["instances"]
+                }
+                coupleId={coupleId}
+                month={month}
+              />
+            )}
             {balance && (
               <BalanceCard
                 balance={balance}
@@ -165,6 +236,16 @@ export default function DashboardPage() {
               />
             )}
             {balance && <MonthSummaryCard balance={balance} />}
+            {data?.fixedExpenseInstances &&
+              data.fixedExpenseInstances.length > 0 && (
+                <MonthlyFixedSummary
+                  instances={
+                    data.fixedExpenseInstances as Parameters<
+                      typeof effectiveFixedAmount
+                    >[0][]
+                  }
+                />
+              )}
             <CategoryBreakdownCard breakdown={categoryBreakdown} />
             <Link
               href="/expenses"
