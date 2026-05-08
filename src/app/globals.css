@@ -167,11 +167,6 @@
 }
 
 /* ── DESKTOP LAYOUT ────────────────────────────────────────── */
-@media (min-width: 1024px) {
-  :root {
-    --bottom-nav-height: 0px;
-  }
-}
 
 @media (prefers-color-scheme: dark) {
   :root {

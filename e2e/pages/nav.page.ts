@@ -1,25 +1,38 @@
 import type { Page, Locator } from "@playwright/test";
 
-export type NavItem = "Inicio" | "Gastos" | "Historial" | "Config";
+export type NavItem = "Inicio" | "Gastos" | "Historial" | "Configuración";
 
 /**
- * Page Object Model for the BottomNav component.
+ * Page Object Model for the Sidebar navigation.
  *
- * Each link has an aria-label matching its visible label, so role-based
- * locators are resilient to icon or style changes.
+ * On mobile the sidebar is a Sheet — must be opened via SidebarTrigger first.
+ * On desktop it is always visible.
  */
 export class BottomNav {
-  readonly nav: Locator;
+  readonly trigger: Locator;
 
   constructor(private readonly page: Page) {
-    this.nav = page.getByRole("navigation", { name: "Navegación principal" });
+    this.trigger = page.getByRole("button", { name: "Toggle Sidebar" });
   }
 
+  /** Opens the sidebar sheet on mobile (no-op on desktop where it's always visible). */
+  async openIfMobile() {
+    const isTriggerVisible = await this.trigger.isVisible();
+    if (isTriggerVisible) {
+      await this.trigger.click();
+      // Wait for sidebar links to appear
+      await this.link("Inicio").waitFor({ state: "visible", timeout: 5_000 });
+    }
+  }
+
+  /** Find a nav link by its visible label — works after openIfMobile() on mobile. */
   link(label: NavItem): Locator {
-    return this.nav.getByRole("link", { name: label });
+    return this.page.getByRole("link", { name: label, exact: true });
   }
 
   async navigateTo(label: NavItem) {
+    await this.openIfMobile();
+
     const link = this.link(label);
     const href = await link.getAttribute("href");
     if (!href) throw new Error(`El link ${label} no tiene href`);
@@ -28,8 +41,6 @@ export class BottomNav {
     const isAlreadyOnTarget =
       previousPathname === href ||
       (href !== "/" && previousPathname.startsWith(`${href}/`));
-
-    await link.scrollIntoViewIfNeeded();
 
     if (isAlreadyOnTarget) {
       await link.click({ force: true });
@@ -42,21 +53,25 @@ export class BottomNav {
           (url) =>
             url.pathname === href ||
             (href !== "/" && url.pathname.startsWith(`${href}/`)),
-          { timeout: 5_000 },
+          { timeout: 8_000 },
         ),
         link.click(),
       ]);
     } catch {
-      // Fallback estable para mobile/CI cuando el click no dispara navegación.
       if (new URL(this.page.url()).pathname === previousPathname) {
         await this.page.goto(href);
       }
     }
   }
 
-  /** Returns the NavItem whose link has aria-current="page" */
   async activePage(): Promise<string | null> {
-    for (const label of ["Inicio", "Gastos", "Historial", "Config"] as const) {
+    await this.openIfMobile();
+    for (const label of [
+      "Inicio",
+      "Gastos",
+      "Historial",
+      "Configuración",
+    ] as const) {
       const ariaCurrent = await this.link(label).getAttribute("aria-current");
       if (ariaCurrent === "page") return label;
     }

@@ -60,20 +60,20 @@ test.describe("Dashboard", () => {
   });
 });
 
-// ── Bottom Navigation ──────────────────────────────────────────────────────────
+// ── Sidebar Navigation ─────────────────────────────────────────────────────────
 
-test.describe("Bottom Nav", () => {
+test.describe("Sidebar Nav", () => {
   test("contiene los 4 destinos requeridos", async ({
     authenticatedPage: page,
   }) => {
     await page.goto("/dashboard");
     const nav = new BottomNav(page);
+    await nav.openIfMobile();
 
-    // Los links deben existir y ser accesibles por role
     await expect(nav.link("Inicio")).toBeVisible();
     await expect(nav.link("Gastos")).toBeVisible();
     await expect(nav.link("Historial")).toBeVisible();
-    await expect(nav.link("Config")).toBeVisible();
+    await expect(nav.link("Configuración")).toBeVisible();
   });
 
   test("el link activo tiene aria-current='page'", async ({
@@ -90,7 +90,7 @@ test.describe("Bottom Nav", () => {
     for (const [label, expectedPath] of [
       ["Gastos", "/expenses"],
       ["Historial", "/history"],
-      ["Config", "/settings"],
+      ["Configuración", "/settings"],
       ["Inicio", "/dashboard"],
     ] as const) {
       test(`click en "${label}" navega a ${expectedPath}`, async ({
