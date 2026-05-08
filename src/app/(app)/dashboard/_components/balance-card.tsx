@@ -1,4 +1,4 @@
-import { Avatar } from "@/components/shared/avatar";
+import { PersonAvatar } from "@/components/shared/avatar";
 import { formatARS, formatMonth, getInitials } from "@/lib/utils";
 import type { MonthlyBalance } from "@/lib/utils/balance";
 
@@ -150,7 +150,11 @@ export function BalanceCard({
                   marginBottom: 4,
                 }}
               >
-                <Avatar initials={p.initials} person={p.person} size="sm" />
+                <PersonAvatar
+                  initials={p.initials}
+                  person={p.person}
+                  size="sm"
+                />
                 <span
                   style={{
                     fontSize: 12,

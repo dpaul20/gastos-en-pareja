@@ -19,8 +19,9 @@ import {
 import { CuotaItem } from "./_components/cuota-item";
 import { FijoItem } from "./_components/fijo-item";
 import { VariableItem } from "./_components/variable-item";
-import { SegmentedControl } from "./_components/segmented-control";
+import { TAB_LABEL, TAB_TESTID } from "./_components/segmented-control";
 import { AddSheet } from "./_components/add-sheet";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Sheet,
   SheetContent,
@@ -707,227 +708,249 @@ export default function ExpensesPage() {
         background: "var(--bg-base)",
       }}
     >
-      <div
-        style={{
-          background: "var(--bg-elevated)",
-          borderBottom: "1px solid var(--border-subtle)",
-          paddingTop: 14,
-        }}
+      <Tabs
+        value={tab}
+        onValueChange={(v) => handleTabChange(v as Tab)}
+        className="flex flex-1 flex-col"
       >
-        <h1
+        <div
           style={{
-            fontSize: 20,
-            fontWeight: 700,
-            color: "var(--fg-1)",
-            fontFamily: "var(--font-sans)",
-            padding: "0 20px 10px",
-            margin: 0,
+            background: "var(--bg-elevated)",
+            borderBottom: "1px solid var(--border-subtle)",
+            paddingTop: 14,
           }}
         >
-          Gastos
-        </h1>
-        <SegmentedControl active={tab} onChange={handleTabChange} />
-        <TabDescription tab={tab} />
-        {categories.length > 0 && (
-          <div
+          <h1
             style={{
-              display: "flex",
-              gap: 6,
-              overflowX: "auto",
-              padding: "8px 16px 10px",
-              scrollbarWidth: "none",
+              fontSize: 20,
+              fontWeight: 700,
+              color: "var(--fg-1)",
+              fontFamily: "var(--font-sans)",
+              padding: "0 20px 10px",
+              margin: 0,
             }}
           >
-            <button
-              onClick={() => setFilterCategory(null)}
+            Gastos
+          </h1>
+          <div style={{ padding: "0 16px 10px" }}>
+            <TabsList className="w-full">
+              {(["cuotas", "fijos", "variables"] as Tab[]).map((t) => (
+                <TabsTrigger
+                  key={t}
+                  value={t}
+                  data-testid={TAB_TESTID[t]}
+                  className="flex-1"
+                >
+                  {TAB_LABEL[t]}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </div>
+          <TabDescription tab={tab} />
+          {categories.length > 0 && (
+            <div
               style={{
-                flexShrink: 0,
-                padding: "4px 12px",
-                borderRadius: 20,
-                border: "1px solid var(--border-subtle)",
-                background:
-                  filterCategory === null
-                    ? "var(--accent)"
-                    : "var(--bg-sunken)",
-                color: filterCategory === null ? "#fff" : "var(--fg-2)",
-                fontSize: 12,
-                fontWeight: 600,
-                fontFamily: "var(--font-sans)",
-                cursor: "pointer",
+                display: "flex",
+                gap: 6,
+                overflowX: "auto",
+                padding: "8px 16px 10px",
+                scrollbarWidth: "none",
               }}
             >
-              Todos
-            </button>
-            {categories.map((cat) => (
               <button
-                key={cat.id}
-                onClick={() =>
-                  setFilterCategory(filterCategory === cat.id ? null : cat.id)
-                }
+                onClick={() => setFilterCategory(null)}
                 style={{
                   flexShrink: 0,
                   padding: "4px 12px",
                   borderRadius: 20,
                   border: "1px solid var(--border-subtle)",
                   background:
-                    filterCategory === cat.id
+                    filterCategory === null
                       ? "var(--accent)"
                       : "var(--bg-sunken)",
-                  color: filterCategory === cat.id ? "#fff" : "var(--fg-2)",
+                  color: filterCategory === null ? "#fff" : "var(--fg-2)",
                   fontSize: 12,
                   fontWeight: 600,
                   fontFamily: "var(--font-sans)",
                   cursor: "pointer",
                 }}
               >
-                {cat.icon} {cat.name}
+                Todos
               </button>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div style={{ flex: 1, overflowY: "auto" }}>
-        {/* CUOTAS */}
-        {tab === "cuotas" && (
-          <div
-            style={{
-              padding: "12px 16px",
-              display: "flex",
-              flexDirection: "column",
-              gap: 8,
-            }}
-          >
-            {cuotas.length === 0 && (
-              <div
-                style={{
-                  textAlign: "center",
-                  padding: "48px 0",
-                  color: "var(--fg-3)",
-                  fontFamily: "var(--font-sans)",
-                  fontSize: 14,
-                }}
-              >
-                Sin compras en cuotas. Usá el + para agregar.
-              </div>
-            )}
-            {cuotas.map((c) => (
-              <CuotaItem key={c.id} c={c} />
-            ))}
-          </div>
-        )}
-
-        {/* FIJOS */}
-        {tab === "fijos" && (
-          <div style={{ padding: "12px 16px" }}>
-            {fijos.length === 0 && (
-              <div
-                style={{
-                  textAlign: "center",
-                  padding: "48px 0",
-                  color: "var(--fg-3)",
-                  fontFamily: "var(--font-sans)",
-                  fontSize: 14,
-                }}
-              >
-                Sin gastos fijos. Usá el + para agregar.
-              </div>
-            )}
-            {fijos.length > 0 && (
-              <>
-                <div
+              {categories.map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() =>
+                    setFilterCategory(filterCategory === cat.id ? null : cat.id)
+                  }
                   style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 1,
-                    background: "var(--bg-elevated)",
-                    borderRadius: 14,
+                    flexShrink: 0,
+                    padding: "4px 12px",
+                    borderRadius: 20,
                     border: "1px solid var(--border-subtle)",
-                    overflow: "hidden",
-                    boxShadow: "var(--shadow-sm)",
+                    background:
+                      filterCategory === cat.id
+                        ? "var(--accent)"
+                        : "var(--bg-sunken)",
+                    color: filterCategory === cat.id ? "#fff" : "var(--fg-2)",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    fontFamily: "var(--font-sans)",
+                    cursor: "pointer",
                   }}
                 >
-                  {fijos.map((fi, i) => (
-                    <FijoItem
-                      key={fi.id}
-                      fi={fi}
-                      isLast={i === fijos.length - 1}
-                    />
-                  ))}
-                </div>
+                  {cat.icon} {cat.name}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div style={{ flex: 1, overflowY: "auto" }}>
+          {/* CUOTAS */}
+          <TabsContent value="cuotas" className="mt-0">
+            <div
+              style={{
+                padding: "12px 16px",
+                display: "flex",
+                flexDirection: "column",
+                gap: 8,
+              }}
+            >
+              {cuotas.length === 0 && (
                 <div
                   style={{
-                    background: "var(--bg-elevated)",
-                    borderRadius: 12,
-                    padding: "12px 16px",
-                    marginTop: 8,
-                    display: "flex",
-                    justifyContent: "space-between",
-                    border: "1px solid var(--border-subtle)",
+                    textAlign: "center",
+                    padding: "48px 0",
+                    color: "var(--fg-3)",
+                    fontFamily: "var(--font-sans)",
+                    fontSize: 14,
                   }}
                 >
-                  <span
-                    style={{
-                      fontSize: 13,
-                      fontWeight: 600,
-                      color: "var(--fg-2)",
-                      fontFamily: "var(--font-sans)",
-                    }}
-                  >
-                    Total servicios
-                  </span>
-                  <span
-                    style={{
-                      fontFamily: "var(--font-mono)",
-                      fontSize: 15,
-                      fontWeight: 700,
-                      color: "var(--fg-1)",
-                    }}
-                  >
-                    {formatARS(
-                      fijos.reduce((s, fi) => s + effectiveFixedAmount(fi), 0),
-                    )}
-                  </span>
+                  Sin compras en cuotas. Usá el + para agregar.
                 </div>
-              </>
-            )}
-          </div>
-        )}
+              )}
+              {cuotas.map((c) => (
+                <CuotaItem key={c.id} c={c} />
+              ))}
+            </div>
+          </TabsContent>
 
-        {/* VARIABLES */}
-        {tab === "variables" && (
-          <div
-            style={{
-              padding: "12px 16px",
-              display: "flex",
-              flexDirection: "column",
-              gap: 8,
-            }}
-          >
-            {variables.length === 0 && (
-              <div
-                style={{
-                  textAlign: "center",
-                  padding: "48px 0",
-                  color: "var(--fg-3)",
-                  fontFamily: "var(--font-sans)",
-                  fontSize: 14,
-                }}
-              >
-                Sin gastos variables. Usá el + para agregar.
-              </div>
-            )}
-            {variables.map((v) => (
-              <VariableItem
-                key={v.id}
-                v={v}
-                getPersonInitials={getPersonInitials}
-                getPerson={getPerson}
-              />
-            ))}
-          </div>
-        )}
-      </div>
+          {/* FIJOS */}
+          <TabsContent value="fijos" className="mt-0">
+            <div style={{ padding: "12px 16px" }}>
+              {fijos.length === 0 && (
+                <div
+                  style={{
+                    textAlign: "center",
+                    padding: "48px 0",
+                    color: "var(--fg-3)",
+                    fontFamily: "var(--font-sans)",
+                    fontSize: 14,
+                  }}
+                >
+                  Sin gastos fijos. Usá el + para agregar.
+                </div>
+              )}
+              {fijos.length > 0 && (
+                <>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 1,
+                      background: "var(--bg-elevated)",
+                      borderRadius: 14,
+                      border: "1px solid var(--border-subtle)",
+                      overflow: "hidden",
+                      boxShadow: "var(--shadow-sm)",
+                    }}
+                  >
+                    {fijos.map((fi, i) => (
+                      <FijoItem
+                        key={fi.id}
+                        fi={fi}
+                        isLast={i === fijos.length - 1}
+                      />
+                    ))}
+                  </div>
+                  <div
+                    style={{
+                      background: "var(--bg-elevated)",
+                      borderRadius: 12,
+                      padding: "12px 16px",
+                      marginTop: 8,
+                      display: "flex",
+                      justifyContent: "space-between",
+                      border: "1px solid var(--border-subtle)",
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: "var(--fg-2)",
+                        fontFamily: "var(--font-sans)",
+                      }}
+                    >
+                      Total servicios
+                    </span>
+                    <span
+                      style={{
+                        fontFamily: "var(--font-mono)",
+                        fontSize: 15,
+                        fontWeight: 700,
+                        color: "var(--fg-1)",
+                      }}
+                    >
+                      {formatARS(
+                        fijos.reduce(
+                          (s, fi) => s + effectiveFixedAmount(fi),
+                          0,
+                        ),
+                      )}
+                    </span>
+                  </div>
+                </>
+              )}
+            </div>
+          </TabsContent>
+
+          {/* VARIABLES */}
+          <TabsContent value="variables" className="mt-0">
+            <div
+              style={{
+                padding: "12px 16px",
+                display: "flex",
+                flexDirection: "column",
+                gap: 8,
+              }}
+            >
+              {variables.length === 0 && (
+                <div
+                  style={{
+                    textAlign: "center",
+                    padding: "48px 0",
+                    color: "var(--fg-3)",
+                    fontFamily: "var(--font-sans)",
+                    fontSize: 14,
+                  }}
+                >
+                  Sin gastos variables. Usá el + para agregar.
+                </div>
+              )}
+              {variables.map((v) => (
+                <VariableItem
+                  key={v.id}
+                  v={v}
+                  getPersonInitials={getPersonInitials}
+                  getPerson={getPerson}
+                />
+              ))}
+            </div>
+          </TabsContent>
+        </div>
+      </Tabs>
 
       {flow.step === "idle" && (
         <Fab

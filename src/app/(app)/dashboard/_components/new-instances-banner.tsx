@@ -1,3 +1,7 @@
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { X } from "lucide-react";
+
 export function NewInstancesBanner({
   count,
   onDismiss,
@@ -8,41 +12,24 @@ export function NewInstancesBanner({
   if (count === 0) return null;
   const plural = count > 1;
   return (
-    <div
-      style={{
-        background: "var(--status-success-subtle)",
-        borderRadius: 12,
-        padding: "10px 14px",
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-      }}
-    >
-      <span
-        style={{
-          fontSize: 13,
-          color: "var(--status-success)",
-          fontFamily: "var(--font-sans)",
-          fontWeight: 500,
-        }}
+    <Alert className="mb-3 flex items-center justify-between gap-2 border-(--status-success-subtle) bg-(--status-success-subtle) py-2.5">
+      <AlertDescription
+        style={{ color: "var(--status-success)" }}
+        className="text-[13px] font-medium"
       >
         ✓ {count} gasto{plural ? "s" : ""} fijo{plural ? "s" : ""} generado
         {plural ? "s" : ""} para este mes
-      </span>
-      <button
+      </AlertDescription>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="size-6 shrink-0"
+        style={{ color: "var(--status-success)" }}
         onClick={onDismiss}
-        style={{
-          background: "none",
-          border: "none",
-          cursor: "pointer",
-          color: "var(--status-success)",
-          fontSize: 16,
-          padding: 2,
-        }}
         aria-label="Cerrar"
       >
-        ×
-      </button>
-    </div>
+        <X className="size-4" />
+      </Button>
+    </Alert>
   );
 }

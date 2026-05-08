@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
-import { Avatar } from "@/components/shared/avatar";
+import { PersonAvatar as Avatar } from "@/components/shared/avatar";
 import {
   useCoupleMember,
   useCoupleMemberProfiles,

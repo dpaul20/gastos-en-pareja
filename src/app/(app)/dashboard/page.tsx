@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { addMonths, subMonths } from "date-fns";
 import { MonthHeader } from "@/components/shared/month-header";
+import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 import { formatMonth, getMonthDate, formatARS } from "@/lib/utils";
 import {
@@ -179,23 +180,10 @@ export default function DashboardPage() {
       />
 
       {loadingMember || loadingData ? (
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "48px 0",
-          }}
-        >
-          <div
-            style={{
-              fontSize: 14,
-              color: "var(--fg-3)",
-              fontFamily: "var(--font-sans)",
-            }}
-          >
-            Cargando...
-          </div>
+        <div className="flex flex-col gap-3 p-4 lg:p-6">
+          <Skeleton className="h-32 w-full rounded-xl" />
+          <Skeleton className="h-40 w-full rounded-xl" />
+          <Skeleton className="h-24 w-full rounded-xl" />
         </div>
       ) : (
         <div className="p-4 pb-0 lg:p-6 lg:pb-0">

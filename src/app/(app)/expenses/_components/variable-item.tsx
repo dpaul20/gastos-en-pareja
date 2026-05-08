@@ -1,4 +1,5 @@
-import { Avatar } from "@/components/shared/avatar";
+import { PersonAvatar } from "@/components/shared/avatar";
+import { Card, CardContent } from "@/components/ui/card";
 import { formatARS } from "@/lib/utils";
 import { useMonthlyData } from "@/lib/queries/use-monthly-data";
 
@@ -15,55 +16,32 @@ export function VariableItem({
   readonly getPerson: (userId: string) => "a" | "b";
 }) {
   return (
-    <div
-      style={{
-        background: "var(--bg-elevated)",
-        borderRadius: 14,
-        padding: "14px 16px",
-        border: "1px solid var(--border-subtle)",
-        boxShadow: "var(--shadow-sm)",
-        display: "flex",
-        alignItems: "center",
-        gap: 12,
-      }}
-    >
-      <Avatar
-        initials={getPersonInitials(v.user_id)}
-        person={getPerson(v.user_id)}
-        size="md"
-      />
-      <div style={{ flex: 1 }}>
+    <Card>
+      <CardContent className="flex items-center gap-3 p-[14px_16px]">
+        <PersonAvatar
+          initials={getPersonInitials(v.user_id)}
+          person={getPerson(v.user_id)}
+          size="md"
+        />
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 14, fontWeight: 500, color: "var(--fg-1)" }}>
+            {v.description}
+          </div>
+          <div style={{ fontSize: 12, color: "var(--fg-3)", marginTop: 2 }}>
+            {v.date}
+          </div>
+        </div>
         <div
           style={{
-            fontSize: 14,
-            fontWeight: 500,
+            fontFamily: "var(--font-mono)",
+            fontSize: 15,
+            fontWeight: 600,
             color: "var(--fg-1)",
-            fontFamily: "var(--font-sans)",
           }}
         >
-          {v.description}
+          {formatARS(v.amount)}
         </div>
-        <div
-          style={{
-            fontSize: 12,
-            color: "var(--fg-3)",
-            marginTop: 2,
-            fontFamily: "var(--font-sans)",
-          }}
-        >
-          {v.date}
-        </div>
-      </div>
-      <div
-        style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: 15,
-          fontWeight: 600,
-          color: "var(--fg-1)",
-        }}
-      >
-        {formatARS(v.amount)}
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }
