@@ -226,6 +226,7 @@ test.describe("Expenses — creación de gasto variable", () => {
 test.describe("Cerrar sesión", () => {
   test("redirige a /login y ya no se puede acceder a rutas protegidas", async ({
     authenticatedPage: page,
+    browser,
   }) => {
     await page.goto("/settings");
     // El botón "Cerrar sesión" debe existir como botón accesible
@@ -240,5 +241,20 @@ test.describe("Cerrar sesión", () => {
     // Una ruta protegida ya no es accesible con esta sesión
     await page.goto("/dashboard");
     await expect(page).toHaveURL(/\/login/);
+
+    // Restore auth.json — sign-out revokes the session server-side, which
+    // would break subsequent tests that load the same storage state.
+    const freshCtx = await browser.newContext({
+      baseURL: "http://localhost:3000",
+    });
+    const freshPage = await freshCtx.newPage();
+    const res = await freshPage.request.post("/api/test/sign-in", {
+      headers: { "Content-Type": "application/json" },
+      data: { email: "test@gastospareja.local", password: "Test1234!" },
+    });
+    if (res.ok()) {
+      await freshCtx.storageState({ path: "e2e/auth.json" });
+    }
+    await freshCtx.close();
   });
 });

@@ -94,6 +94,11 @@ test.describe("Income carry-over — sugerencia del mes anterior", () => {
     // Save the income
     await page.getByRole("button", { name: "Guardar ingreso" }).click();
 
+    // Wait for the Server Action to complete — button returns to non-loading state
+    await expect(
+      page.getByRole("button", { name: "Guardar ingreso" }),
+    ).toBeEnabled({ timeout: 8_000 });
+
     // Banner should disappear now that current month has income
     await expect(page.getByText(/Igual al mes pasado/i)).not.toBeVisible({
       timeout: 8_000,
