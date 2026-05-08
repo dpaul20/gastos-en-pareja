@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.9.0](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.8.0...gastos-en-pareja-v1.9.0) (2026-05-08)
+
+
+### ✨ Features
+
+* **dashboard:** add UpcomingDuesWidget for service due dates ([e7c5029](https://github.com/dpaul20/gastos-en-pareja/commit/e7c5029dbfd3ce263bd9019167270d1c6137a078))
+* **expenses:** add TypeSelectorSheet, credit_card on cuotas, and income carry-over ([be4add3](https://github.com/dpaul20/gastos-en-pareja/commit/be4add328beab5c366259914a97244fc8a410a23))
+* **expenses:** rename Fijos→Servicios and Variables→Compras ([81c5ef9](https://github.com/dpaul20/gastos-en-pareja/commit/81c5ef9282abd99833f0ab7779a7e3b387aeafc3))
+* **ux:** UX redesign — Servicios/Cuotas/Compras, dashboard dues, and amount override ([45215ca](https://github.com/dpaul20/gastos-en-pareja/commit/45215ca81397ca2e09eb82a123286ba367593da4))
+
+
+### 🐛 Bug Fixes
+
+* **e2e:** restore auth after sign-out and fix race condition in income test ([605eac3](https://github.com/dpaul20/gastos-en-pareja/commit/605eac343f87c9b644bb8e4058bd50f6a68409f8))
+* **e2e:** use data-testid on TypeSelectorSheet options to avoid text ambiguity ([3511e1e](https://github.com/dpaul20/gastos-en-pareja/commit/3511e1ebd1f303179a96bbf9b3e3e4a9f10d0375))
+* **fijo:** add per-month amount_override with effectiveFixedAmount helper ([4559bcf](https://github.com/dpaul20/gastos-en-pareja/commit/4559bcfac189e0469833433aebe7f50db6b552a1))
+
 ## [1.8.0](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.7.0...gastos-en-pareja-v1.8.0) (2026-05-06)
 
 
