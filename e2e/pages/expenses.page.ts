@@ -63,12 +63,12 @@ export class ExpensesPage {
     await typeSelector.waitFor({ state: "visible" });
 
     if (this._activeTab === "Compras") {
-      await typeSelector.getByText("Compra").click();
+      await this.page.getByTestId("type-option-compra").click();
     } else if (this._activeTab === "Cuotas") {
-      await typeSelector.getByText("Cuota").click();
+      await this.page.getByTestId("type-option-cuota").click();
     } else {
       // Servicios — needs extra step through ServiceListSheet
-      await typeSelector.getByText("Servicio").click();
+      await this.page.getByTestId("type-option-servicio").click();
       await this.serviceListSheet().waitFor({ state: "visible" });
       await this.page.getByText("+ Nuevo servicio").click();
     }

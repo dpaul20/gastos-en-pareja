@@ -83,24 +83,28 @@ function TypeSelectorSheet({
     label: string;
     description: string;
     icon: string;
+    testId: string;
     onSelect: () => void;
   }> = [
     {
       label: "Servicio",
       description: "Agua, luz, expensas y servicios que se repiten cada mes",
       icon: "🏠",
+      testId: "type-option-servicio",
       onSelect: onSelectServicio,
     },
     {
       label: "Cuota",
       description: "Compra en cuotas, ¿en qué tarjeta?",
       icon: "💳",
+      testId: "type-option-cuota",
       onSelect: onSelectCuota,
     },
     {
       label: "Compra",
       description: "Super, verdulería, gastos puntuales",
       icon: "🛒",
+      testId: "type-option-compra",
       onSelect: onSelectCompra,
     },
   ];
@@ -145,6 +149,7 @@ function TypeSelectorSheet({
           {options.map((opt) => (
             <button
               key={opt.label}
+              data-testid={opt.testId}
               onClick={opt.onSelect}
               style={{
                 display: "flex",
