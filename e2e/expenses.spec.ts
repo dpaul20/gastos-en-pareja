@@ -10,6 +10,32 @@ import { ExpensesPage } from "./pages/expenses.page";
  * - Verifica estado real (valores de campos, texto en lista) no sólo visibilidad
  */
 
+// ── Tab descriptions ───────────────────────────────────────────────────────────
+
+test.describe("Tab descriptions", () => {
+  test("muestra la descripción correcta para cada tab", async ({
+    authenticatedPage: page,
+  }) => {
+    const expenses = new ExpensesPage(page);
+    await expenses.goto();
+
+    const descriptions: Record<string, string> = {
+      Cuotas: "Compras en cuotas o planes de pago recurrentes",
+      Servicios: "Agua, luz, expensas y servicios que se repiten cada mes",
+      Compras: "Gastos puntuales del mes, compartidos o personales",
+    };
+
+    for (const [tabName, expectedText] of Object.entries(descriptions)) {
+      await test.step(`tab ${tabName}`, async () => {
+        await expenses.selectTab(tabName as "Cuotas" | "Servicios" | "Compras");
+        await expect(page.getByTestId("tab-description")).toContainText(
+          expectedText,
+        );
+      });
+    }
+  });
+});
+
 // ── Tab structure ──────────────────────────────────────────────────────────────
 
 test.describe("Segmented control", () => {
@@ -20,8 +46,8 @@ test.describe("Segmented control", () => {
     await expenses.goto();
 
     const tabFieldMap: Record<string, string[]> = {
-      Variables: ["Descripción", "Monto", "Fecha (AAAA-MM-DD)"],
-      Fijos: ["Descripción", "Monto", "Día de vencimiento (1-31)"],
+      Compras: ["Descripción", "Monto", "Fecha (AAAA-MM-DD)"],
+      Servicios: ["Descripción", "Monto", "Día de vencimiento (1-31)"],
       Cuotas: [
         "Descripción",
         "Monto total",
@@ -32,7 +58,7 @@ test.describe("Segmented control", () => {
 
     for (const [tabName, expectedFields] of Object.entries(tabFieldMap)) {
       await test.step(`tab ${tabName}`, async () => {
-        await expenses.selectTab(tabName as "Variables" | "Fijos" | "Cuotas");
+        await expenses.selectTab(tabName as "Compras" | "Servicios" | "Cuotas");
         await expenses.openAddSheet();
 
         for (const fieldLabel of expectedFields) {
@@ -75,7 +101,7 @@ test.describe("Dialog — ciclo de vida", () => {
   }) => {
     const expenses = new ExpensesPage(page);
     await expenses.goto();
-    await expenses.selectTab("Variables");
+    await expenses.selectTab("Compras");
     await expenses.openAddSheet();
 
     await expect(expenses.dialogField("Descripción")).toHaveValue("");
@@ -104,7 +130,7 @@ test.describe("Gasto variable — creación exitosa", () => {
     test.slow();
     const expenses = new ExpensesPage(page);
     await expenses.goto();
-    await expenses.selectTab("Variables");
+    await expenses.selectTab("Compras");
     await expenses.openAddSheet();
 
     await expenses.dialogField("Descripción").fill(DESCRIPCION);
@@ -139,14 +165,14 @@ test.describe("Gasto fijo — creación exitosa", () => {
       .like("description", "E2E-fijo-%");
   });
 
-  test("gasto fijo aparece en la lista de Fijos", async ({
+  test("gasto fijo aparece en la lista de Servicios", async ({
     authenticatedPage: page,
   }) => {
     // El flujo completo (nav + form fill + server action + refetch) necesita más tiempo en CI
     test.slow();
     const expenses = new ExpensesPage(page);
     await expenses.goto();
-    await expenses.selectTab("Fijos");
+    await expenses.selectTab("Servicios");
     await expenses.openAddSheet();
 
     await expenses.dialogField("Descripción").fill(DESCRIPCION);
@@ -158,6 +184,206 @@ test.describe("Gasto fijo — creación exitosa", () => {
     await expect(expenses.dialog()).not.toBeVisible({ timeout: 5_000 });
     await expect(page.getByText(DESCRIPCION).first()).toBeVisible({
       timeout: 15_000,
+    });
+  });
+});
+
+// ── Gasto Fijo — Edición de monto ────────────────────────────────────────────
+
+test.describe("Gasto fijo — edición de monto inline", () => {
+  const DESCRIPCION = `E2E-fijo-edit-${Date.now()}`;
+  const MONTO_TEMPLATE = 8000;
+
+  test.afterEach(async ({ adminClient, coupleId }) => {
+    await adminClient
+      .from("fixed_expense_templates")
+      .delete()
+      .eq("couple_id", coupleId)
+      .like("description", "E2E-fijo-edit-%");
+  });
+
+  test("editar el monto de un fijo persiste el override y actualiza el total", async ({
+    authenticatedPage: page,
+  }) => {
+    test.slow();
+    const expenses = new ExpensesPage(page);
+    await expenses.goto();
+    await expenses.selectTab("Servicios");
+    await expenses.openAddSheet();
+
+    await expenses.dialogField("Descripción").fill(DESCRIPCION);
+    await expenses.dialogField("Monto").fill(String(MONTO_TEMPLATE));
+    await expenses.dialogField("Día de vencimiento (1-31)").fill("15");
+    await expenses.saveButton().click();
+
+    await expect(expenses.dialog()).not.toBeVisible({ timeout: 5_000 });
+    // Wait for the item to appear in the list
+    await expect(page.getByText(DESCRIPCION).first()).toBeVisible({
+      timeout: 15_000,
+    });
+
+    // Tap the amount button to enter edit mode
+    const amountButton = page.getByTitle("Editar monto").first();
+    await amountButton.click();
+
+    // Fill the override amount
+    const input = page.locator('input[type="number"]').first();
+    await expect(input).toBeVisible({ timeout: 3_000 });
+    await input.fill("12000");
+
+    // Save with ✓ button
+    await page.getByTitle("Guardar").first().click();
+
+    // After save: override amount should be visible and "editado" pill should appear
+    await expect(page.getByText("editado").first()).toBeVisible({
+      timeout: 10_000,
+    });
+    await expect(page.getByText("$12.000").first()).toBeVisible({
+      timeout: 5_000,
+    });
+  });
+});
+
+test.describe("Gasto fijo — restablecer monto al default", () => {
+  const DESCRIPCION = `E2E-fijo-edit-reset-${Date.now()}`;
+  const MONTO_TEMPLATE = 5000;
+
+  test.afterEach(async ({ adminClient, coupleId }) => {
+    await adminClient
+      .from("fixed_expense_templates")
+      .delete()
+      .eq("couple_id", coupleId)
+      .like("description", "E2E-fijo-edit-reset-%");
+  });
+
+  test("restablecer override vuelve al monto del template y quita la pill", async ({
+    adminClient,
+    coupleId,
+    authenticatedPage: page,
+  }) => {
+    test.slow();
+
+    // Create template via UI first
+    const expenses = new ExpensesPage(page);
+    await expenses.goto();
+    await expenses.selectTab("Servicios");
+    await expenses.openAddSheet();
+
+    await expenses.dialogField("Descripción").fill(DESCRIPCION);
+    await expenses.dialogField("Monto").fill(String(MONTO_TEMPLATE));
+    await expenses.dialogField("Día de vencimiento (1-31)").fill("20");
+    await expenses.saveButton().click();
+
+    await expect(expenses.dialog()).not.toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText(DESCRIPCION).first()).toBeVisible({
+      timeout: 15_000,
+    });
+
+    // Set override via DB directly
+    const { data: instance } = await adminClient
+      .from("fixed_expense_instances")
+      .select("id")
+      .eq("couple_id", coupleId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single();
+
+    if (instance) {
+      await adminClient
+        .from("fixed_expense_instances")
+        .update({ amount_override: 9999 })
+        .eq("id", instance.id);
+    }
+
+    // Reload to see the override state
+    await page.reload();
+    await expenses.selectTab("Servicios");
+
+    // "editado" pill should be visible
+    await expect(page.getByText("editado").first()).toBeVisible({
+      timeout: 10_000,
+    });
+
+    // Click reset button (↻)
+    await page
+      .getByTitle(/Restablecer/)
+      .first()
+      .click();
+
+    // After reset: "editado" pill should disappear
+    await expect(page.getByText("editado")).not.toBeVisible({
+      timeout: 10_000,
+    });
+  });
+});
+
+test.describe("Gasto fijo — total del footer refleja overrides", () => {
+  const DESC_A = `E2E-fijo-edit-footer-a-${Date.now()}`;
+  const DESC_B = `E2E-fijo-edit-footer-b-${Date.now()}`;
+
+  test.afterEach(async ({ adminClient, coupleId }) => {
+    await adminClient
+      .from("fixed_expense_templates")
+      .delete()
+      .eq("couple_id", coupleId)
+      .like("description", "E2E-fijo-edit-footer-%");
+  });
+
+  test("el total servicios refleja override en lugar del monto del template", async ({
+    adminClient,
+    coupleId,
+    authenticatedPage: page,
+  }) => {
+    test.slow();
+
+    const expenses = new ExpensesPage(page);
+
+    // Create two fixed expense templates via UI
+    for (const [desc, amount, due] of [
+      [DESC_A, "10000", "5"],
+      [DESC_B, "20000", "10"],
+    ] as [string, string, string][]) {
+      await expenses.goto();
+      await expenses.selectTab("Servicios");
+      await expenses.openAddSheet();
+      await expenses.dialogField("Descripción").fill(desc);
+      await expenses.dialogField("Monto").fill(amount);
+      await expenses.dialogField("Día de vencimiento (1-31)").fill(due);
+      await expenses.saveButton().click();
+      await expect(expenses.dialog()).not.toBeVisible({ timeout: 5_000 });
+    }
+
+    // Override the first instance: change 10000 → 30000
+    const { data: instances } = await adminClient
+      .from("fixed_expense_instances")
+      .select("id, fixed_expense_templates(description)")
+      .eq("couple_id", coupleId);
+
+    const instanceA = instances?.find(
+      (i) =>
+        (i.fixed_expense_templates as { description: string })?.description ===
+        DESC_A,
+    );
+
+    if (instanceA) {
+      await adminClient
+        .from("fixed_expense_instances")
+        .update({ amount_override: 30000 })
+        .eq("id", instanceA.id);
+    }
+
+    // Reload and check footer: should show 30000 + 20000 = 50000
+    await page.reload();
+    await expenses.selectTab("Servicios");
+
+    await page.waitForLoadState("networkidle", { timeout: 10_000 });
+
+    // The footer total should reflect override (50000) not template (30000)
+    await expect(page.getByText("Total servicios")).toBeVisible({
+      timeout: 10_000,
+    });
+    await expect(page.getByText("$50.000").first()).toBeVisible({
+      timeout: 5_000,
     });
   });
 });
@@ -182,7 +408,7 @@ test.describe("Manejo de errores de red", () => {
     // La página debe cargar aunque falle una query específica —
     // no debe mostrar una pantalla de error total
     await page.goto("/expenses");
-    await expect(expenses.tabButton("Variables")).toBeVisible({
+    await expect(expenses.tabButton("Compras")).toBeVisible({
       timeout: 10_000,
     });
   });
