@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useState, useMemo } from "react";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import type { UseFormRegisterReturn } from "react-hook-form";
@@ -15,6 +15,9 @@ import {
 import { CategoryPicker } from "@/components/shared/category-picker";
 import { useCategories } from "@/lib/queries/use-monthly-data";
 import type { Tab } from "@/lib/queries/use-expense-save";
+import { TAB_LABEL } from "./segmented-control";
+import { computeMonthlyInstallment } from "@/lib/utils/installments";
+import { formatARS } from "@/lib/utils";
 
 // ── SCHEMAS ───────────────────────────────────────────────────────────────────
 const cuotasSchema = z.object({
@@ -22,6 +25,7 @@ const cuotasSchema = z.object({
   total_amount: z.string().min(1, "Requerido"),
   installments: z.string().min(1, "Requerido"),
   first_payment_date: z.string().optional(),
+  credit_card: z.string().trim().max(40).optional(),
 });
 
 const fijosSchema = z.object({
@@ -42,13 +46,6 @@ type Fields = Partial<
     z.infer<typeof variablesSchema>
 >;
 
-const schemas: Record<Tab, z.ZodTypeAny> = {
-  cuotas: cuotasSchema,
-  fijos: fijosSchema,
-  variables: variablesSchema,
-};
-
-// ── SUB-COMPONENTS ────────────────────────────────────────────────────────────
 const labelCss: React.CSSProperties = {
   display: "block",
   fontSize: 13,
@@ -64,6 +61,14 @@ const errorCss: React.CSSProperties = {
   marginTop: 4,
   fontFamily: "var(--font-sans)",
 };
+
+const schemas: Record<Tab, z.ZodTypeAny> = {
+  cuotas: cuotasSchema,
+  fijos: fijosSchema,
+  variables: variablesSchema,
+};
+
+// ── SUB-COMPONENTS ────────────────────────────────────────────────────────────
 
 // Monetary input: DS pattern — wrapper div + $ prefix + borderless inner input
 function MoneyField({
@@ -200,9 +205,21 @@ export function AddSheet({
 
   const {
     register,
+    control,
     handleSubmit,
     formState: { errors },
   } = useForm<Fields>({ resolver: zodResolver(schemas[tab]) });
+
+  // Live monthly installment calculation (cuotas tab only)
+  const totalAmountRaw = useWatch({ control, name: "total_amount" });
+  const installmentsRaw = useWatch({ control, name: "installments" });
+  const monthlyAmount = useMemo(() => {
+    const total = Number.parseFloat(totalAmountRaw?.replace(",", ".") ?? "");
+    const count = Number.parseInt(installmentsRaw ?? "", 10);
+    if (!Number.isFinite(total) || !Number.isFinite(count) || count <= 0)
+      return null;
+    return computeMonthlyInstallment(total, count);
+  }, [totalAmountRaw, installmentsRaw]);
 
   function onSubmit(data: Fields) {
     onSave(
@@ -248,7 +265,7 @@ export function AddSheet({
               textTransform: "capitalize",
             }}
           >
-            Nuevo gasto — {tab}
+            Nuevo gasto — {TAB_LABEL[tab]}
           </SheetTitle>
         </SheetHeader>
 
@@ -274,6 +291,25 @@ export function AddSheet({
                 registration={register("installments")}
                 error={errors.installments?.message}
                 mono
+              />
+              {monthlyAmount !== null && (
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: "var(--fg-2)",
+                    marginTop: -10,
+                    marginBottom: 14,
+                    fontFamily: "var(--font-sans)",
+                  }}
+                >
+                  ≈ {formatARS(monthlyAmount)} / mes
+                </div>
+              )}
+              <InputField
+                label="Tarjeta (opcional)"
+                id="field-credit-card"
+                registration={register("credit_card")}
+                error={errors.credit_card?.message}
               />
               <InputField
                 label="Primer pago (AAAA-MM-DD)"

@@ -10,12 +10,12 @@ import {
 } from "@/lib/queries/use-monthly-data";
 import {
   usePendingInvitation,
-  useCurrentIncome,
+  useIncomeWithCarry,
   useMyPendingInvitations,
 } from "@/lib/queries/settings";
 import { upsertIncome } from "@/lib/actions/expenses";
 import { sendInvitation, createCouple } from "@/lib/actions/couple";
-import { getMonthDate, getInitials } from "@/lib/utils";
+import { getMonthDate, getInitials, formatARS } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { NoCoupleCard } from "./_components/no-couple-card";
 
@@ -27,10 +27,12 @@ export default function SettingsPage() {
   const { data: pendingInvitation } = usePendingInvitation(
     member?.couple_id ?? null,
   );
-  const { data: currentIncome } = useCurrentIncome(
+  const { data: incomeData } = useIncomeWithCarry(
     member?.couple_id ?? null,
     member?.user_id ?? null,
   );
+  const currentIncome = incomeData?.current ?? null;
+  const previousIncome = incomeData?.previous ?? null;
   const { data: myPendingInvitations = [] } = useMyPendingInvitations();
   const queryClient = useQueryClient();
   const router = useRouter();
@@ -50,6 +52,7 @@ export default function SettingsPage() {
     if (!amount || !member) return;
     startTransition(async () => {
       await upsertIncome(amount, getMonthDate());
+      queryClient.invalidateQueries({ queryKey: ["income-with-carry"] });
       queryClient.invalidateQueries({ queryKey: ["monthly-data"] });
     });
   }
@@ -421,6 +424,31 @@ export default function SettingsPage() {
                   />
                 </div>
               </div>
+              {previousIncome !== null &&
+                currentIncome === null &&
+                !myIncome && (
+                  <div style={{ padding: "0 16px 10px" }}>
+                    <button
+                      type="button"
+                      onClick={() => setMyIncome(String(previousIncome.amount))}
+                      style={{
+                        width: "100%",
+                        background: "var(--accent-subtle)",
+                        color: "var(--accent)",
+                        border: "1px solid var(--border-subtle)",
+                        borderRadius: 10,
+                        padding: "9px 12px",
+                        fontSize: 13,
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        fontFamily: "var(--font-sans)",
+                        textAlign: "left",
+                      }}
+                    >
+                      Igual al mes pasado — {formatARS(previousIncome.amount)}
+                    </button>
+                  </div>
+                )}
               <div style={{ padding: "0 16px 14px" }}>
                 <button
                   onClick={handleSaveIncome}
