@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { addMonths, subMonths } from "date-fns";
+import { Card, CardContent } from "@/components/ui/card";
 import { MonthHeader } from "@/components/shared/month-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
@@ -46,40 +47,35 @@ function MonthlyFixedSummary({
     .reduce((sum, i) => sum + effectiveFixedAmount(i), 0);
 
   return (
-    <div
-      style={{
-        background: "var(--bg-elevated)",
-        borderRadius: 16,
-        border: "1px solid var(--border-subtle)",
-        padding: "12px 16px",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        gap: 8,
-      }}
-    >
-      <div style={{ fontSize: 13, color: "var(--fg-2)", fontWeight: 500 }}>
-        {paid} de {total} servicios pagados
-      </div>
-      <div style={{ display: "flex", gap: 12 }}>
-        <span
-          style={{ fontSize: 12, color: "var(--color-teal)", fontWeight: 600 }}
-        >
-          {formatARS(paidAmount)}
-        </span>
-        {pendingAmount > 0 && (
+    <Card>
+      <CardContent className="flex items-center justify-between gap-2 p-3">
+        <div style={{ fontSize: 13, color: "var(--fg-2)", fontWeight: 500 }}>
+          {paid} de {total} servicios pagados
+        </div>
+        <div style={{ display: "flex", gap: 12 }}>
           <span
             style={{
               fontSize: 12,
-              color: "var(--color-coral)",
+              color: "var(--color-teal)",
               fontWeight: 600,
             }}
           >
-            {formatARS(pendingAmount)} pendiente
+            {formatARS(paidAmount)}
           </span>
-        )}
-      </div>
-    </div>
+          {pendingAmount > 0 && (
+            <span
+              style={{
+                fontSize: 12,
+                color: "var(--color-coral)",
+                fontWeight: 600,
+              }}
+            >
+              {formatARS(pendingAmount)} pendiente
+            </span>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
