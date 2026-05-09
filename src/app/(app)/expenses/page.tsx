@@ -733,13 +733,13 @@ export default function ExpensesPage() {
             Gastos
           </h1>
           <div style={{ padding: "0 16px 10px" }}>
-            <TabsList className="w-full">
+            <TabsList className="w-full bg-(--bg-sunken)">
               {(["cuotas", "fijos", "variables"] as Tab[]).map((t) => (
                 <TabsTrigger
                   key={t}
                   value={t}
                   data-testid={TAB_TESTID[t]}
-                  className="flex-1"
+                  className="flex-1 text-(--fg-2) data-[state=active]:bg-(--bg-elevated) data-[state=active]:font-semibold data-[state=active]:text-(--accent) data-[state=active]:shadow-sm"
                 >
                   {TAB_LABEL[t]}
                 </TabsTrigger>

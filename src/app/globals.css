@@ -242,7 +242,7 @@ body {
   --accent-shadcn-foreground: var(--accent);
   --destructive: var(--status-danger);
   --destructive-foreground: var(--fg-inverse);
-  --border: var(--border-default);
+  --border: var(--border-subtle);
   --input: var(--bg-sunken);
   --ring: var(--accent);
   --radius: var(--radius-md);
