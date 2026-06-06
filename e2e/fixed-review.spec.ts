@@ -129,7 +129,6 @@ test.describe("SCEN-04: Confirmar instancia individual", () => {
     await expect(page.getByText(DESC)).toBeVisible({ timeout: 10_000 });
 
     // Find the Confirmar button for this item
-    const item = page.getByText(DESC).locator("..").locator("..");
     const confirmBtn = page.getByRole("button", { name: "Confirmar" }).first();
     await expect(confirmBtn).toBeVisible();
     await confirmBtn.click();
