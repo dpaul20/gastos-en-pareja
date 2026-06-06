@@ -365,12 +365,12 @@ test.describe("Gasto fijo — total del footer refleja overrides", () => {
         DESC_A,
     );
 
-    if (instanceA) {
-      await adminClient
-        .from("fixed_expense_instances")
-        .update({ amount_override: 30000 })
-        .eq("id", instanceA.id);
-    }
+    expect(instanceA, "instance for DESC_A not found — join failed or template insert did not create instance").toBeDefined();
+
+    await adminClient
+      .from("fixed_expense_instances")
+      .update({ amount_override: 30000 })
+      .eq("id", instanceA!.id);
 
     // Reload and check footer: should show 30000 + 20000 = 50000
     await page.reload();
@@ -382,8 +382,8 @@ test.describe("Gasto fijo — total del footer refleja overrides", () => {
     await expect(page.getByText("Total servicios")).toBeVisible({
       timeout: 10_000,
     });
-    await expect(page.getByText("$50.000").first()).toBeVisible({
-      timeout: 5_000,
+    await expect(page.getByTestId("fijos-total")).toHaveText("$50.000", {
+      timeout: 8_000,
     });
   });
 });
