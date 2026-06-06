@@ -102,6 +102,33 @@ test.describe("Login page — estructura y accesibilidad", () => {
   });
 });
 
+// ── Auth — usuario autenticado ────────────────────────────────────────────────
+
+test.describe("Auth — usuario autenticado", () => {
+  test("TC-005: visitar /login redirige a /dashboard", async ({
+    authenticatedPage: page,
+  }) => {
+    await page.goto("/login");
+    await expect(page).toHaveURL(/\/dashboard/, { timeout: 8_000 });
+  });
+
+  test("TC-006: /auth/callback sin código redirige a /login", async ({
+    browser,
+  }) => {
+    // Fresh context — no auth state
+    const context = await browser.newContext({
+      baseURL: "http://localhost:3000",
+    });
+    const page = await context.newPage();
+    try {
+      await page.goto("/auth/callback");
+      await expect(page).toHaveURL(/\/login/, { timeout: 8_000 });
+    } finally {
+      await context.close();
+    }
+  });
+});
+
 // ── Open redirect guard ────────────────────────────────────────────────────────
 
 test.describe("Auth callback — protección de open redirect", () => {
