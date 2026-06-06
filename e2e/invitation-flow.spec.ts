@@ -194,6 +194,224 @@ test.describe("Flujo de invitación — camino feliz", () => {
   });
 });
 
+// ── TC-011 — Token expirado ───────────────────────────────────────────────────
+
+test.describe("Flujo de invitación — token expirado", () => {
+  let expiredToken: string;
+  let tempCoupleId: string;
+
+  test.beforeAll(async () => {
+    const admin = createClient<Database>(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+
+    // Get owner userId
+    const { data: users } = await admin.auth.admin.listUsers();
+    const owner = users?.users.find((u) => u.email === TEST_EMAIL);
+    if (!owner) throw new Error("Owner not found");
+
+    const { data: member } = await admin
+      .from("couple_members")
+      .select("couple_id")
+      .eq("user_id", owner.id)
+      .single();
+    if (!member) throw new Error("Owner has no couple");
+    tempCoupleId = member.couple_id;
+
+    // Insert invitation with expires_at in the past
+    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { data: inv } = await admin
+      .from("invitations")
+      .insert({
+        couple_id: tempCoupleId,
+        inviter_id: owner.id,
+        email: "expired-test@gastospareja.local",
+        expires_at: yesterday,
+      })
+      .select("token")
+      .single();
+    if (!inv) throw new Error("Could not create expired invitation");
+    expiredToken = inv.token;
+  });
+
+  test.afterAll(async () => {
+    const admin = createClient<Database>(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+    if (expiredToken) {
+      await admin.from("invitations").delete().eq("token", expiredToken);
+    }
+  });
+
+  test("TC-011: token expirado muestra mensaje de invitación inválida", async ({
+    browser,
+  }) => {
+    const context = await browser.newContext({
+      baseURL: "http://localhost:3000",
+    });
+    const page = await context.newPage();
+
+    try {
+      // Sign in as test user
+      await page.request.post("/api/test/sign-in", {
+        headers: { "Content-Type": "application/json" },
+        data: { email: TEST_EMAIL, password: TEST_PASSWORD },
+      });
+
+      await page.goto(`/invite/${expiredToken}`);
+
+      // Must NOT redirect to dashboard
+      await expect(page).not.toHaveURL(/\/dashboard/, { timeout: 5_000 });
+
+      // Must show invalid invitation message
+      await expect(
+        page.getByText("Invitación inválida", { exact: true }),
+      ).toBeVisible({ timeout: 10_000 });
+    } finally {
+      await context.close();
+    }
+  });
+});
+
+// ── TC-012 — Idempotencia al aceptar dos veces ─────────────────────────────────
+
+test.describe("Flujo de invitación — idempotencia", () => {
+  const IDEMPOTENT_INVITEE_EMAIL = "e2e-idempotent-invitee@gastospareja.local";
+  // NOSONAR: test-only password, never used in production
+  const IDEMPOTENT_INVITEE_PASSWORD = "Test1234!"; // NOSONAR
+  let idempotentInviteeUserId: string;
+  let idempotentToken: string;
+  let idempotentCoupleId: string;
+
+  test.beforeAll(async () => {
+    const admin = createClient<Database>(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+
+    const { data: users } = await admin.auth.admin.listUsers();
+    const owner = users?.users.find((u) => u.email === TEST_EMAIL);
+    if (!owner) throw new Error("Owner not found");
+
+    const { data: member } = await admin
+      .from("couple_members")
+      .select("couple_id")
+      .eq("user_id", owner.id)
+      .single();
+    if (!member) throw new Error("Owner has no couple");
+    idempotentCoupleId = member.couple_id;
+
+    // Clean up previous invitee if exists
+    const existingInvitee = users?.users.find(
+      (u) => u.email === IDEMPOTENT_INVITEE_EMAIL,
+    );
+    if (existingInvitee) {
+      await admin
+        .from("couple_members")
+        .delete()
+        .eq("user_id", existingInvitee.id);
+      await admin.auth.admin.deleteUser(existingInvitee.id);
+    }
+
+    // Create invitee
+    const { data: newInvitee } = await admin.auth.admin.createUser({
+      email: IDEMPOTENT_INVITEE_EMAIL,
+      password: IDEMPOTENT_INVITEE_PASSWORD,
+      email_confirm: true,
+    });
+    if (!newInvitee?.user) throw new Error("Could not create invitee");
+    idempotentInviteeUserId = newInvitee.user.id;
+
+    // Create valid invitation
+    const expiresAt = new Date(
+      Date.now() + 7 * 24 * 60 * 60 * 1000,
+    ).toISOString();
+    const { data: inv } = await admin
+      .from("invitations")
+      .insert({
+        couple_id: idempotentCoupleId,
+        inviter_id: owner.id,
+        email: IDEMPOTENT_INVITEE_EMAIL,
+        expires_at: expiresAt,
+      })
+      .select("token")
+      .single();
+    if (!inv) throw new Error("Could not create invitation");
+    idempotentToken = inv.token;
+  });
+
+  test.afterAll(async () => {
+    const admin = createClient<Database>(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+    if (idempotentInviteeUserId) {
+      await admin
+        .from("couple_members")
+        .delete()
+        .eq("user_id", idempotentInviteeUserId);
+      await admin.auth.admin.deleteUser(idempotentInviteeUserId);
+    }
+    if (idempotentToken) {
+      await admin.from("invitations").delete().eq("token", idempotentToken);
+    }
+  });
+
+  test("TC-012: aceptar la invitación dos veces es idempotente — un solo couple_member", async ({
+    browser,
+    adminClient,
+  }) => {
+    // First acceptance
+    const context1 = await browser.newContext({
+      baseURL: "http://localhost:3000",
+    });
+    const page1 = await context1.newPage();
+
+    await page1.request.post("/api/test/sign-in", {
+      headers: { "Content-Type": "application/json" },
+      data: {
+        email: IDEMPOTENT_INVITEE_EMAIL,
+        password: IDEMPOTENT_INVITEE_PASSWORD,
+      },
+    });
+
+    await page1.goto(`/invite/${idempotentToken}`);
+    await expect(page1).toHaveURL(/\/dashboard/, { timeout: 15_000 });
+    await context1.close();
+
+    // Second attempt — same token, same user (new context with fresh sign-in)
+    const context2 = await browser.newContext({
+      baseURL: "http://localhost:3000",
+    });
+    const page2 = await context2.newPage();
+
+    await page2.request.post("/api/test/sign-in", {
+      headers: { "Content-Type": "application/json" },
+      data: {
+        email: IDEMPOTENT_INVITEE_EMAIL,
+        password: IDEMPOTENT_INVITEE_PASSWORD,
+      },
+    });
+
+    try {
+      await page2.goto(`/invite/${idempotentToken}`);
+
+      // Must not crash — either dashboard or already-accepted state
+      await expect(page2).not.toHaveURL(/\/500/, { timeout: 8_000 });
+    } finally {
+      await context2.close();
+    }
+
+    // DB must have exactly 1 couple_member row for the invitee
+    const { data: members } = await adminClient
+      .from("couple_members")
+      .select("couple_id")
+      .eq("user_id", idempotentInviteeUserId);
+
+    expect(members?.length).toBe(1);
+  });
+});
+
+// ── Casos adversariales ───────────────────────────────────────────────────────
+
 test.describe("Flujo de invitación — casos adversariales", () => {
   test("usuario ya pertenece a una pareja — no puede aceptar una segunda invitación", async ({
     adminClient,
