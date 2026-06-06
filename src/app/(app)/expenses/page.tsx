@@ -921,6 +921,8 @@ export default function ExpensesPage() {
                         key={fi.id}
                         fi={fi}
                         isLast={i === fijos.length - 1}
+                        getPersonInitials={getPersonInitials}
+                        getPerson={getPerson}
                       />
                     ))}
                   </div>
