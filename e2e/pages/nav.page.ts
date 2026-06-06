@@ -20,8 +20,8 @@ export class BottomNav {
     const isTriggerVisible = await this.trigger.isVisible();
     if (isTriggerVisible) {
       await this.trigger.click();
-      // Wait for sidebar links to appear
-      await this.link("Inicio").waitFor({ state: "visible", timeout: 5_000 });
+      // Wait for sidebar links to appear (Sheet animation can be slow in CI)
+      await this.link("Inicio").waitFor({ state: "visible", timeout: 10_000 });
     }
   }
 

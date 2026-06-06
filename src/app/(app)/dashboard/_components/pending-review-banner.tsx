@@ -5,7 +5,7 @@ export function PendingReviewBanner({ count }: { readonly count: number }) {
   if (count === 0) return null;
   const plural = count > 1;
   return (
-    <Link href="/expenses" style={{ textDecoration: "none" }}>
+    <Link href="/expenses" data-testid="pending-review-link" style={{ textDecoration: "none" }}>
       <Alert
         className="mb-3 flex items-center gap-2 border-(--color-coral) py-2.5"
         style={{

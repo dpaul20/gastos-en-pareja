@@ -367,24 +367,27 @@ test.describe("Gasto fijo — total del footer refleja overrides", () => {
 
     expect(instanceA, "instance for DESC_A not found — join failed or template insert did not create instance").toBeDefined();
 
+    // Record baseline total before override
+    await expenses.goto();
+    await expenses.selectTab("Servicios");
+    await page.waitForLoadState("networkidle", { timeout: 10_000 });
+    await expect(page.getByText("Total servicios")).toBeVisible({ timeout: 10_000 });
+    const baselineText = await page.getByTestId("fijos-total").innerText();
+    const baseline = Number(baselineText.replace(/[^0-9]/g, ""));
+
     await adminClient
       .from("fixed_expense_instances")
       .update({ amount_override: 30000 })
       .eq("id", instanceA!.id);
 
-    // Reload and check footer: should show 30000 + 20000 = 50000
+    // Reload — footer should increase by +20000 (override 30000 replaces template 10000)
     await page.reload();
     await expenses.selectTab("Servicios");
-
     await page.waitForLoadState("networkidle", { timeout: 10_000 });
-
-    // The footer total should reflect override (50000) not template (30000)
-    await expect(page.getByText("Total servicios")).toBeVisible({
-      timeout: 10_000,
-    });
-    await expect(page.getByTestId("fijos-total")).toHaveText("$50.000", {
-      timeout: 8_000,
-    });
+    await expect(page.getByText("Total servicios")).toBeVisible({ timeout: 10_000 });
+    const afterText = await page.getByTestId("fijos-total").innerText();
+    const after = Number(afterText.replace(/[^0-9]/g, ""));
+    expect(after, `footer debería haber aumentado en 20000 (baseline=${baseline})`).toBe(baseline + 20000);
   });
 });
 
