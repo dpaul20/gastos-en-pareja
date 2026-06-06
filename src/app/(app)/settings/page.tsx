@@ -42,6 +42,7 @@ export default function SettingsPage() {
   const [coupleMsg, setCoupleMsg] = useState("");
   const [myIncome, setMyIncome] = useState("");
   const displayIncome = myIncome || String(currentIncome?.amount ?? "");
+  const parsedIncome = Number.parseInt(displayIncome.replaceAll(/\D/g, ""), 10);
 
   const supabase = createClient();
 
@@ -452,7 +453,7 @@ export default function SettingsPage() {
               <div style={{ padding: "0 16px 14px" }}>
                 <button
                   onClick={handleSaveIncome}
-                  disabled={isPending || !myIncome}
+                  disabled={isPending || !myIncome || parsedIncome <= 0}
                   aria-busy={isPending}
                   style={{
                     width: "100%",
