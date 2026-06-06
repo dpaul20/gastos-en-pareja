@@ -184,7 +184,7 @@ test.describe("SCEN-05: Confirmar todos", () => {
     await confirmAllBtn.click();
 
     // All "Sin confirmar" badges should disappear
-    await expect(page.getByText("Sin confirmar")).not.toBeVisible({
+    await expect(page.getByText("Sin confirmar")).toHaveCount(0, {
       timeout: 8_000,
     });
     // Both items still present

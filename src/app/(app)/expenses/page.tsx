@@ -948,6 +948,7 @@ export default function ExpensesPage() {
                       Total servicios
                     </span>
                     <span
+                      data-testid="fijos-total"
                       style={{
                         fontFamily: "var(--font-mono)",
                         fontSize: 15,
