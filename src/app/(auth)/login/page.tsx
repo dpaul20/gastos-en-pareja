@@ -1,12 +1,36 @@
 "use client";
 
-import { Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+
+const IS_DEV = process.env.NODE_ENV === "development";
 
 function LoginContent() {
   const supabase = createClient();
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const [devEmail, setDevEmail] = useState("");
+  const [devPassword, setDevPassword] = useState("");
+  const [devError, setDevError] = useState<string | null>(null);
+  const [devLoading, setDevLoading] = useState(false);
+
+  async function signInWithEmail(e: React.FormEvent) {
+    e.preventDefault();
+    setDevError(null);
+    setDevLoading(true);
+    const { error } = await supabase.auth.signInWithPassword({
+      email: devEmail,
+      password: devPassword,
+    });
+    setDevLoading(false);
+    if (error) {
+      setDevError(error.message);
+    } else {
+      const next = searchParams.get("next");
+      router.push(next?.startsWith("/") ? next : "/dashboard");
+    }
+  }
 
   async function signInWithGoogle() {
     const next = searchParams.get("next");
@@ -208,6 +232,95 @@ function LoginContent() {
         >
           Al continuar aceptás los términos de uso
         </div>
+
+        {IS_DEV && (
+          <form
+            onSubmit={signInWithEmail}
+            style={{
+              marginTop: 24,
+              padding: "16px",
+              background: "var(--bg-elevated)",
+              border: "1.5px dashed var(--border-default)",
+              borderRadius: 14,
+              display: "flex",
+              flexDirection: "column",
+              gap: 10,
+            }}
+          >
+            <div
+              style={{
+                fontSize: 11,
+                fontWeight: 600,
+                color: "var(--fg-3)",
+                fontFamily: "var(--font-sans)",
+                textTransform: "uppercase",
+                letterSpacing: "0.08em",
+              }}
+            >
+              Dev — seed users
+            </div>
+            <input
+              type="email"
+              placeholder="persona_a@test.local"
+              value={devEmail}
+              onChange={(e) => setDevEmail(e.target.value)}
+              required
+              style={{
+                border: "1px solid var(--border-default)",
+                borderRadius: 10,
+                padding: "10px 12px",
+                fontSize: 14,
+                fontFamily: "var(--font-sans)",
+                background: "var(--bg-sunken)",
+                color: "var(--fg-1)",
+                outline: "none",
+              }}
+            />
+            <input
+              type="password"
+              placeholder="password123"
+              value={devPassword}
+              onChange={(e) => setDevPassword(e.target.value)}
+              required
+              style={{
+                border: "1px solid var(--border-default)",
+                borderRadius: 10,
+                padding: "10px 12px",
+                fontSize: 14,
+                fontFamily: "var(--font-sans)",
+                background: "var(--bg-sunken)",
+                color: "var(--fg-1)",
+                outline: "none",
+              }}
+            />
+            {devError && (
+              <div
+                role="alert"
+                style={{ fontSize: 12, color: "var(--status-danger)", fontFamily: "var(--font-sans)" }}
+              >
+                {devError}
+              </div>
+            )}
+            <button
+              type="submit"
+              disabled={devLoading}
+              style={{
+                background: "var(--accent)",
+                color: "white",
+                border: "none",
+                borderRadius: 10,
+                padding: "10px",
+                fontSize: 14,
+                fontWeight: 600,
+                fontFamily: "var(--font-sans)",
+                cursor: devLoading ? "not-allowed" : "pointer",
+                opacity: devLoading ? 0.7 : 1,
+              }}
+            >
+              {devLoading ? "Entrando…" : "Entrar"}
+            </button>
+          </form>
+        )}
       </div>
     </main>
   );

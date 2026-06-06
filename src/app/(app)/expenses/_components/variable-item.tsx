@@ -27,8 +27,26 @@ export function VariableItem({
           <div style={{ fontSize: 14, fontWeight: 500, color: "var(--fg-1)" }}>
             {v.description}
           </div>
-          <div style={{ fontSize: 12, color: "var(--fg-3)", marginTop: 2 }}>
-            {v.date}
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
+            <span style={{ fontSize: 12, color: "var(--fg-3)" }}>{v.date}</span>
+            {!v.is_shared && (
+              <span
+                style={{
+                  fontSize: 10,
+                  fontWeight: 600,
+                  color: "var(--fg-3)",
+                  background: "var(--bg-sunken)",
+                  border: "1px solid var(--border-subtle)",
+                  borderRadius: 4,
+                  padding: "1px 5px",
+                  fontFamily: "var(--font-sans)",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                }}
+              >
+                Personal
+              </span>
+            )}
           </div>
         </div>
         <div

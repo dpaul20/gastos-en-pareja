@@ -636,7 +636,18 @@ export default function ExpensesPage() {
   const [tab, setTab] = useState<Tab>("cuotas");
   const [flow, setFlow] = useState<FlowState>({ step: "idle" });
   const [filterCategory, setFilterCategory] = useState<string | null>(null);
-  const { save, saveError } = useExpenseSave(tab);
+
+  // Map flow steps to AddSheet tab — must be computed before useExpenseSave
+  const addSheetTab: Tab | null =
+    flow.step === "cuota-form"
+      ? "cuotas"
+      : flow.step === "new-service"
+        ? "fijos"
+        : flow.step === "compra-form"
+          ? "variables"
+          : null;
+
+  const { save, saveError } = useExpenseSave(addSheetTab ?? tab);
 
   function handleTabChange(newTab: Tab) {
     setTab(newTab);
@@ -664,9 +675,11 @@ export default function ExpensesPage() {
     categoryId: string | null,
     autoRenew: boolean,
     requiresMonthlyReview: boolean,
+    isShared: boolean,
+    payerId?: string | null,
   ) {
     setFlow({ step: "idle" });
-    save(fields, categoryId, autoRenew, requiresMonthlyReview);
+    save(fields, categoryId, autoRenew, requiresMonthlyReview, isShared, payerId);
   }
 
   const queryClient = useQueryClient();
@@ -704,16 +717,6 @@ export default function ExpensesPage() {
     flow.step === "edit-service"
       ? (allFijos.find((fi) => fi.id === flow.instanceId) ?? null)
       : null;
-
-  // Map flow steps to AddSheet tab
-  const addSheetTab: Tab | null =
-    flow.step === "cuota-form"
-      ? "cuotas"
-      : flow.step === "new-service"
-        ? "fijos"
-        : flow.step === "compra-form"
-          ? "variables"
-          : null;
 
   return (
     <main
@@ -847,7 +850,12 @@ export default function ExpensesPage() {
                 </div>
               )}
               {cuotas.map((c) => (
-                <CuotaItem key={c.id} c={c} />
+                <CuotaItem
+                  key={c.id}
+                  c={c}
+                  getPersonInitials={getPersonInitials}
+                  getPerson={getPerson}
+                />
               ))}
             </div>
           </TabsContent>
@@ -1041,6 +1049,8 @@ export default function ExpensesPage() {
           onClose={() => setFlow({ step: "idle" })}
           onSave={handleSave}
           saveError={saveError}
+          members={profiles}
+          currentUserId={member?.user_id ?? undefined}
         />
       )}
     </main>

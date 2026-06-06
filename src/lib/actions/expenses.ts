@@ -50,12 +50,25 @@ export async function createInstallmentPurchase(data: {
   category_id?: string;
   auto_renew?: boolean;
   credit_card?: string | null;
+  paid_by_user_id?: string;
 }) {
-  const { supabase, coupleId } = await getCouple();
+  const { supabase, user, coupleId } = await getCouple();
 
+  let payerId = data.paid_by_user_id ?? user.id;
+  if (data.paid_by_user_id && data.paid_by_user_id !== user.id) {
+    const { data: m } = await supabase
+      .from("couple_members")
+      .select("user_id")
+      .eq("couple_id", coupleId)
+      .eq("user_id", data.paid_by_user_id)
+      .maybeSingle();
+    if (!m) payerId = user.id;
+  }
+
+  const { paid_by_user_id: _ignored, ...rest } = data;
   const { error } = await supabase
     .from("installment_purchases")
-    .insert({ ...data, couple_id: coupleId });
+    .insert({ ...rest, couple_id: coupleId, paid_by_user_id: payerId });
 
   if (error) throw new Error("No se pudo guardar la cuota");
 
@@ -91,6 +104,7 @@ export async function incrementPaidInstallments(id: string) {
       first_payment_date: new Date().toISOString().slice(0, 10),
       auto_renew: true,
       category_id: data.category_id,
+      paid_by_user_id: data.paid_by_user_id,
     });
   }
 
@@ -192,10 +206,10 @@ export async function toggleFixedExpenseInstance(
   instanceId: string,
   paid: boolean,
 ) {
-  const { supabase } = await getCouple();
+  const { supabase, user } = await getCouple();
   await supabase
     .from("fixed_expense_instances")
-    .update({ paid })
+    .update({ paid, paid_by_user_id: paid ? user.id : null })
     .eq("id", instanceId);
   revalidatePath("/expenses");
   revalidatePath("/dashboard");
@@ -266,6 +280,7 @@ export async function createVariableExpense(data: {
   amount: number;
   date: string;
   category_id?: string;
+  is_shared?: boolean;
 }) {
   const { supabase, user, coupleId } = await getCouple();
 

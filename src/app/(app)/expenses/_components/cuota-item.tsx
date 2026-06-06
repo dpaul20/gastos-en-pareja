@@ -5,6 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { PersonAvatar } from "@/components/shared/avatar";
 import { formatARS } from "@/lib/utils";
 import { incrementPaidInstallments } from "@/lib/actions/expenses";
 import { useMonthlyData } from "@/lib/queries/use-monthly-data";
@@ -12,7 +13,15 @@ import { useMonthlyData } from "@/lib/queries/use-monthly-data";
 type MonthlyData = NonNullable<ReturnType<typeof useMonthlyData>["data"]>;
 type InstallmentPurchase = MonthlyData["installmentPurchases"][number];
 
-export function CuotaItem({ c }: { readonly c: InstallmentPurchase }) {
+export function CuotaItem({
+  c,
+  getPersonInitials,
+  getPerson,
+}: {
+  readonly c: InstallmentPurchase;
+  readonly getPersonInitials?: (id: string) => string;
+  readonly getPerson?: (id: string) => "a" | "b";
+}) {
   const [, startTransition] = useTransition();
   const queryClient = useQueryClient();
   const isPaid = c.paid_installments >= c.installments;
@@ -34,15 +43,24 @@ export function CuotaItem({ c }: { readonly c: InstallmentPurchase }) {
             </div>
           </div>
           <div className="flex flex-col items-end gap-1">
-            <div
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 15,
-                fontWeight: 600,
-                color: "var(--fg-1)",
-              }}
-            >
-              {formatARS(cuota)}
+            <div className="flex items-center gap-1.5">
+              {c.paid_by_user_id && getPersonInitials && getPerson && (
+                <PersonAvatar
+                  initials={getPersonInitials(c.paid_by_user_id)}
+                  person={getPerson(c.paid_by_user_id)}
+                  size="sm"
+                />
+              )}
+              <div
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 15,
+                  fontWeight: 600,
+                  color: "var(--fg-1)",
+                }}
+              >
+                {formatARS(cuota)}
+              </div>
             </div>
             <div className="flex items-center gap-1.5">
               <Badge variant={isPaid ? "success" : "warning"}>

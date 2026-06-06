@@ -95,9 +95,26 @@ export function calculateMonthlyBalance(params: {
     const percentage =
       totalIncome > 0 ? Number(income.amount) / totalIncome : 0;
     const obligation = percentage * sharedExpensesTotal;
-    const actualPaid = variableExpenses
+    const actualPaidVariable = variableExpenses
       .filter((v) => v.user_id === income.user_id && isSharedExpense(v))
       .reduce((sum, v) => sum + Number(v.amount), 0);
+
+    const actualPaidFixed = fixedExpenseInstances
+      .filter((fi) => fi.paid && fi.paid_by_user_id === income.user_id)
+      .reduce((sum, fi) => sum + effectiveFixedAmount(fi), 0);
+
+    const actualPaidInstallments = installmentPurchases
+      .filter(
+        (p) =>
+          p.paid_by_user_id === income.user_id &&
+          (p.auto_renew || p.paid_installments < p.installments),
+      )
+      .reduce(
+        (sum, p) => sum + Math.round(Number(p.total_amount) / p.installments),
+        0,
+      );
+
+    const actualPaid = actualPaidVariable + actualPaidFixed + actualPaidInstallments;
     const netBalance = actualPaid - obligation;
 
     return {

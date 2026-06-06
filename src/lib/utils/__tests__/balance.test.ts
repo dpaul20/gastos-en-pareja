@@ -36,6 +36,7 @@ const baseInstallments = [
     paid_installments: 19,
     first_payment_date: "2025-09-01",
     created_at: "",
+    paid_by_user_id: null as string | null,
   },
   {
     id: "p2",
@@ -49,6 +50,7 @@ const baseInstallments = [
     paid_installments: 3,
     first_payment_date: "2026-01-01",
     created_at: "",
+    paid_by_user_id: null as string | null,
   },
 ];
 
@@ -132,6 +134,7 @@ describe("calculateMonthlyBalance", () => {
           created_at: "",
           status: "CONFIRMED" as string,
           amount_override: null as number | null,
+          paid_by_user_id: null as string | null,
           fixed_expense_templates: {
             id: "t1",
             couple_id: "c1",
@@ -153,6 +156,7 @@ describe("calculateMonthlyBalance", () => {
           created_at: "",
           status: "CONFIRMED" as string,
           amount_override: null as number | null,
+          paid_by_user_id: null as string | null,
           fixed_expense_templates: {
             id: "t2",
             couple_id: "c1",
@@ -535,6 +539,125 @@ describe("calculateMonthlyBalance", () => {
       // auto_renew: 120.000 / 12 = 10.000; normal: 600.000 / 6 = 100.000; total = 110.000
       expect(result.installmentTotal).toBe(110_000);
     });
+  });
+});
+
+// ── PAYER ATTRIBUTION TESTS ───────────────────────────────────────────────────
+
+describe("calculateMonthlyBalance — payer attribution (payer-attribution)", () => {
+  const template = {
+    id: "t-attr",
+    couple_id: "c1",
+    category_id: null,
+    description: "Luz attr",
+    amount: 60_000,
+    due_day: 15,
+    active: true,
+    created_at: "",
+  };
+
+  function makeFixedInstance(
+    id: string,
+    paid: boolean,
+    paid_by_user_id: string | null,
+    amount = 60_000,
+  ) {
+    return {
+      id,
+      template_id: "t-attr",
+      couple_id: "c1",
+      month: "2026-04-01",
+      paid,
+      paid_by_user_id,
+      created_at: "",
+      amount_override: null as number | null,
+      fixed_expense_templates: { ...template, amount },
+    };
+  }
+
+  function makeInstallment(
+    id: string,
+    paid_by_user_id: string | null,
+    opts: {
+      total_amount?: number;
+      installments?: number;
+      paid_installments?: number;
+      auto_renew?: boolean;
+    } = {},
+  ) {
+    return {
+      id,
+      couple_id: "c1",
+      category_id: null,
+      credit_card: null,
+      description: `Cuota ${id}`,
+      total_amount: opts.total_amount ?? 12_000,
+      installments: opts.installments ?? 12,
+      paid_installments: opts.paid_installments ?? 0,
+      auto_renew: opts.auto_renew ?? false,
+      paid_by_user_id,
+      first_payment_date: "2026-01-01",
+      created_at: "",
+    };
+  }
+
+  const twoIncomes = [
+    { id: "i1", couple_id: "c1", user_id: DEIVY_ID, amount: 1_000_000, month: "2026-04-01", created_at: "" },
+    { id: "i2", couple_id: "c1", user_id: ANNIE_ID, amount: 1_000_000, month: "2026-04-01", created_at: "" },
+  ];
+
+  it("SCEN-01: instancia fija pagada y atribuida a Deivy se acredita en su actualPaid", () => {
+    const fi = makeFixedInstance("fi1", true, DEIVY_ID, 60_000);
+    const result = calculateMonthlyBalance({ incomes: twoIncomes, installmentPurchases: [], fixedExpenseInstances: [fi], variableExpenses: [] });
+    expect(result.balances.find((b) => b.userId === DEIVY_ID)!.actualPaid).toBe(60_000);
+    expect(result.balances.find((b) => b.userId === ANNIE_ID)!.actualPaid).toBe(0);
+  });
+
+  it("SCEN-02: instancia fija pagada sin atribución no se acredita a nadie", () => {
+    const fi = makeFixedInstance("fi2", true, null, 60_000);
+    const result = calculateMonthlyBalance({ incomes: twoIncomes, installmentPurchases: [], fixedExpenseInstances: [fi], variableExpenses: [] });
+    expect(result.balances.find((b) => b.userId === DEIVY_ID)!.actualPaid).toBe(0);
+    expect(result.balances.find((b) => b.userId === ANNIE_ID)!.actualPaid).toBe(0);
+  });
+
+  it("SCEN-03: dos instancias fijas atribuidas a distintas personas se acreditan correctamente", () => {
+    const result = calculateMonthlyBalance({ incomes: twoIncomes, installmentPurchases: [], fixedExpenseInstances: [makeFixedInstance("fi3a", true, DEIVY_ID, 60_000), makeFixedInstance("fi3b", true, ANNIE_ID, 40_000)], variableExpenses: [] });
+    expect(result.balances.find((b) => b.userId === DEIVY_ID)!.actualPaid).toBe(60_000);
+    expect(result.balances.find((b) => b.userId === ANNIE_ID)!.actualPaid).toBe(40_000);
+  });
+
+  it("SCEN-04: cuota activa atribuida a Deivy — acredita round(total/installments)", () => {
+    const p = makeInstallment("p-s4", DEIVY_ID, { total_amount: 12_000, installments: 12, paid_installments: 5 });
+    const result = calculateMonthlyBalance({ incomes: twoIncomes, installmentPurchases: [p], fixedExpenseInstances: [], variableExpenses: [] });
+    expect(result.balances.find((b) => b.userId === DEIVY_ID)!.actualPaid).toBe(1_000);
+    expect(result.balances.find((b) => b.userId === ANNIE_ID)!.actualPaid).toBe(0);
+  });
+
+  it("SCEN-05: cuota sin pagador atribuido no acredita a nadie", () => {
+    const p = makeInstallment("p-s5", null, { total_amount: 12_000, installments: 12, paid_installments: 5 });
+    const result = calculateMonthlyBalance({ incomes: twoIncomes, installmentPurchases: [p], fixedExpenseInstances: [], variableExpenses: [] });
+    expect(result.balances.find((b) => b.userId === DEIVY_ID)!.actualPaid).toBe(0);
+    expect(result.balances.find((b) => b.userId === ANNIE_ID)!.actualPaid).toBe(0);
+  });
+
+  it("SCEN-07: cuota auto_renew completamente pagada pero atribuida sigue acreditando", () => {
+    const p = makeInstallment("p-s7", ANNIE_ID, { total_amount: 120_000, installments: 12, paid_installments: 12, auto_renew: true });
+    const result = calculateMonthlyBalance({ incomes: twoIncomes, installmentPurchases: [p], fixedExpenseInstances: [], variableExpenses: [] });
+    expect(result.balances.find((b) => b.userId === ANNIE_ID)!.actualPaid).toBe(10_000);
+    expect(result.balances.find((b) => b.userId === DEIVY_ID)!.actualPaid).toBe(0);
+  });
+
+  it("mixto: variable + fijo + cuota para Deivy suman correctamente en actualPaid", () => {
+    const variable = { id: "v-mix", couple_id: "c1", category_id: null, user_id: DEIVY_ID, description: "Super", amount: 50_000, is_shared: true, date: "2026-04-10", created_at: "" };
+    const result = calculateMonthlyBalance({ incomes: twoIncomes, installmentPurchases: [makeInstallment("p-mix", DEIVY_ID, { total_amount: 12_000, installments: 12, paid_installments: 3 })], fixedExpenseInstances: [makeFixedInstance("fi-mix", true, DEIVY_ID, 60_000)], variableExpenses: [variable] });
+    expect(result.balances.find((b) => b.userId === DEIVY_ID)!.actualPaid).toBe(111_000);
+  });
+
+  it("regresión: baseInstallments con paid_by_user_id null no cambian actualPaid previo", () => {
+    const result = calculateMonthlyBalance({ incomes: baseIncomes, installmentPurchases: baseInstallments, fixedExpenseInstances: [], variableExpenses: [] });
+    for (const b of result.balances) {
+      expect(b.actualPaid).toBe(0);
+    }
   });
 });
 
