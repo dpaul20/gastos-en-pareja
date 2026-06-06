@@ -91,6 +91,7 @@ export function MonthCard({
 
   return (
     <button
+      data-testid="month-card"
       onClick={onClick}
       style={{
         background: "var(--bg-elevated)",
@@ -167,7 +168,7 @@ export function MonthCard({
       </div>
       <div
         style={{
-          background: "var(--color-neutral-200)",
+          background: "var(--border-default)",
           borderRadius: 99,
           height: 4,
           display: "flex",
