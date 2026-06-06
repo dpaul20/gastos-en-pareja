@@ -69,7 +69,7 @@ export function CuotaItem({ c }: { readonly c: InstallmentPurchase }) {
         </div>
         <div
           style={{
-            background: "var(--color-neutral-200)",
+            background: "var(--border-default)",
             borderRadius: 99,
             height: 5,
             overflow: "hidden",

@@ -30,7 +30,7 @@ export function PersonAvatar({
       <AvatarFallback
         style={{
           background: bg,
-          color: "white",
+          color: "var(--fg-inverse)",
           fontSize: fontSizeStyle[size],
           fontWeight: 700,
         }}
