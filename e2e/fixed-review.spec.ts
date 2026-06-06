@@ -269,7 +269,7 @@ test.describe("SCEN-07: Dashboard banner con instancias PENDING", () => {
       page.getByText(/necesita(n)? confirmación/i),
     ).toBeVisible({ timeout: 12_000 });
     // Banner links to /expenses
-    const bannerLink = page.getByRole("link", { name: /necesita/i });
+    const bannerLink = page.getByTestId("pending-review-link");
     await expect(bannerLink).toHaveAttribute("href", "/expenses");
   });
 });
