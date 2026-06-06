@@ -37,7 +37,7 @@ export function BalanceCard({
       <div
         style={{
           background:
-            "linear-gradient(135deg, rgba(108,92,231,0.07) 0%, rgba(108,92,231,0.02) 100%)",
+            "linear-gradient(135deg, color-mix(in srgb, var(--accent) 7%, transparent) 0%, color-mix(in srgb, var(--accent) 2%, transparent) 100%)",
           padding: "20px 20px 16px",
         }}
       >
@@ -58,6 +58,7 @@ export function BalanceCard({
         {balance.debtAmount > 0 ? (
           <>
             <div
+              data-testid="balance-debt-amount"
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: 38,
@@ -85,6 +86,7 @@ export function BalanceCard({
         ) : (
           <>
             <div
+              data-testid="balance-zero"
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: 38,
@@ -181,7 +183,7 @@ export function BalanceCard({
         </div>
         <div
           style={{
-            background: "var(--color-neutral-200)",
+            background: "var(--border-default)",
             borderRadius: 99,
             height: 6,
             display: "flex",

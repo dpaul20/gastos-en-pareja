@@ -1,6 +1,9 @@
 import { test, expect } from "./fixtures";
 import { BottomNav } from "./pages/nav.page";
 import { ExpensesPage } from "./pages/expenses.page";
+import { createClient } from "@supabase/supabase-js";
+import type { Database } from "../src/types/database";
+import { SUPABASE_URL, SUPABASE_SERVICE_KEY, TEST_EMAIL } from "./config";
 
 /**
  * Golden path E2E — usuario autenticado.
@@ -217,6 +220,222 @@ test.describe("Expenses — creación de gasto variable", () => {
       await expect(expenses.itemByDescription(DESCRIPCION_TEST)).toBeVisible({
         timeout: 15_000,
       });
+    });
+  });
+});
+
+// ── Dashboard — balance proporcional ─────────────────────────────────────────
+
+test.describe("Dashboard — balance proporcional", () => {
+  // We create a temporary partner user to have two incomes in the couple
+  const PARTNER_EMAIL = "e2e-partner-balance@gastospareja.local";
+  // NOSONAR: test-only password, never used in production
+  const PARTNER_PASSWORD = "Test1234!"; // NOSONAR
+  const EXPENSE_DESC = `E2E-balance-math-${Date.now()}`;
+  const currentMonth = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}-01`;
+  let testUserId: string;
+  let partnerUserId: string;
+
+  test.beforeAll(async () => {
+    const admin = createClient<Database>(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+
+    // Find testUser
+    const { data: users } = await admin.auth.admin.listUsers();
+    const testUser = users?.users.find((u) => u.email === TEST_EMAIL);
+    if (!testUser) throw new Error("Test user not found");
+    testUserId = testUser.id;
+
+    // Resolve coupleId for testUser
+    const { data: member } = await admin
+      .from("couple_members")
+      .select("couple_id")
+      .eq("user_id", testUserId)
+      .single();
+    if (!member) throw new Error("Test user has no couple");
+    const coupleId = member.couple_id;
+
+    // Clean up any existing partner from prior runs
+    const existingPartner = users?.users.find((u) => u.email === PARTNER_EMAIL);
+    if (existingPartner) {
+      await admin
+        .from("couple_members")
+        .delete()
+        .eq("user_id", existingPartner.id);
+      await admin.auth.admin.deleteUser(existingPartner.id);
+    }
+
+    // Create partner user
+    const { data: newPartner } = await admin.auth.admin.createUser({
+      email: PARTNER_EMAIL,
+      password: PARTNER_PASSWORD,
+      email_confirm: true,
+    });
+    if (!newPartner?.user) throw new Error("Could not create partner user");
+    partnerUserId = newPartner.user.id;
+
+    // Add partner to the couple
+    await admin.from("couple_members").insert({
+      couple_id: coupleId,
+      user_id: partnerUserId,
+      role: "MEMBER",
+    });
+  });
+
+  test.afterAll(async () => {
+    const admin = createClient<Database>(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+    if (partnerUserId) {
+      await admin.from("couple_members").delete().eq("user_id", partnerUserId);
+      await admin.auth.admin.deleteUser(partnerUserId);
+    }
+  });
+
+  test.afterEach(async ({ adminClient, coupleId }) => {
+    // Clean incomes for both users for current month
+    await adminClient
+      .from("incomes")
+      .delete()
+      .eq("couple_id", coupleId)
+      .eq("month", currentMonth)
+      .in("user_id", [testUserId, partnerUserId].filter(Boolean));
+    // Clean the variable expense
+    await adminClient
+      .from("variable_expenses")
+      .delete()
+      .eq("couple_id", coupleId)
+      .like("description", "E2E-balance-math-%");
+  });
+
+  test("TC-007: balance-debt-amount refleja el split proporcional", async ({
+    adminClient,
+    coupleId,
+    authenticatedPage: page,
+  }) => {
+    test.slow();
+
+    // Seed incomes: testUser 100k, partner 50k
+    await adminClient.from("incomes").upsert(
+      [
+        {
+          couple_id: coupleId,
+          user_id: testUserId,
+          amount: 100_000,
+          month: currentMonth,
+        },
+        {
+          couple_id: coupleId,
+          user_id: partnerUserId,
+          amount: 50_000,
+          month: currentMonth,
+        },
+      ],
+      { onConflict: "couple_id,user_id,month" },
+    );
+
+    // Seed a shared variable expense paid by testUser (30k)
+    // date = today so it falls in current month
+    const today = new Date().toISOString().split("T")[0];
+    await adminClient.from("variable_expenses").insert({
+      couple_id: coupleId,
+      user_id: testUserId,
+      description: EXPENSE_DESC,
+      amount: 30_000,
+      date: today,
+      is_shared: true,
+    });
+
+    await page.goto("/dashboard");
+    await page.waitForLoadState("networkidle", { timeout: 12_000 });
+
+    // balance-debt-amount must be visible
+    const debtEl = page.getByTestId("balance-debt-amount");
+    await expect(debtEl).toBeVisible({ timeout: 10_000 });
+
+    // Verify it shows a non-zero ARS amount (contains "$" and a digit)
+    const text = await debtEl.textContent();
+    expect(text).toMatch(/\$[\d.]+/);
+
+    // The expected debtAmount: partner owes 10000 (10% of 30k shared expense is
+    // partner's obligation minus their paid = 0-10000 = -10000, abs = 10000)
+    // formatARS(10000) = "$10.000"
+    expect(text).toContain("$10.000");
+  });
+});
+
+// ── Dashboard — navegación de mes recarga datos ───────────────────────────────
+
+test.describe("Dashboard — navegación de mes recarga datos", () => {
+  const currentMonth = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}-01`;
+  const prevDate = new Date(
+    new Date().getFullYear(),
+    new Date().getMonth() - 1,
+    1,
+  );
+  const previousMonth = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, "0")}-01`;
+  let testUserId: string;
+
+  test.beforeEach(async ({ adminClient, coupleId }) => {
+    const { data: users } = await adminClient.auth.admin.listUsers();
+    const testUser = users?.users.find((u) => u.email === TEST_EMAIL);
+    if (!testUser) throw new Error("Test user not found");
+    testUserId = testUser.id;
+
+    // Ensure no income for previous month
+    await adminClient
+      .from("incomes")
+      .delete()
+      .eq("couple_id", coupleId)
+      .eq("user_id", testUserId)
+      .eq("month", previousMonth);
+
+    // Seed unique income for current month only
+    await adminClient.from("incomes").upsert(
+      {
+        couple_id: coupleId,
+        user_id: testUserId,
+        amount: 123_456,
+        month: currentMonth,
+      },
+      { onConflict: "couple_id,user_id,month" },
+    );
+  });
+
+  test.afterEach(async ({ adminClient, coupleId }) => {
+    await adminClient
+      .from("incomes")
+      .delete()
+      .eq("couple_id", coupleId)
+      .eq("user_id", testUserId)
+      .in("month", [currentMonth, previousMonth]);
+  });
+
+  test("TC-008: navegar al mes anterior no muestra datos del mes actual", async ({
+    authenticatedPage: page,
+  }) => {
+    test.slow();
+    await page.goto("/dashboard");
+    await page.waitForLoadState("networkidle", { timeout: 12_000 });
+
+    const monthLabel = page.getByTestId("current-month");
+    await monthLabel.waitFor({ state: "visible", timeout: 10_000 });
+    const initialMonth = await monthLabel.textContent();
+
+    // Navigate to previous month
+    await page.getByRole("button", { name: "Mes anterior" }).click();
+    await page.waitForLoadState("networkidle", { timeout: 8_000 });
+
+    // Month label must change
+    await expect(monthLabel).not.toHaveText(initialMonth ?? "", {
+      timeout: 5_000,
+    });
+
+    // The unique amount seeded for current month must NOT appear in previous month
+    // formatARS(123_456) = "$123.456"
+    await expect(page.getByText("$123.456")).not.toBeVisible({
+      timeout: 3_000,
     });
   });
 });
