@@ -388,6 +388,131 @@ test.describe("Gasto fijo — total del footer refleja overrides", () => {
   });
 });
 
+// ── Gasto cuota — CRUD ────────────────────────────────────────────────────────
+
+test.describe("Gasto cuota — creación exitosa", () => {
+  const DESCRIPCION = `E2E-cuota-${Date.now()}`;
+
+  test.afterEach(async ({ adminClient, coupleId }) => {
+    await adminClient
+      .from("installment_purchases")
+      .delete()
+      .eq("couple_id", coupleId)
+      .like("description", "E2E-cuota-%");
+  });
+
+  test("cuota aparece en la lista después de ser creada", async ({
+    authenticatedPage: page,
+  }) => {
+    test.slow();
+    const expenses = new ExpensesPage(page);
+    await expenses.goto();
+    await expenses.selectTab("Cuotas");
+    await expenses.openAddSheet();
+
+    await expenses.dialogField("Descripción").fill(DESCRIPCION);
+    await expenses.dialogField("Monto total").fill("24000");
+    await expenses.dialogField("Cuotas").fill("12");
+    const today = new Date().toISOString().split("T")[0];
+    await expenses.dialogField("Primer pago (AAAA-MM-DD)").fill(today);
+
+    await expenses.saveButton().click();
+
+    await expect(expenses.dialog()).not.toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText(DESCRIPCION).first()).toBeVisible({
+      timeout: 15_000,
+    });
+  });
+});
+
+// ── Gasto variable — validación de formulario ─────────────────────────────────
+
+test.describe("Gasto variable — validación de formulario", () => {
+  test("TC-002: submit vacío muestra error y mantiene el dialog abierto", async ({
+    authenticatedPage: page,
+  }) => {
+    const expenses = new ExpensesPage(page);
+    await expenses.goto();
+    await expenses.selectTab("Compras");
+    await expenses.openAddSheet();
+
+    await expenses.saveButton().click();
+
+    // Dialog must stay open
+    await expect(expenses.dialog()).toBeVisible({ timeout: 3_000 });
+    // At least one validation error should be visible
+    const errorMessages = expenses
+      .dialog()
+      .locator(
+        "[aria-invalid='true'], [role='alert'], .text-destructive, p[class*='error'], span[class*='error']",
+      );
+    await expect(errorMessages.first()).toBeVisible({ timeout: 3_000 });
+  });
+
+  test("TC-003: monto negativo muestra error de validación", async ({
+    authenticatedPage: page,
+  }) => {
+    const expenses = new ExpensesPage(page);
+    await expenses.goto();
+    await expenses.selectTab("Compras");
+    await expenses.openAddSheet();
+
+    await expenses.dialogField("Descripción").fill("Test descripción");
+    await expenses.dialogField("Monto").fill("-100");
+
+    await expenses.saveButton().click();
+
+    // Dialog must stay open
+    await expect(expenses.dialog()).toBeVisible({ timeout: 3_000 });
+    // Error message for amount field
+    const errorMessages = expenses
+      .dialog()
+      .locator(
+        "[aria-invalid='true'], [role='alert'], .text-destructive, p[class*='error'], span[class*='error']",
+      );
+    await expect(errorMessages.first()).toBeVisible({ timeout: 3_000 });
+  });
+});
+
+// ── Cuota auto_renew — permanece en lista ─────────────────────────────────────
+
+test.describe("Cuota auto_renew — permanece en lista aunque esté pagada", () => {
+  const DESCRIPCION = `E2E-auto-renew-${Date.now()}`;
+
+  test.beforeEach(async ({ adminClient, coupleId }) => {
+    const today = new Date().toISOString().split("T")[0];
+    await adminClient.from("installment_purchases").insert({
+      couple_id: coupleId,
+      description: DESCRIPCION,
+      total_amount: 9000,
+      installments: 3,
+      paid_installments: 3,
+      auto_renew: true,
+      first_payment_date: today,
+    });
+  });
+
+  test.afterEach(async ({ adminClient, coupleId }) => {
+    await adminClient
+      .from("installment_purchases")
+      .delete()
+      .eq("couple_id", coupleId)
+      .like("description", "E2E-auto-renew-%");
+  });
+
+  test("auto_renew item visible aunque paid_installments === installments", async ({
+    authenticatedPage: page,
+  }) => {
+    test.slow();
+    const expenses = new ExpensesPage(page);
+    await expenses.goto();
+    // Cuotas is the default tab
+    await expect(page.getByText(DESCRIPCION).first()).toBeVisible({
+      timeout: 15_000,
+    });
+  });
+});
+
 // ── Network failure ────────────────────────────────────────────────────────────
 
 test.describe("Manejo de errores de red", () => {
