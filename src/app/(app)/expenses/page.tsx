@@ -636,7 +636,7 @@ export default function ExpensesPage() {
   const [tab, setTab] = useState<Tab>("cuotas");
   const [flow, setFlow] = useState<FlowState>({ step: "idle" });
   const [filterCategory, setFilterCategory] = useState<string | null>(null);
-  const { save } = useExpenseSave(tab);
+  const { save, saveError } = useExpenseSave(tab);
 
   function handleTabChange(newTab: Tab) {
     setTab(newTab);
@@ -1040,6 +1040,7 @@ export default function ExpensesPage() {
           categories={categories}
           onClose={() => setFlow({ step: "idle" })}
           onSave={handleSave}
+          saveError={saveError}
         />
       )}
     </main>
