@@ -130,6 +130,7 @@ describe("calculateMonthlyBalance", () => {
           month: "2026-04-01",
           paid: true,
           created_at: "",
+          status: "CONFIRMED" as string,
           amount_override: null as number | null,
           fixed_expense_templates: {
             id: "t1",
@@ -139,6 +140,7 @@ describe("calculateMonthlyBalance", () => {
             amount: 500_000,
             due_day: 9,
             active: true,
+            requires_monthly_review: false,
             created_at: "",
           },
         },
@@ -149,6 +151,7 @@ describe("calculateMonthlyBalance", () => {
           month: "2026-04-01",
           paid: false,
           created_at: "",
+          status: "CONFIRMED" as string,
           amount_override: null as number | null,
           fixed_expense_templates: {
             id: "t2",
@@ -158,6 +161,7 @@ describe("calculateMonthlyBalance", () => {
             amount: 68_740,
             due_day: 31,
             active: true,
+            requires_monthly_review: false,
             created_at: "",
           },
         },
@@ -374,6 +378,7 @@ describe("calculateMonthlyBalance", () => {
       amount: 100_000,
       due_day: 15,
       active: true,
+      requires_monthly_review: false,
       created_at: "",
     };
     const baseInstance = {
@@ -383,6 +388,7 @@ describe("calculateMonthlyBalance", () => {
       month: "2026-04-01",
       paid: false,
       created_at: "",
+      status: "CONFIRMED" as string,
       amount_override: null as number | null,
       fixed_expense_templates: baseTemplate,
     };
@@ -541,6 +547,7 @@ describe("effectiveFixedAmount", () => {
     amount: 12_000,
     due_day: 10,
     active: true,
+    requires_monthly_review: false,
     created_at: "",
   };
   const baseInstance = {
@@ -550,6 +557,7 @@ describe("effectiveFixedAmount", () => {
     month: "2026-04-01",
     paid: false,
     created_at: "",
+    status: "CONFIRMED" as string,
     amount_override: null as number | null,
     fixed_expense_templates: baseTemplate,
   };
@@ -571,5 +579,78 @@ describe("effectiveFixedAmount", () => {
       amount_override: "9999.99" as unknown as number | null,
     };
     expect(effectiveFixedAmount(instance)).toBe(9999.99);
+  });
+});
+
+// ── SCEN-01 / SCEN-02: status field does not affect balance math ──────────────
+
+describe("calculateMonthlyBalance — PENDING_CONFIRMATION status (RF-07)", () => {
+  const template = {
+    id: "t1",
+    couple_id: "c1",
+    category_id: null,
+    description: "Luz",
+    amount: 80_000,
+    due_day: 15,
+    active: true,
+    requires_monthly_review: true,
+    created_at: "",
+  };
+
+  const pendingInstance = {
+    id: "fi1",
+    template_id: "t1",
+    couple_id: "c1",
+    month: "2026-04-01",
+    paid: false,
+    created_at: "",
+    status: "PENDING_CONFIRMATION" as string,
+    amount_override: null as number | null,
+    fixed_expense_templates: template,
+  };
+
+  const confirmedInstance = {
+    ...pendingInstance,
+    status: "CONFIRMED" as string,
+  };
+
+  const incomes = [
+    {
+      id: "1",
+      couple_id: "c1",
+      user_id: "user-a",
+      amount: 1_000_000,
+      month: "2026-04-01",
+      created_at: "",
+    },
+  ];
+
+  // SCEN-01: PENDING_CONFIRMATION instance is included in fixed total — same as CONFIRMED
+  it("SCEN-01: instancia PENDING_CONFIRMATION se incluye en el total de gastos fijos", () => {
+    const result = calculateMonthlyBalance({
+      incomes,
+      installmentPurchases: [],
+      fixedExpenseInstances: [pendingInstance],
+      variableExpenses: [],
+    });
+    expect(result.fixedTotal).toBe(80_000);
+  });
+
+  // SCEN-02: CONFIRMED instance produces identical result — non-regression
+  it("SCEN-02: instancia CONFIRMED produce el mismo total que PENDING_CONFIRMATION", () => {
+    const pendingResult = calculateMonthlyBalance({
+      incomes,
+      installmentPurchases: [],
+      fixedExpenseInstances: [pendingInstance],
+      variableExpenses: [],
+    });
+    const confirmedResult = calculateMonthlyBalance({
+      incomes,
+      installmentPurchases: [],
+      fixedExpenseInstances: [confirmedInstance],
+      variableExpenses: [],
+    });
+    expect(pendingResult.fixedTotal).toBe(confirmedResult.fixedTotal);
+    expect(pendingResult.totalExpenses).toBe(confirmedResult.totalExpenses);
   });
 });

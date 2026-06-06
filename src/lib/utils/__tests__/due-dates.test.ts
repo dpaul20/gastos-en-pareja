@@ -24,6 +24,7 @@ function makeTemplate(
     due_day: 10,
     active: true,
     category_id: null,
+    requires_monthly_review: false,
     created_at: "2026-01-01T00:00:00Z",
     ...overrides,
   };
@@ -43,6 +44,7 @@ function makeInstance(
     month: "2026-05-01",
     paid: false,
     amount_override: null,
+    status: "CONFIRMED",
     created_at: "2026-05-01T00:00:00Z",
     ...instanceOverrides,
     fixed_expense_templates: makeTemplate(templateOverrides),

@@ -7,6 +7,31 @@ export type Json =
   | Json[];
 
 export type Database = {
+  graphql_public: {
+    Tables: {
+      [_ in never]: never;
+    };
+    Views: {
+      [_ in never]: never;
+    };
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json;
+          operationName?: string;
+          query?: string;
+          variables?: Json;
+        };
+        Returns: Json;
+      };
+    };
+    Enums: {
+      [_ in never]: never;
+    };
+    CompositeTypes: {
+      [_ in never]: never;
+    };
+  };
   public: {
     Tables: {
       couple_members: {
@@ -105,6 +130,7 @@ export type Database = {
           id: string;
           month: string;
           paid: boolean;
+          status: string;
           template_id: string;
         };
         Insert: {
@@ -114,6 +140,7 @@ export type Database = {
           id?: string;
           month: string;
           paid?: boolean;
+          status?: string;
           template_id: string;
         };
         Update: {
@@ -123,6 +150,7 @@ export type Database = {
           id?: string;
           month?: string;
           paid?: boolean;
+          status?: string;
           template_id?: string;
         };
         Relationships: [
@@ -152,6 +180,7 @@ export type Database = {
           description: string;
           due_day: number;
           id: string;
+          requires_monthly_review: boolean;
         };
         Insert: {
           active?: boolean;
@@ -162,6 +191,7 @@ export type Database = {
           description: string;
           due_day: number;
           id?: string;
+          requires_monthly_review?: boolean;
         };
         Update: {
           active?: boolean;
@@ -172,6 +202,7 @@ export type Database = {
           description?: string;
           due_day?: number;
           id?: string;
+          requires_monthly_review?: boolean;
         };
         Relationships: [
           {
@@ -521,6 +552,9 @@ export type CompositeTypes<
     : never;
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       couple_status: ["PENDING", "ACTIVE"],

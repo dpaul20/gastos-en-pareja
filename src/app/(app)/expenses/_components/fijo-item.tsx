@@ -6,6 +6,7 @@ import { formatARS } from "@/lib/utils";
 import {
   toggleFixedExpenseInstance,
   updateFixedExpenseInstanceAmount,
+  confirmFixedExpenseInstance,
 } from "@/lib/actions/expenses";
 import { effectiveFixedAmount } from "@/lib/utils/balance";
 import { useMonthlyData } from "@/lib/queries/use-monthly-data";
@@ -29,6 +30,14 @@ export function FijoItem({
   const hasOverride = fi.amount_override != null;
   const templateAmount = fi.fixed_expense_templates.amount;
   const activeAmount = effectiveFixedAmount(fi);
+  const isPending = fi.status === "PENDING_CONFIRMATION";
+
+  const confirmMutation = useMutation({
+    mutationFn: (instanceId: string) => confirmFixedExpenseInstance(instanceId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["monthly-data"] });
+    },
+  });
 
   const amountMutation = useMutation({
     mutationFn: ({
@@ -120,6 +129,24 @@ export function FijoItem({
             }}
           >
             editado
+          </span>
+        )}
+        {isPending && (
+          <span
+            style={{
+              display: "inline-block",
+              marginTop: 3,
+              background:
+                "color-mix(in srgb, var(--color-coral) 12%, transparent)",
+              color: "var(--color-coral)",
+              fontSize: 10,
+              fontWeight: 600,
+              borderRadius: 4,
+              padding: "1px 5px",
+              fontFamily: "var(--font-sans)",
+            }}
+          >
+            Sin confirmar
           </span>
         )}
       </div>
@@ -288,6 +315,31 @@ export function FijoItem({
           </div>
         )}
       </div>
+
+      {/* Confirm CTA — only shown when PENDING_CONFIRMATION */}
+      {isPending && (
+        <button
+          onClick={() => confirmMutation.mutate(fi.id)}
+          disabled={confirmMutation.isPending}
+          style={{
+            height: 28,
+            paddingInline: 10,
+            borderRadius: 8,
+            border: `1.5px solid var(--color-coral)`,
+            background:
+              "color-mix(in srgb, var(--color-coral) 10%, transparent)",
+            color: "var(--color-coral)",
+            cursor: confirmMutation.isPending ? "not-allowed" : "pointer",
+            fontSize: 11,
+            fontWeight: 600,
+            fontFamily: "var(--font-sans)",
+            flexShrink: 0,
+            opacity: confirmMutation.isPending ? 0.5 : 1,
+          }}
+        >
+          Confirmar
+        </button>
+      )}
 
       {/* Right: paid toggle */}
       <button

@@ -1,5 +1,7 @@
 import type { Database } from "@/types/database";
 
+export type FixedInstanceStatus = "PENDING_CONFIRMATION" | "CONFIRMED";
+
 type Income = Database["public"]["Tables"]["incomes"]["Row"];
 type InstallmentPurchase =
   Database["public"]["Tables"]["installment_purchases"]["Row"];

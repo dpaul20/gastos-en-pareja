@@ -112,6 +112,7 @@ export async function createFixedExpenseTemplate(data: {
   amount: number;
   due_day: number;
   category_id?: string;
+  requires_monthly_review?: boolean;
 }) {
   const { supabase, coupleId } = await getCouple();
   const { data: template, error } = await supabase
@@ -127,8 +128,62 @@ export async function createFixedExpenseTemplate(data: {
       couple_id: coupleId,
       month,
       paid: false,
+      status: data.requires_monthly_review
+        ? "PENDING_CONFIRMATION"
+        : "CONFIRMED",
     });
   }
+  revalidatePath("/expenses");
+  revalidatePath("/dashboard");
+}
+
+export async function updateFixedExpenseTemplate(
+  templateId: string,
+  data: {
+    requires_monthly_review?: boolean;
+    description?: string;
+    amount?: number;
+    due_day?: number;
+    category_id?: string | null;
+  },
+): Promise<void> {
+  const { supabase } = await getCouple();
+  const { error } = await supabase
+    .from("fixed_expense_templates")
+    .update(data)
+    .eq("id", templateId);
+  if (error) throw new Error("No se pudo actualizar el servicio");
+  revalidatePath("/expenses");
+  revalidatePath("/dashboard");
+}
+
+export async function confirmFixedExpenseInstance(
+  instanceId: string,
+): Promise<void> {
+  const { supabase } = await getCouple();
+  const { error } = await supabase
+    .from("fixed_expense_instances")
+    .update({ status: "CONFIRMED" })
+    .eq("id", instanceId)
+    .eq("status", "PENDING_CONFIRMATION"); // idempotent; no-op if already confirmed
+  if (error) throw new Error("No se pudo confirmar el servicio");
+  revalidatePath("/expenses");
+  revalidatePath("/dashboard");
+}
+
+export async function confirmAllFixedExpenseInstances(
+  coupleId: string,
+  month: string,
+): Promise<void> {
+  const { supabase, coupleId: myCoupleId } = await getCouple();
+  if (coupleId !== myCoupleId) throw new Error("Pareja inválida");
+  const { error } = await supabase
+    .from("fixed_expense_instances")
+    .update({ status: "CONFIRMED" })
+    .eq("couple_id", coupleId)
+    .eq("month", month)
+    .eq("status", "PENDING_CONFIRMATION");
+  if (error) throw new Error("No se pudieron confirmar los servicios");
   revalidatePath("/expenses");
   revalidatePath("/dashboard");
 }
@@ -175,7 +230,7 @@ export async function ensureFixedExpenseInstances(
 
   const { data: templates } = await supabase
     .from("fixed_expense_templates")
-    .select("id")
+    .select("id, requires_monthly_review")
     .eq("couple_id", coupleId)
     .eq("active", true);
 
@@ -195,6 +250,7 @@ export async function ensureFixedExpenseInstances(
       couple_id: coupleId,
       month,
       paid: false,
+      status: t.requires_monthly_review ? "PENDING_CONFIRMATION" : "CONFIRMED",
     }));
 
   if (toCreate.length) {

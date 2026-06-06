@@ -18,6 +18,7 @@ export function useExpenseSave(tab: Tab) {
     fields: Record<string, string>,
     categoryId: string | null,
     autoRenew: boolean,
+    requiresMonthlyReview = false,
   ) {
     startTransition(async () => {
       if (tab === "cuotas") {
@@ -37,6 +38,7 @@ export function useExpenseSave(tab: Tab) {
           amount: Number.parseFloat(fields.amount),
           due_day: Number.parseInt(fields.due_day),
           category_id: categoryId ?? undefined,
+          requires_monthly_review: requiresMonthlyReview || undefined,
         });
       } else {
         await createVariableExpense({

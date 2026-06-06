@@ -204,10 +204,12 @@ export function AddSheet({
     data: Record<string, string>,
     categoryId: string | null,
     autoRenew: boolean,
+    requiresMonthlyReview: boolean,
   ) => void;
 }) {
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [autoRenew, setAutoRenew] = useState(false);
+  const [requiresMonthlyReview, setRequiresMonthlyReview] = useState(false);
 
   const {
     register,
@@ -234,6 +236,7 @@ export function AddSheet({
       ) as Record<string, string>,
       categoryId,
       autoRenew,
+      requiresMonthlyReview,
     );
   }
 
@@ -344,6 +347,60 @@ export function AddSheet({
               error={errors.due_day?.message}
               mono
             />
+          )}
+
+          {tab === "fijos" && (
+            <div
+              style={{
+                marginBottom: 14,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <span
+                style={{
+                  fontSize: 13,
+                  fontWeight: 500,
+                  color: "var(--fg-2)",
+                  fontFamily: "var(--font-sans)",
+                }}
+              >
+                Pedirme confirmación cada mes
+              </span>
+              <button
+                type="button"
+                onClick={() => setRequiresMonthlyReview((v) => !v)}
+                data-testid="toggle-requires-review"
+                style={{
+                  width: 44,
+                  height: 26,
+                  borderRadius: 99,
+                  border: "none",
+                  cursor: "pointer",
+                  background: requiresMonthlyReview
+                    ? "var(--accent)"
+                    : "var(--border-default)",
+                  transition: "background 150ms",
+                  position: "relative",
+                }}
+                aria-label="Pedirme confirmación cada mes"
+                aria-pressed={requiresMonthlyReview}
+              >
+                <div
+                  style={{
+                    width: 20,
+                    height: 20,
+                    borderRadius: 99,
+                    background: "white",
+                    position: "absolute",
+                    top: 3,
+                    left: requiresMonthlyReview ? 21 : 3,
+                    transition: "left 150ms",
+                  }}
+                />
+              </button>
+            </div>
           )}
 
           {tab === "variables" && (
