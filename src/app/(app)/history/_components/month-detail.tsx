@@ -46,6 +46,7 @@ export function MonthDetail({
       >
         <button
           onClick={onBack}
+          aria-label="Volver"
           style={{
             background: "none",
             border: "none",

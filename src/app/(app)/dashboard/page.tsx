@@ -3,7 +3,9 @@
 import { useState, useEffect, useMemo } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { addMonths, subMonths } from "date-fns";
+import { Card, CardContent } from "@/components/ui/card";
 import { MonthHeader } from "@/components/shared/month-header";
+import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 import { formatMonth, getMonthDate, formatARS } from "@/lib/utils";
 import {
@@ -45,40 +47,35 @@ function MonthlyFixedSummary({
     .reduce((sum, i) => sum + effectiveFixedAmount(i), 0);
 
   return (
-    <div
-      style={{
-        background: "var(--bg-elevated)",
-        borderRadius: 16,
-        border: "1px solid var(--border-subtle)",
-        padding: "12px 16px",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        gap: 8,
-      }}
-    >
-      <div style={{ fontSize: 13, color: "var(--fg-2)", fontWeight: 500 }}>
-        {paid} de {total} servicios pagados
-      </div>
-      <div style={{ display: "flex", gap: 12 }}>
-        <span
-          style={{ fontSize: 12, color: "var(--color-teal)", fontWeight: 600 }}
-        >
-          {formatARS(paidAmount)}
-        </span>
-        {pendingAmount > 0 && (
+    <Card>
+      <CardContent className="flex items-center justify-between gap-2 p-3">
+        <div style={{ fontSize: 13, color: "var(--fg-2)", fontWeight: 500 }}>
+          {paid} de {total} servicios pagados
+        </div>
+        <div style={{ display: "flex", gap: 12 }}>
           <span
             style={{
               fontSize: 12,
-              color: "var(--color-coral)",
+              color: "var(--color-teal)",
               fontWeight: 600,
             }}
           >
-            {formatARS(pendingAmount)} pendiente
+            {formatARS(paidAmount)}
           </span>
-        )}
-      </div>
-    </div>
+          {pendingAmount > 0 && (
+            <span
+              style={{
+                fontSize: 12,
+                color: "var(--color-coral)",
+                fontWeight: 600,
+              }}
+            >
+              {formatARS(pendingAmount)} pendiente
+            </span>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -169,12 +166,7 @@ export default function DashboardPage() {
   return (
     <main
       aria-label="Inicio"
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        minHeight: "100%",
-        background: "var(--bg-base)",
-      }}
+      style={{ minHeight: "100%", background: "var(--bg-base)" }}
     >
       <MonthHeader
         month={formatMonth(month)}
@@ -182,95 +174,85 @@ export default function DashboardPage() {
         onNext={() => setCurrentDate((d) => addMonths(d, 1))}
         canGoNext={!isCurrentMonth}
       />
-      <div
-        style={{
-          flex: 1,
-          padding: "16px 16px 0",
-          display: "flex",
-          flexDirection: "column",
-          gap: 12,
-        }}
-      >
-        {loadingMember || loadingData ? (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: "48px 0",
-            }}
-          >
-            <div
-              style={{
-                fontSize: 14,
-                color: "var(--fg-3)",
-                fontFamily: "var(--font-sans)",
-              }}
-            >
-              Cargando...
-            </div>
-          </div>
-        ) : (
-          <>
-            <NewInstancesBanner
-              count={newInstancesBanner}
-              onDismiss={() => setNewInstancesBanner(0)}
-            />
-            {isCurrentMonth && data?.fixedExpenseInstances && coupleId && (
-              <UpcomingDuesWidget
-                instances={
-                  data.fixedExpenseInstances as Parameters<
-                    typeof UpcomingDuesWidget
-                  >[0]["instances"]
-                }
-                coupleId={coupleId}
-                month={month}
-              />
-            )}
-            {balance && (
-              <BalanceCard
-                balance={balance}
-                month={month}
-                myProfile={myProfile}
-                partnerProfile={partnerProfile}
-              />
-            )}
-            {balance && <MonthSummaryCard balance={balance} />}
-            {data?.fixedExpenseInstances &&
-              data.fixedExpenseInstances.length > 0 && (
-                <MonthlyFixedSummary
+
+      {loadingMember || loadingData ? (
+        <div className="flex flex-col gap-3 p-4 lg:p-6">
+          <Skeleton className="h-32 w-full rounded-xl" />
+          <Skeleton className="h-40 w-full rounded-xl" />
+          <Skeleton className="h-24 w-full rounded-xl" />
+        </div>
+      ) : (
+        <div className="p-4 pb-0 lg:p-6 lg:pb-0">
+          <NewInstancesBanner
+            count={newInstancesBanner}
+            onDismiss={() => setNewInstancesBanner(0)}
+          />
+
+          {/* Desktop: 2-col grid | Mobile: single column */}
+          <div className="flex flex-col gap-3 lg:grid lg:grid-cols-2 lg:items-start lg:gap-5">
+            {/* Left column */}
+            <div className="flex flex-col gap-3 lg:gap-4">
+              {isCurrentMonth && data?.fixedExpenseInstances && coupleId && (
+                <UpcomingDuesWidget
                   instances={
                     data.fixedExpenseInstances as Parameters<
-                      typeof effectiveFixedAmount
-                    >[0][]
+                      typeof UpcomingDuesWidget
+                    >[0]["instances"]
                   }
+                  coupleId={coupleId}
+                  month={month}
                 />
               )}
-            <CategoryBreakdownCard breakdown={categoryBreakdown} />
-            <Link
-              href="/expenses"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 8,
-                background: "var(--accent)",
-                borderRadius: 14,
-                padding: "15px 20px",
-                color: "white",
-                fontSize: 15,
-                fontWeight: 600,
-                fontFamily: "var(--font-sans)",
-                textDecoration: "none",
-                boxShadow: "0 4px 16px rgba(108,92,231,0.35)",
-              }}
-            >
-              <span style={{ fontSize: 20, fontWeight: 300 }}>+</span> Agregar
-              gasto
-            </Link>
-          </>
-        )}
-      </div>
+              {balance && (
+                <BalanceCard
+                  balance={balance}
+                  month={month}
+                  myProfile={myProfile}
+                  partnerProfile={partnerProfile}
+                />
+              )}
+              {data?.fixedExpenseInstances &&
+                data.fixedExpenseInstances.length > 0 && (
+                  <MonthlyFixedSummary
+                    instances={
+                      data.fixedExpenseInstances as Parameters<
+                        typeof effectiveFixedAmount
+                      >[0][]
+                    }
+                  />
+                )}
+            </div>
+
+            {/* Right column */}
+            <div className="flex flex-col gap-3 lg:gap-4">
+              {balance && <MonthSummaryCard balance={balance} />}
+              <CategoryBreakdownCard breakdown={categoryBreakdown} />
+              <Link
+                href="/expenses"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  background: "var(--accent)",
+                  borderRadius: 14,
+                  padding: "15px 20px",
+                  color: "white",
+                  fontSize: 15,
+                  fontWeight: 600,
+                  fontFamily: "var(--font-sans)",
+                  textDecoration: "none",
+                  boxShadow: "0 4px 16px rgba(108,92,231,0.35)",
+                  marginBottom: 8,
+                }}
+              >
+                <span style={{ fontSize: 20, fontWeight: 300 }}>+</span> Agregar
+                gasto
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

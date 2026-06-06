@@ -36,7 +36,13 @@ const fijosSchema = z.object({
 
 const variablesSchema = z.object({
   description: z.string().min(1, "Requerido"),
-  amount: z.string().min(1, "Requerido"),
+  amount: z
+    .string()
+    .min(1, "Requerido")
+    .refine(
+      (v) => Number(v.replace(",", ".")) > 0,
+      "El monto debe ser mayor a 0",
+    ),
   date: z.string().optional(),
 });
 

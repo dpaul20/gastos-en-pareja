@@ -6,6 +6,7 @@ import { getUpcomingDues } from "@/lib/utils/due-dates";
 import type { FixedExpenseInstance, UpcomingDue } from "@/lib/utils/due-dates";
 import { effectiveFixedAmount } from "@/lib/utils/balance";
 import { formatARS } from "@/lib/utils";
+import { Card, CardContent } from "@/components/ui/card";
 
 // ── SUB-COMPONENTS ───────────────────────────────────────────────────────────
 
@@ -164,53 +165,46 @@ export function UpcomingDuesWidget({
   const payingId = isPending ? (payingVariables ?? null) : null;
 
   return (
-    <div
-      data-testid="upcoming-dues-widget"
-      style={{
-        background: "var(--bg-elevated)",
-        borderRadius: 20,
-        border: "1px solid var(--border-subtle)",
-        padding: "16px 16px 4px",
-        boxShadow: "var(--shadow-md)",
-      }}
-    >
-      <h3
-        style={{
-          fontSize: 11,
-          fontWeight: 700,
-          color: "var(--fg-2)",
-          textTransform: "uppercase",
-          letterSpacing: "0.05em",
-          marginBottom: 8,
-        }}
-      >
-        Servicios
-      </h3>
+    <Card data-testid="upcoming-dues-widget">
+      <CardContent className="px-4 pt-4 pb-1">
+        <h3
+          style={{
+            fontSize: 11,
+            fontWeight: 700,
+            color: "var(--fg-2)",
+            textTransform: "uppercase",
+            letterSpacing: "0.05em",
+            marginBottom: 8,
+          }}
+        >
+          Servicios
+        </h3>
 
-      <DueSection
-        title="🔴 Vence hoy"
-        titleColor="var(--accent)"
-        items={todayDues}
-        showPayButton
-        onPay={pay}
-        payingId={payingId}
-      />
-      <DueSection
-        title="⚠️ Vencidos"
-        titleColor="var(--color-coral)"
-        items={overdue}
-        showPayButton
-        onPay={pay}
-        payingId={payingId}
-      />
-      <DueSection
-        title="📅 Esta semana"
-        titleColor="var(--fg-2)"
-        items={upcoming}
-        showPayButton={false}
-        onPay={pay}
-        payingId={payingId}
-      />
-    </div>
+        <DueSection
+          title="🔴 Vence hoy"
+          titleColor="var(--accent)"
+          items={todayDues}
+          showPayButton
+          onPay={pay}
+          payingId={payingId}
+        />
+        <DueSection
+          title="⚠️ Vencidos"
+          titleColor="var(--color-coral)"
+          items={overdue}
+          showPayButton
+          onPay={pay}
+          payingId={payingId}
+        />
+        <DueSection
+          title="📅 Esta semana"
+          titleColor="var(--fg-2)"
+          items={upcoming}
+          showPayButton={false}
+          onPay={pay}
+          payingId={payingId}
+        />
+      </CardContent>
+    </Card>
   );
 }

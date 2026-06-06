@@ -86,6 +86,7 @@ export function BottomNav() {
   return (
     <nav
       aria-label="Navegación principal"
+      className="flex items-start lg:hidden"
       style={{
         position: "fixed",
         bottom: 0,
@@ -96,8 +97,6 @@ export function BottomNav() {
         backdropFilter: "blur(20px)",
         WebkitBackdropFilter: "blur(20px)",
         borderTop: "1px solid var(--border-subtle)",
-        display: "flex",
-        alignItems: "flex-start",
         paddingTop: 6,
         zIndex: 100,
         maxWidth: 390,

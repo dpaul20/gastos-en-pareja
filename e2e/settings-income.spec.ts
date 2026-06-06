@@ -141,6 +141,113 @@ test.describe("Income carry-over — sugerencia del mes anterior", () => {
   });
 });
 
+// ── Income — validación de monto ──────────────────────────────────────────────
+
+test.describe("Income — validación de monto", () => {
+  const currentMonth = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}-01`;
+  let testUserId: string;
+
+  test.beforeEach(async ({ adminClient, coupleId }) => {
+    const { data: users } = await adminClient.auth.admin.listUsers();
+    const testUser = users?.users.find((u) => u.email === TEST_EMAIL);
+    if (!testUser) throw new Error("Test user not found");
+    testUserId = testUser.id;
+
+    // Ensure no income for current month before each test
+    await adminClient
+      .from("incomes")
+      .delete()
+      .eq("couple_id", coupleId)
+      .eq("user_id", testUserId)
+      .eq("month", currentMonth);
+  });
+
+  test.afterEach(async ({ adminClient, coupleId }) => {
+    if (testUserId) {
+      await adminClient
+        .from("incomes")
+        .delete()
+        .eq("couple_id", coupleId)
+        .eq("user_id", testUserId)
+        .eq("month", currentMonth);
+    }
+  });
+
+  test("TC-009: monto 0 no guarda el ingreso — botón queda deshabilitado", async ({
+    authenticatedPage: page,
+    adminClient,
+    coupleId,
+  }) => {
+    test.slow();
+    await page.goto("/settings");
+    await page.waitForLoadState("networkidle", { timeout: 12_000 });
+
+    const incomeInput = page.getByPlaceholder("0");
+    await incomeInput.fill("0");
+
+    const saveBtn = page.getByRole("button", { name: "Guardar ingreso" });
+
+    // Button must be disabled when amount is 0
+    await expect(saveBtn).toBeDisabled({ timeout: 3_000 });
+
+    // Verify no income row was created
+    const { data } = await adminClient
+      .from("incomes")
+      .select("amount")
+      .eq("couple_id", coupleId)
+      .eq("user_id", testUserId)
+      .eq("month", currentMonth);
+
+    expect(data?.length ?? 0).toBe(0);
+  });
+
+  test("TC-010: actualizar ingreso sobreescribe el registro existente", async ({
+    authenticatedPage: page,
+    adminClient,
+    coupleId,
+  }) => {
+    test.slow();
+
+    // Seed current-month income of 100_000
+    await adminClient.from("incomes").upsert(
+      {
+        couple_id: coupleId,
+        user_id: testUserId,
+        amount: 100_000,
+        month: currentMonth,
+      },
+      { onConflict: "couple_id,user_id,month" },
+    );
+
+    await page.goto("/settings");
+    await page.waitForLoadState("networkidle", { timeout: 12_000 });
+
+    // Input should pre-fill with 100000
+    const incomeInput = page.getByPlaceholder("0");
+    await expect(incomeInput).toHaveValue("100000", { timeout: 5_000 });
+
+    // Change to 200000
+    await incomeInput.fill("200000");
+
+    const saveBtn = page.getByRole("button", { name: "Guardar ingreso" });
+    await saveBtn.click();
+
+    // Wait for the Server Action to complete
+    await expect(saveBtn).toBeEnabled({ timeout: 8_000 });
+
+    // Verify exactly one row with amount 200000
+    const { data } = await adminClient
+      .from("incomes")
+      .select("amount")
+      .eq("couple_id", coupleId)
+      .eq("user_id", testUserId)
+      .eq("month", currentMonth);
+
+    expect(data?.length).toBe(1);
+    expect(Number(data?.[0]?.amount)).toBe(200_000);
+  });
+});
+
 // ── Sin ingreso previo ────────────────────────────────────────────────────────
 
 test.describe("Income — sin ingreso previo", () => {

@@ -168,7 +168,7 @@ export function FijoItem({
                   borderRadius: 8,
                   border: "none",
                   background: "var(--accent)",
-                  color: "#fff",
+                  color: "var(--accent-foreground)",
                   cursor: amountMutation.isPending ? "not-allowed" : "pointer",
                   display: "flex",
                   alignItems: "center",
