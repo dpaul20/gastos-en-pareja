@@ -326,7 +326,7 @@ test.describe("SCEN-08: Toggle en create-form persiste el flag", () => {
     // Enable the "Pedirme confirmación cada mes" toggle
     const toggle = page.getByTestId("toggle-requires-review");
     await toggle.click();
-    await expect(toggle).toHaveAttribute("aria-pressed", "true");
+    await expect(toggle).toHaveAttribute("aria-checked", "true");
 
     // Save
     await page.getByRole("button", { name: "Guardar" }).click();

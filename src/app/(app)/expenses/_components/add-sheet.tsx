@@ -6,6 +6,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import type { UseFormRegisterReturn } from "react-hook-form";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import {
   Sheet,
   SheetContent,
@@ -18,7 +20,7 @@ import { useCategories } from "@/lib/queries/use-monthly-data";
 import type { Tab } from "@/lib/queries/use-expense-save";
 import { TAB_LABEL } from "./segmented-control";
 import { computeMonthlyInstallment } from "@/lib/utils/installments";
-import { formatARS, getInitials } from "@/lib/utils";
+import { cn, formatARS, getInitials } from "@/lib/utils";
 
 // ── SCHEMAS ───────────────────────────────────────────────────────────────────
 
@@ -145,20 +147,17 @@ function MoneyField({
         >
           $
         </span>
-        <input
+        <Input
           id={id}
           {...registration}
           inputMode="numeric"
           placeholder="0"
+          className={cn(
+            "flex-1 border-none bg-transparent shadow-none outline-none focus-visible:ring-0",
+            "font-mono font-semibold text-base",
+          )}
           style={{
-            flex: 1,
-            border: "none",
-            background: "transparent",
             padding: "10px 12px 10px 4px",
-            fontSize: 16,
-            fontFamily: "var(--font-mono)",
-            fontWeight: 600,
-            outline: "none",
             color: "var(--fg-1)",
           }}
         />
@@ -193,22 +192,18 @@ function InputField({
       <label htmlFor={id} style={labelCss}>
         {label}
       </label>
-      <input
+      <Input
         id={id}
         {...registration}
         type={type}
+        className={cn(
+          "w-full rounded-xl px-3.5 py-3 text-[15px]",
+          mono && "font-mono font-semibold",
+        )}
         style={{
-          width: "100%",
           border: "1.5px solid var(--border-default)",
-          borderRadius: 12,
-          padding: "12px 14px",
-          fontSize: 15,
-          fontFamily: mono ? "var(--font-mono)" : "var(--font-sans)",
-          fontWeight: mono ? 600 : undefined,
-          outline: "none",
           background: "var(--bg-elevated)",
           color: "var(--fg-1)",
-          boxSizing: "border-box",
         }}
       />
       {error && (
@@ -411,38 +406,12 @@ export function AddSheet({
               >
                 Pedirme confirmación cada mes
               </span>
-              <button
-                type="button"
-                onClick={() => setRequiresMonthlyReview((v) => !v)}
+              <Switch
+                checked={requiresMonthlyReview}
+                onCheckedChange={setRequiresMonthlyReview}
                 data-testid="toggle-requires-review"
-                style={{
-                  width: 44,
-                  height: 26,
-                  borderRadius: 99,
-                  border: "none",
-                  cursor: "pointer",
-                  background: requiresMonthlyReview
-                    ? "var(--accent)"
-                    : "var(--border-default)",
-                  transition: "background 150ms",
-                  position: "relative",
-                }}
                 aria-label="Pedirme confirmación cada mes"
-                aria-pressed={requiresMonthlyReview}
-              >
-                <div
-                  style={{
-                    width: 20,
-                    height: 20,
-                    borderRadius: 99,
-                    background: "white",
-                    position: "absolute",
-                    top: 3,
-                    left: requiresMonthlyReview ? 21 : 3,
-                    transition: "left 150ms",
-                  }}
-                />
-              </button>
+              />
             </div>
           )}
 
@@ -489,37 +458,12 @@ export function AddSheet({
                     : "No afecta el balance entre los dos"}
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => setIsShared((v) => !v)}
+              <Switch
+                checked={isShared}
+                onCheckedChange={setIsShared}
                 data-testid="toggle-is-shared"
-                style={{
-                  width: 44,
-                  height: 26,
-                  borderRadius: 99,
-                  border: "none",
-                  cursor: "pointer",
-                  background: isShared ? "var(--accent)" : "var(--border-default)",
-                  transition: "background 150ms",
-                  position: "relative",
-                  flexShrink: 0,
-                }}
-                aria-label={isShared ? "Gasto compartido" : "Gasto personal"}
-                aria-pressed={isShared}
-              >
-                <div
-                  style={{
-                    width: 20,
-                    height: 20,
-                    borderRadius: 99,
-                    background: "white",
-                    position: "absolute",
-                    top: 3,
-                    left: isShared ? 21 : 3,
-                    transition: "left 150ms",
-                  }}
-                />
-              </button>
+                aria-label="Gasto compartido"
+              />
             </div>
           )}
 
@@ -609,36 +553,11 @@ export function AddSheet({
               >
                 Renovar automáticamente
               </span>
-              <button
-                type="button"
-                onClick={() => setAutoRenew((a) => !a)}
-                style={{
-                  width: 44,
-                  height: 26,
-                  borderRadius: 99,
-                  border: "none",
-                  cursor: "pointer",
-                  background: autoRenew
-                    ? "var(--accent)"
-                    : "var(--border-default)",
-                  transition: "background 150ms",
-                  position: "relative",
-                }}
-                aria-label="Auto-renovar"
-              >
-                <div
-                  style={{
-                    width: 20,
-                    height: 20,
-                    borderRadius: 99,
-                    background: "white",
-                    position: "absolute",
-                    top: 3,
-                    left: autoRenew ? 21 : 3,
-                    transition: "left 150ms",
-                  }}
-                />
-              </button>
+              <Switch
+                checked={autoRenew}
+                onCheckedChange={setAutoRenew}
+                aria-label="Renovación automática"
+              />
             </div>
           )}
 

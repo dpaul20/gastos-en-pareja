@@ -3,7 +3,10 @@
 import { useState, useTransition } from "react";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { PersonAvatar } from "@/components/shared/avatar";
-import { formatARS } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { cn, formatARS } from "@/lib/utils";
 import {
   toggleFixedExpenseInstance,
   updateFixedExpenseInstanceAmount,
@@ -168,7 +171,7 @@ export function FijoItem({
             }}
           >
             <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-              <input
+              <Input
                 type="number"
                 value={draft}
                 autoFocus
@@ -177,6 +180,7 @@ export function FijoItem({
                   if (e.key === "Enter") handleSave();
                   if (e.key === "Escape") handleCancel();
                 }}
+                className={cn("font-mono font-semibold")}
                 style={{
                   width: 110,
                   padding: "4px 8px",
@@ -184,37 +188,33 @@ export function FijoItem({
                   borderRadius: 8,
                   background: "var(--bg-sunken)",
                   color: "var(--fg-1)",
-                  fontFamily: "var(--font-mono)",
                   fontSize: 13,
-                  fontWeight: 600,
-                  outline: "none",
                 }}
               />
-              <button
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={handleSave}
                 disabled={amountMutation.isPending}
                 title="Guardar"
+                aria-label="Guardar monto"
                 style={{
                   width: 28,
                   height: 28,
                   borderRadius: 8,
-                  border: "none",
                   background: "var(--accent)",
                   color: "var(--accent-foreground)",
-                  cursor: amountMutation.isPending ? "not-allowed" : "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 14,
                   flexShrink: 0,
                   opacity: amountMutation.isPending ? 0.6 : 1,
                 }}
               >
-                ✓
-              </button>
-              <button
+                <span aria-hidden="true">✓</span>
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={handleCancel}
-                title="Cancelar"
+                aria-label="Cancelar edición"
                 style={{
                   width: 28,
                   height: 28,
@@ -222,19 +222,15 @@ export function FijoItem({
                   border: "1px solid var(--border-subtle)",
                   background: "var(--bg-sunken)",
                   color: "var(--fg-2)",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 14,
                   flexShrink: 0,
                 }}
               >
-                ×
-              </button>
+                <span aria-hidden="true">×</span>
+              </Button>
             </div>
             {mutationError && (
               <div
+                role="alert"
                 style={{
                   fontSize: 11,
                   color: "var(--status-danger)",
@@ -263,40 +259,34 @@ export function FijoItem({
                 />
               )}
               {hasOverride && (
-                <button
+                <Button
+                  variant="ghost"
+                  size="icon"
                   onClick={handleReset}
                   disabled={amountMutation.isPending}
+                  aria-label="Restablecer monto"
                   title={`Restablecer (${formatARS(templateAmount)})`}
                   style={{
-                    background: "none",
-                    border: "none",
-                    cursor: amountMutation.isPending
-                      ? "not-allowed"
-                      : "pointer",
-                    color: "var(--fg-3)",
-                    fontSize: 14,
                     padding: "2px 4px",
                     borderRadius: 4,
-                    display: "flex",
-                    alignItems: "center",
+                    color: "var(--fg-3)",
+                    fontSize: 14,
                     opacity: amountMutation.isPending ? 0.5 : 1,
                   }}
                 >
-                  ↻
-                </button>
+                  <span aria-hidden="true">↻</span>
+                </Button>
               )}
-              <button
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={handleStartEdit}
                 title="Editar monto"
+                aria-label="Editar monto"
                 style={{
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
                   padding: "0 4px",
                   minWidth: 44,
                   minHeight: 44,
-                  display: "flex",
-                  alignItems: "center",
                   justifyContent: "flex-end",
                 }}
               >
@@ -310,7 +300,7 @@ export function FijoItem({
                 >
                   {formatARS(activeAmount)}
                 </span>
-              </button>
+              </Button>
             </div>
             {hasOverride && (
               <div
@@ -330,7 +320,8 @@ export function FijoItem({
 
       {/* Confirm CTA — only shown when PENDING_CONFIRMATION */}
       {isPending && (
-        <button
+        <Button
+          variant="ghost"
           onClick={() => confirmMutation.mutate(fi.id)}
           disabled={confirmMutation.isPending}
           style={{
@@ -341,7 +332,6 @@ export function FijoItem({
             background:
               "color-mix(in srgb, var(--color-coral) 10%, transparent)",
             color: "var(--color-coral)",
-            cursor: confirmMutation.isPending ? "not-allowed" : "pointer",
             fontSize: 11,
             fontWeight: 600,
             fontFamily: "var(--font-sans)",
@@ -350,48 +340,21 @@ export function FijoItem({
           }}
         >
           Confirmar
-        </button>
+        </Button>
       )}
 
       {/* Right: paid toggle */}
-      <button
-        onClick={() =>
+      <Switch
+        checked={fi.paid}
+        onCheckedChange={(checked) =>
           startTransition(async () => {
-            await toggleFixedExpenseInstance(fi.id, !fi.paid);
+            await toggleFixedExpenseInstance(fi.id, checked);
             queryClient.invalidateQueries({ queryKey: ["monthly-data"] });
           })
         }
         disabled={editing || amountMutation.isPending}
-        style={{
-          width: 28,
-          height: 28,
-          borderRadius: 99,
-          cursor:
-            editing || amountMutation.isPending ? "not-allowed" : "pointer",
-          background: fi.paid
-            ? "var(--status-success-subtle)"
-            : "var(--bg-sunken)",
-          border: `2px solid ${fi.paid ? "var(--status-success)" : "var(--border-default)"}`,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          flexShrink: 0,
-          opacity: editing || amountMutation.isPending ? 0.5 : 1,
-        }}
-      >
-        {fi.paid && (
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="var(--status-success)"
-            strokeWidth="2.5"
-          >
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
-        )}
-      </button>
+        aria-label={fi.paid ? "Marcar como no pagado" : "Marcar como pagado"}
+      />
     </div>
   );
 }
