@@ -117,6 +117,7 @@ function TypeSelectorSheet({
         data-testid="type-selector-sheet"
         side="bottom"
         showCloseButton={false}
+        aria-describedby={undefined}
         style={{
           maxWidth: 390,
           margin: "0 auto",
@@ -222,6 +223,7 @@ function ServiceListSheet({
         data-testid="service-list-sheet"
         side="bottom"
         showCloseButton={false}
+        aria-describedby={undefined}
         style={{
           maxWidth: 390,
           margin: "0 auto",
@@ -433,6 +435,7 @@ function EditServiceSheet({
         data-testid="edit-service-sheet"
         side="bottom"
         showCloseButton={false}
+        aria-describedby={undefined}
         style={{
           maxWidth: 390,
           margin: "0 auto",

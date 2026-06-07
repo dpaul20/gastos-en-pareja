@@ -288,6 +288,7 @@ export function AddSheet({
         data-testid="add-sheet-dialog"
         side="bottom"
         showCloseButton={false}
+        aria-describedby={undefined}
         style={{
           maxWidth: 390,
           margin: "0 auto",
