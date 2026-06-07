@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { FAB as Fab } from "@/components/shared/fab";
-import { formatARS, getMonthDate, getInitials } from "@/lib/utils";
+import { formatARS, getMonthDate, getInitials, cn } from "@/lib/utils";
 import { effectiveFixedAmount } from "@/lib/utils/balance";
 import {
   useCoupleMember,
@@ -23,6 +23,8 @@ import { VariableItem } from "./_components/variable-item";
 import { TAB_LABEL, TAB_TESTID } from "./_components/segmented-control";
 import { AddSheet } from "./_components/add-sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import {
   Sheet,
   SheetContent,
@@ -53,9 +55,9 @@ function TabDescription({ tab }: { tab: Tab }) {
   return (
     <p
       data-testid="tab-description"
+      className="text-xs"
       style={{
         margin: "6px 20px 0",
-        fontSize: 12,
         lineHeight: 1.4,
         color: "var(--fg-2)",
         fontFamily: "var(--font-sans)",
@@ -118,13 +120,11 @@ function TypeSelectorSheet({
         side="bottom"
         showCloseButton={false}
         aria-describedby={undefined}
+        className="mx-auto w-full sm:max-w-120 rounded-t-[20px] pb-safe-mobile"
         style={{
-          maxWidth: 390,
-          margin: "0 auto",
-          borderRadius: "20px 20px 0 0",
-          padding: "20px 20px max(56px, env(safe-area-inset-bottom, 56px))",
           background: "var(--bg-elevated)",
           border: "none",
+          padding: "20px 20px 0",
         }}
       >
         <div
@@ -136,11 +136,10 @@ function TypeSelectorSheet({
             margin: "0 auto 20px",
           }}
         />
-        <SheetHeader style={{ marginBottom: 20 }}>
+        <SheetHeader className="mb-5">
           <SheetTitle
+            className="text-lg font-bold"
             style={{
-              fontSize: 18,
-              fontWeight: 700,
               color: "var(--fg-1)",
               fontFamily: "var(--font-sans)",
             }}
@@ -148,31 +147,23 @@ function TypeSelectorSheet({
             ¿Qué querés agregar?
           </SheetTitle>
         </SheetHeader>
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <div className="flex flex-col gap-[10px]">
           {options.map((opt) => (
             <button
               key={opt.label}
               data-testid={opt.testId}
               onClick={opt.onSelect}
+              className="flex items-center w-full text-left cursor-pointer rounded-2xl px-4 py-[14px] gap-[14px]"
               style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 14,
                 background: "var(--bg-sunken)",
                 border: "1.5px solid var(--border-subtle)",
-                borderRadius: 16,
-                padding: "14px 16px",
-                cursor: "pointer",
-                textAlign: "left",
-                width: "100%",
               }}
             >
-              <span style={{ fontSize: 28 }}>{opt.icon}</span>
+              <span aria-hidden="true" style={{ fontSize: 28 }}>{opt.icon}</span>
               <div>
                 <div
+                  className="text-[15px] font-semibold"
                   style={{
-                    fontSize: 15,
-                    fontWeight: 600,
                     color: "var(--fg-1)",
                     fontFamily: "var(--font-sans)",
                   }}
@@ -180,8 +171,8 @@ function TypeSelectorSheet({
                   {opt.label}
                 </div>
                 <div
+                  className="text-xs"
                   style={{
-                    fontSize: 12,
                     color: "var(--fg-3)",
                     marginTop: 2,
                     fontFamily: "var(--font-sans)",
@@ -224,13 +215,11 @@ function ServiceListSheet({
         side="bottom"
         showCloseButton={false}
         aria-describedby={undefined}
+        className="mx-auto w-full sm:max-w-120 rounded-t-[20px]"
         style={{
-          maxWidth: 390,
-          margin: "0 auto",
-          borderRadius: "20px 20px 0 0",
-          padding: "20px 20px 40px",
           background: "var(--bg-elevated)",
           border: "none",
+          padding: "20px 20px 40px",
         }}
       >
         <div
@@ -242,11 +231,10 @@ function ServiceListSheet({
             margin: "0 auto 20px",
           }}
         />
-        <SheetHeader style={{ marginBottom: 16 }}>
+        <SheetHeader className="mb-4">
           <SheetTitle
+            className="text-lg font-bold"
             style={{
-              fontSize: 18,
-              fontWeight: 700,
               color: "var(--fg-1)",
               fontFamily: "var(--font-sans)",
             }}
@@ -256,24 +244,20 @@ function ServiceListSheet({
         </SheetHeader>
 
         <div
+          className="flex flex-col rounded-2xl overflow-hidden"
           style={{
-            display: "flex",
-            flexDirection: "column",
             gap: 1,
             background: "var(--bg-sunken)",
-            borderRadius: 14,
             border: "1px solid var(--border-subtle)",
-            overflow: "hidden",
           }}
         >
           {instances.length === 0 && (
             <div
+              className="text-[13px] text-center"
               style={{
                 padding: "20px 16px",
-                fontSize: 13,
                 color: "var(--fg-3)",
                 fontFamily: "var(--font-sans)",
-                textAlign: "center",
               }}
             >
               Sin servicios este mes
@@ -285,25 +269,17 @@ function ServiceListSheet({
               <button
                 key={fi.id}
                 onClick={() => onPickInstance(fi.id)}
+                className="flex items-center justify-between gap-3 px-4 py-3 w-full text-left cursor-pointer"
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: 12,
-                  padding: "12px 16px",
                   background: "var(--bg-elevated)",
                   border: "none",
                   borderBottom: "1px solid var(--border-subtle)",
-                  cursor: "pointer",
-                  textAlign: "left",
-                  width: "100%",
                 }}
               >
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div
+                    className="text-sm font-medium"
                     style={{
-                      fontSize: 14,
-                      fontWeight: 500,
                       color: "var(--fg-1)",
                       fontFamily: "var(--font-sans)",
                       overflow: "hidden",
@@ -314,8 +290,8 @@ function ServiceListSheet({
                     {fi.fixed_expense_templates.description}
                   </div>
                   <div
+                    className="text-xs"
                     style={{
-                      fontSize: 12,
                       color: "var(--fg-3)",
                       fontFamily: "var(--font-mono)",
                       marginTop: 2,
@@ -326,16 +302,12 @@ function ServiceListSheet({
                 </div>
                 {fi.paid && (
                   <span
+                    className="text-xs font-semibold flex-shrink-0 rounded-[6px] px-2 py-[2px]"
                     style={{
-                      fontSize: 11,
-                      fontWeight: 600,
                       color: "var(--color-teal)",
                       background:
                         "color-mix(in srgb, var(--color-teal) 12%, transparent)",
-                      borderRadius: 6,
-                      padding: "2px 8px",
                       fontFamily: "var(--font-sans)",
-                      flexShrink: 0,
                     }}
                   >
                     ✓ Pagado
@@ -348,22 +320,13 @@ function ServiceListSheet({
 
         <button
           onClick={onCreateNew}
+          className="flex items-center justify-center gap-2 mt-3 w-full text-sm font-semibold rounded-2xl cursor-pointer"
           style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 8,
-            marginTop: 12,
-            width: "100%",
             padding: "13px 16px",
             background: "transparent",
             border: "1.5px dashed var(--border-default)",
-            borderRadius: 14,
             color: "var(--accent)",
-            fontSize: 14,
-            fontWeight: 600,
             fontFamily: "var(--font-sans)",
-            cursor: "pointer",
           }}
         >
           + Nuevo servicio
@@ -436,13 +399,11 @@ function EditServiceSheet({
         side="bottom"
         showCloseButton={false}
         aria-describedby={undefined}
+        className="mx-auto w-full sm:max-w-120 rounded-t-[20px]"
         style={{
-          maxWidth: 390,
-          margin: "0 auto",
-          borderRadius: "20px 20px 0 0",
-          padding: "20px 20px 40px",
           background: "var(--bg-elevated)",
           border: "none",
+          padding: "20px 20px 40px",
         }}
       >
         <div
@@ -454,11 +415,10 @@ function EditServiceSheet({
             margin: "0 auto 20px",
           }}
         />
-        <SheetHeader style={{ marginBottom: 16 }}>
+        <SheetHeader className="mb-4">
           <SheetTitle
+            className="text-lg font-bold"
             style={{
-              fontSize: 18,
-              fontWeight: 700,
               color: "var(--fg-1)",
               fontFamily: "var(--font-sans)",
             }}
@@ -468,36 +428,30 @@ function EditServiceSheet({
         </SheetHeader>
 
         {/* Amount edit */}
-        <div style={{ marginBottom: 14 }}>
+        <div className="mb-[14px]">
           <label
             htmlFor="edit-service-amount"
+            className="block text-[13px] font-medium mb-[5px]"
             style={{
-              display: "block",
-              fontSize: 13,
-              fontWeight: 500,
               color: "var(--fg-2)",
-              marginBottom: 5,
               fontFamily: "var(--font-sans)",
             }}
           >
             Monto este mes
           </label>
           <div
+            className="flex items-center overflow-hidden"
             style={{
-              display: "flex",
-              alignItems: "center",
               background: "var(--bg-sunken)",
               borderRadius: 10,
               border: "1.5px solid var(--border-default)",
-              overflow: "hidden",
             }}
           >
             <span
               aria-hidden
+              className="text-base font-semibold"
               style={{
                 padding: "10px 6px 10px 12px",
-                fontSize: 16,
-                fontWeight: 600,
                 color: "var(--fg-3)",
                 fontFamily: "var(--font-mono)",
               }}
@@ -513,14 +467,12 @@ function EditServiceSheet({
                 setFieldError(null);
               }}
               inputMode="numeric"
+              className="flex-1 text-base font-semibold"
               style={{
-                flex: 1,
                 border: "none",
                 background: "transparent",
                 padding: "10px 12px 10px 4px",
-                fontSize: 16,
                 fontFamily: "var(--font-mono)",
-                fontWeight: 600,
                 outline: "none",
                 color: "var(--fg-1)",
               }}
@@ -528,10 +480,9 @@ function EditServiceSheet({
           </div>
           {instance.amount_override == null && (
             <div
+              className="text-xs mt-1"
               style={{
-                fontSize: 12,
                 color: "var(--fg-3)",
-                marginTop: 4,
                 fontFamily: "var(--font-sans)",
               }}
             >
@@ -541,10 +492,9 @@ function EditServiceSheet({
           {fieldError && (
             <div
               role="alert"
+              className="text-xs mt-1"
               style={{
-                fontSize: 12,
                 color: "var(--status-danger)",
-                marginTop: 4,
                 fontFamily: "var(--font-sans)",
               }}
             >
@@ -554,80 +504,35 @@ function EditServiceSheet({
         </div>
 
         {/* Paid toggle */}
-        <div
-          style={{
-            marginBottom: 20,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
+        <div className="mb-5 flex items-center justify-between">
           <span
+            className="text-[13px] font-medium"
             style={{
-              fontSize: 13,
-              fontWeight: 500,
               color: "var(--fg-2)",
               fontFamily: "var(--font-sans)",
             }}
           >
             Ya lo pagué
           </span>
-          <button
-            type="button"
-            onClick={() =>
-              toggleMutation.mutate({ id: instance.id, paid: !instance.paid })
+          <Switch
+            checked={instance.paid}
+            onCheckedChange={(checked) =>
+              toggleMutation.mutate({ id: instance.id, paid: checked })
             }
             disabled={isPending}
-            style={{
-              width: 44,
-              height: 26,
-              borderRadius: 99,
-              border: "none",
-              cursor: isPending ? "not-allowed" : "pointer",
-              background: instance.paid
-                ? "var(--accent)"
-                : "var(--border-default)",
-              transition: "background 150ms",
-              position: "relative",
-              opacity: isPending ? 0.6 : 1,
-            }}
-            aria-label="Ya lo pagué"
-          >
-            <div
-              style={{
-                width: 20,
-                height: 20,
-                borderRadius: 99,
-                background: "white",
-                position: "absolute",
-                top: 3,
-                left: instance.paid ? 21 : 3,
-                transition: "left 150ms",
-              }}
-            />
-          </button>
+            aria-label={instance.paid ? "Marcar como no pagado" : "Marcar como pagado"}
+          />
         </div>
 
-        <button
+        <Button
           type="button"
           onClick={handleSave}
           disabled={isPending}
-          style={{
-            width: "100%",
-            padding: "13px 16px",
-            background: "var(--accent)",
-            color: "white",
-            border: "none",
-            borderRadius: 14,
-            fontSize: 15,
-            fontWeight: 600,
-            fontFamily: "var(--font-sans)",
-            cursor: isPending ? "not-allowed" : "pointer",
-            opacity: isPending ? 0.7 : 1,
-          }}
+          className="w-full"
+          style={{ opacity: isPending ? 0.7 : 1 }}
         >
           Guardar
-        </button>
+        </Button>
       </SheetContent>
     </Sheet>
   );
@@ -723,9 +628,8 @@ export default function ExpensesPage() {
 
   return (
     <main
+      className="flex flex-col"
       style={{
-        display: "flex",
-        flexDirection: "column",
         minHeight: "100%",
         background: "var(--bg-base)",
       }}
@@ -743,18 +647,15 @@ export default function ExpensesPage() {
           }}
         >
           <h1
+            className="text-lg font-bold px-5 pb-[10px] m-0"
             style={{
-              fontSize: 20,
-              fontWeight: 700,
               color: "var(--fg-1)",
               fontFamily: "var(--font-sans)",
-              padding: "0 20px 10px",
-              margin: 0,
             }}
           >
             Gastos
           </h1>
-          <div style={{ padding: "0 16px 10px" }}>
+          <div className="px-4 pb-2.5">
             <TabsList className="w-full bg-(--bg-sunken)">
               {(["cuotas", "fijos", "variables"] as Tab[]).map((t) => (
                 <TabsTrigger
@@ -770,31 +671,19 @@ export default function ExpensesPage() {
           </div>
           <TabDescription tab={tab} />
           {categories.length > 0 && (
-            <div
-              style={{
-                display: "flex",
-                gap: 6,
-                overflowX: "auto",
-                padding: "8px 16px 10px",
-                scrollbarWidth: "none",
-              }}
-            >
+            <div className="flex overflow-x-auto gap-1.5 px-4 pt-2 pb-2.5 [scrollbar-width:none]">
               <button
                 onClick={() => setFilterCategory(null)}
+                className="flex-shrink-0 text-xs font-semibold cursor-pointer rounded-[20px]"
                 style={{
-                  flexShrink: 0,
                   padding: "4px 12px",
-                  borderRadius: 20,
                   border: "1px solid var(--border-subtle)",
                   background:
                     filterCategory === null
                       ? "var(--accent)"
                       : "var(--bg-sunken)",
                   color: filterCategory === null ? "#fff" : "var(--fg-2)",
-                  fontSize: 12,
-                  fontWeight: 600,
                   fontFamily: "var(--font-sans)",
-                  cursor: "pointer",
                 }}
               >
                 Todos
@@ -805,20 +694,16 @@ export default function ExpensesPage() {
                   onClick={() =>
                     setFilterCategory(filterCategory === cat.id ? null : cat.id)
                   }
+                  className="flex-shrink-0 text-xs font-semibold cursor-pointer rounded-[20px]"
                   style={{
-                    flexShrink: 0,
                     padding: "4px 12px",
-                    borderRadius: 20,
                     border: "1px solid var(--border-subtle)",
                     background:
                       filterCategory === cat.id
                         ? "var(--accent)"
                         : "var(--bg-sunken)",
                     color: filterCategory === cat.id ? "#fff" : "var(--fg-2)",
-                    fontSize: 12,
-                    fontWeight: 600,
                     fontFamily: "var(--font-sans)",
-                    cursor: "pointer",
                   }}
                 >
                   {cat.icon} {cat.name}
@@ -831,35 +716,29 @@ export default function ExpensesPage() {
         <div style={{ flex: 1, overflowY: "auto" }}>
           {/* CUOTAS */}
           <TabsContent value="cuotas" className="mt-0">
-            <div
-              style={{
-                padding: "12px 16px",
-                display: "flex",
-                flexDirection: "column",
-                gap: 8,
-              }}
-            >
+            <div className="px-4 py-3 flex flex-col gap-2">
               {cuotas.length === 0 && (
                 <div
+                  className="text-center text-sm py-12"
                   style={{
-                    textAlign: "center",
-                    padding: "48px 0",
                     color: "var(--fg-3)",
                     fontFamily: "var(--font-sans)",
-                    fontSize: 14,
                   }}
                 >
                   Sin compras en cuotas. Usá el + para agregar.
                 </div>
               )}
-              {cuotas.map((c) => (
-                <CuotaItem
-                  key={c.id}
-                  c={c}
-                  getPersonInitials={getPersonInitials}
-                  getPerson={getPerson}
-                />
-              ))}
+              <ul className="list-none m-0 p-0 flex flex-col gap-2">
+                {cuotas.map((c) => (
+                  <li key={c.id}>
+                    <CuotaItem
+                      c={c}
+                      getPersonInitials={getPersonInitials}
+                      getPerson={getPerson}
+                    />
+                  </li>
+                ))}
+              </ul>
             </div>
           </TabsContent>
 
@@ -868,12 +747,11 @@ export default function ExpensesPage() {
             <div style={{ padding: "12px 16px" }}>
               {fijos.length === 0 && (
                 <div
+                  className="text-center text-sm"
                   style={{
-                    textAlign: "center",
                     padding: "48px 0",
                     color: "var(--fg-3)",
                     fontFamily: "var(--font-sans)",
-                    fontSize: 14,
                   }}
                 >
                   Sin gastos fijos. Usá el + para agregar.
@@ -882,68 +760,58 @@ export default function ExpensesPage() {
               {fijos.length > 0 && (
                 <>
                   {pendingFijosCount > 0 && coupleId && (
-                    <div style={{ marginBottom: 8, display: "flex", justifyContent: "flex-end" }}>
-                      <button
+                    <div className="mb-2 flex justify-end">
+                      <Button
                         data-testid="confirm-all-fijos"
                         onClick={() => confirmAllMutation.mutate()}
                         disabled={confirmAllMutation.isPending}
+                        variant="outline"
+                        size="sm"
+                        className={cn(
+                          "text-[13px] font-semibold",
+                          confirmAllMutation.isPending && "opacity-50",
+                        )}
                         style={{
-                          padding: "6px 14px",
-                          borderRadius: 8,
                           border: `1.5px solid var(--color-coral)`,
                           background:
                             "color-mix(in srgb, var(--color-coral) 10%, transparent)",
                           color: "var(--color-coral)",
-                          cursor: confirmAllMutation.isPending
-                            ? "not-allowed"
-                            : "pointer",
-                          fontSize: 13,
-                          fontWeight: 600,
-                          fontFamily: "var(--font-sans)",
-                          opacity: confirmAllMutation.isPending ? 0.5 : 1,
                         }}
                       >
                         Confirmar todos
-                      </button>
+                      </Button>
                     </div>
                   )}
-                  <div
+                  <ul
+                    className="list-none m-0 p-0 flex flex-col rounded-2xl overflow-hidden"
                     style={{
-                      display: "flex",
-                      flexDirection: "column",
                       gap: 1,
                       background: "var(--bg-elevated)",
-                      borderRadius: 14,
                       border: "1px solid var(--border-subtle)",
-                      overflow: "hidden",
                       boxShadow: "var(--shadow-sm)",
                     }}
                   >
                     {fijos.map((fi, i) => (
-                      <FijoItem
-                        key={fi.id}
-                        fi={fi}
-                        isLast={i === fijos.length - 1}
-                        getPersonInitials={getPersonInitials}
-                        getPerson={getPerson}
-                      />
+                      <li key={fi.id}>
+                        <FijoItem
+                          fi={fi}
+                          isLast={i === fijos.length - 1}
+                          getPersonInitials={getPersonInitials}
+                          getPerson={getPerson}
+                        />
+                      </li>
                     ))}
-                  </div>
+                  </ul>
                   <div
+                    className="flex justify-between rounded-xl px-4 py-3 mt-2"
                     style={{
                       background: "var(--bg-elevated)",
-                      borderRadius: 12,
-                      padding: "12px 16px",
-                      marginTop: 8,
-                      display: "flex",
-                      justifyContent: "space-between",
                       border: "1px solid var(--border-subtle)",
                     }}
                   >
                     <span
+                      className="text-[13px] font-semibold"
                       style={{
-                        fontSize: 13,
-                        fontWeight: 600,
                         color: "var(--fg-2)",
                         fontFamily: "var(--font-sans)",
                       }}
@@ -952,10 +820,9 @@ export default function ExpensesPage() {
                     </span>
                     <span
                       data-testid="fijos-total"
+                      className="text-[15px] font-bold"
                       style={{
                         fontFamily: "var(--font-mono)",
-                        fontSize: 15,
-                        fontWeight: 700,
                         color: "var(--fg-1)",
                       }}
                     >
@@ -974,35 +841,30 @@ export default function ExpensesPage() {
 
           {/* VARIABLES */}
           <TabsContent value="variables" className="mt-0">
-            <div
-              style={{
-                padding: "12px 16px",
-                display: "flex",
-                flexDirection: "column",
-                gap: 8,
-              }}
-            >
+            <div className="px-4 py-3 flex flex-col gap-2">
               {variables.length === 0 && (
                 <div
+                  className="text-center text-sm"
                   style={{
-                    textAlign: "center",
                     padding: "48px 0",
                     color: "var(--fg-3)",
                     fontFamily: "var(--font-sans)",
-                    fontSize: 14,
                   }}
                 >
                   Sin gastos variables. Usá el + para agregar.
                 </div>
               )}
-              {variables.map((v) => (
-                <VariableItem
-                  key={v.id}
-                  v={v}
-                  getPersonInitials={getPersonInitials}
-                  getPerson={getPerson}
-                />
-              ))}
+              <ul className="list-none m-0 p-0 flex flex-col gap-2">
+                {variables.map((v) => (
+                  <li key={v.id}>
+                    <VariableItem
+                      v={v}
+                      getPersonInitials={getPersonInitials}
+                      getPerson={getPerson}
+                    />
+                  </li>
+                ))}
+              </ul>
             </div>
           </TabsContent>
         </div>

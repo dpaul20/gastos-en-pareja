@@ -106,7 +106,11 @@ export function CategoryBreakdownCard({
           Por categoría
         </div>
       </div>
-      <div style={{ padding: "12px 8px 12px 0" }}>
+      <div
+        role="img"
+        aria-label="Distribución de gastos por categoría"
+        style={{ padding: "12px 8px 12px 0" }}
+      >
         <ResponsiveContainer width="100%" height={chartHeight}>
           <BarChart
             data={chartData}

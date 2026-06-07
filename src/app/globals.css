@@ -259,3 +259,14 @@ body {
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 }
+
+/* ── UTILITIES ────────────────────────────────────────────── */
+
+.pb-safe-mobile {
+  padding-bottom: var(--space-5, 20px);
+}
+@media (max-width: 1023px) {
+  .pb-safe-mobile {
+    padding-bottom: max(var(--space-14, 56px), env(safe-area-inset-bottom, 56px));
+  }
+}
