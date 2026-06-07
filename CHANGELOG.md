@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.10.0](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.9.0...gastos-en-pareja-v1.10.0) (2026-06-07)
+
+
+### ✨ Features
+
+* **expenses:** payer attribution for cuotas and fixed expenses ([2ca9733](https://github.com/dpaul20/gastos-en-pareja/commit/2ca9733fb7f5bc237fba1a925870b6d5132e504c))
+
+
+### 🐛 Bug Fixes
+
+* **a11y:** suppress SheetContent aria-describedby warning ([b9028b5](https://github.com/dpaul20/gastos-en-pareja/commit/b9028b5e1f6db97d12682f1dd9af83bc0fc5782d))
+* **e2e:** fix SCEN-01 timing and SCEN-06 wrong testid in payer-attribution tests ([76c5281](https://github.com/dpaul20/gastos-en-pareja/commit/76c528106d3c920511efad332156a15a7c877f16))
+
 ## [1.9.0](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.8.0...gastos-en-pareja-v1.9.0) (2026-06-07)
 
 
