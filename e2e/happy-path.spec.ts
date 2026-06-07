@@ -293,6 +293,16 @@ test.describe("Dashboard — balance proporcional", () => {
     }
   });
 
+  test.beforeEach(async ({ adminClient, coupleId }) => {
+    // Remove any fixed expense instances for this month so parallel tests in expenses.spec.ts
+    // don't contaminate the balance calculation (shared coupleId + workers:2 in CI)
+    await adminClient
+      .from("fixed_expense_instances")
+      .delete()
+      .eq("couple_id", coupleId)
+      .eq("month", currentMonth);
+  });
+
   test.afterEach(async ({ adminClient, coupleId }) => {
     // Clean incomes for both users for current month
     await adminClient
@@ -307,6 +317,12 @@ test.describe("Dashboard — balance proporcional", () => {
       .delete()
       .eq("couple_id", coupleId)
       .like("description", "E2E-balance-math-%");
+    // Clean any fixed expense instances created by ensureFixedExpenseInstances during dashboard load
+    await adminClient
+      .from("fixed_expense_instances")
+      .delete()
+      .eq("couple_id", coupleId)
+      .eq("month", currentMonth);
   });
 
   test("TC-007: balance-debt-amount refleja el split proporcional", async ({
