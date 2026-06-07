@@ -284,10 +284,8 @@ export function AddSheet({
         side="bottom"
         showCloseButton={false}
         aria-describedby={undefined}
+        className="mx-auto w-full sm:max-w-120 rounded-t-[20px]"
         style={{
-          maxWidth: 390,
-          margin: "0 auto",
-          borderRadius: "20px 20px 0 0",
           padding: "20px 20px 40px",
           background: "var(--bg-elevated)",
           border: "none",
