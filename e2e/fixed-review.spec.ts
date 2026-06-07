@@ -320,7 +320,7 @@ test.describe("SCEN-08: Toggle en create-form persiste el flag", () => {
 
     // Fill the form
     await page.getByLabel("Descripción").fill(DESC);
-    await page.getByLabel("Monto").fill("45000");
+    await page.getByRole("textbox", { name: "Monto" }).fill("45000");
     await page.getByLabel("Día de vencimiento (1-31)").fill("10");
 
     // Enable the "Pedirme confirmación cada mes" toggle
