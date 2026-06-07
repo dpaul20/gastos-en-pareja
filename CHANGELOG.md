@@ -1,5 +1,39 @@
 # Changelog
 
+## [1.9.0](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.8.0...gastos-en-pareja-v1.9.0) (2026-06-07)
+
+
+### ✨ Features
+
+* **dashboard:** add UpcomingDuesWidget for service due dates ([e7c5029](https://github.com/dpaul20/gastos-en-pareja/commit/e7c5029dbfd3ce263bd9019167270d1c6137a078))
+* **db:** add requires_monthly_review and status to fixed expense schema ([106fcad](https://github.com/dpaul20/gastos-en-pareja/commit/106fcadc95c504bf0919fd57136eee7efa1c40df))
+* **expenses:** add TypeSelectorSheet, credit_card on cuotas, and income carry-over ([be4add3](https://github.com/dpaul20/gastos-en-pareja/commit/be4add328beab5c366259914a97244fc8a410a23))
+* **expenses:** rename Fijos→Servicios and Variables→Compras ([81c5ef9](https://github.com/dpaul20/gastos-en-pareja/commit/81c5ef9282abd99833f0ab7779a7e3b387aeafc3))
+* **layout:** add responsive desktop layout with shadcn Sidebar and 2-column dashboard ([1a4a78f](https://github.com/dpaul20/gastos-en-pareja/commit/1a4a78fd7673a4f309cf0ca7d1e96f306865fa7a))
+* monthly review confirmation for recurring fixed expenses ([444b085](https://github.com/dpaul20/gastos-en-pareja/commit/444b085ccbcb927725c4ccb3863c4496171acd33))
+* **nav:** replace bottom nav with shadcn Sidebar (mobile drawer + desktop fixed) ([210600e](https://github.com/dpaul20/gastos-en-pareja/commit/210600ed0c817fa3c579e27ca157f0293375e8bd))
+* **ui:** add pending review badge, confirm flow and dashboard banner ([1e645a1](https://github.com/dpaul20/gastos-en-pareja/commit/1e645a14258d01aa0d7c984012bf65e38c281236))
+* **ux:** UX redesign — Servicios/Cuotas/Compras, dashboard dues, and amount override ([45215ca](https://github.com/dpaul20/gastos-en-pareja/commit/45215ca81397ca2e09eb82a123286ba367593da4))
+
+
+### 🐛 Bug Fixes
+
+* **ci:** exclude all src/lib/actions from coverage — server actions use Supabase, covered by e2e ([911a080](https://github.com/dpaul20/gastos-en-pareja/commit/911a080ede5773abac3ff02210849a155d7ac6b7))
+* **ci:** exclude src/lib/hooks from coverage — hooks need DOM/React context, covered by e2e ([c1dc1ab](https://github.com/dpaul20/gastos-en-pareja/commit/c1dc1abbcbca4800737487266e6dc4cc0a446ba8))
+* **e2e:** fix strict mode violation in SCEN-05 and footer total locator ([234e89d](https://github.com/dpaul20/gastos-en-pareja/commit/234e89dc32ed20b3c3fac5f16603a5696a92a76c))
+* **e2e:** isolate balance test from parallel fixed-expense template creation ([03b9b7d](https://github.com/dpaul20/gastos-en-pareja/commit/03b9b7d1a5ce2259744262d133e8bbb80f32594a))
+* **e2e:** remove unused item variable in fixed-review spec ([95e61c9](https://github.com/dpaul20/gastos-en-pareja/commit/95e61c9166b5f38e7a16cd02286e5406737adbd1))
+* **e2e:** restore auth after sign-out and fix race condition in income test ([605eac3](https://github.com/dpaul20/gastos-en-pareja/commit/605eac343f87c9b644bb8e4058bd50f6a68409f8))
+* **e2e:** use data-testid on TypeSelectorSheet options to avoid text ambiguity ([3511e1e](https://github.com/dpaul20/gastos-en-pareja/commit/3511e1ebd1f303179a96bbf9b3e3e4a9f10d0375))
+* **e2e:** use delta for footer total, testid for banner link, increase sidebar timeout ([67511e8](https://github.com/dpaul20/gastos-en-pareja/commit/67511e8aa7a8cffce1e0b31b9c59d8cfa4bafa49))
+* **expenses:** hide FAB when sheet is open and fix safe-area padding on TypeSelectorSheet ([f2ca242](https://github.com/dpaul20/gastos-en-pareja/commit/f2ca242eda15cf1beaa084b8dca58cfd36816a22))
+* **fijo:** add per-month amount_override with effectiveFixedAmount helper ([4559bcf](https://github.com/dpaul20/gastos-en-pareja/commit/4559bcfac189e0469833433aebe7f50db6b552a1))
+* **forms:** enforce numeric validation and surface server action errors in UI ([b8d5d6b](https://github.com/dpaul20/gastos-en-pareja/commit/b8d5d6b96ca974beb5d9c2bc91f6f2d26076b089))
+* **history:** add data-testid to month-card; add aria-label to back button ([add669d](https://github.com/dpaul20/gastos-en-pareja/commit/add669d95f8e81eb0454c1c0614e0ea1bd7f0bee))
+* **test:** replace read-only process.env.NODE_ENV assignment with vi.stubEnv ([cdc1f7b](https://github.com/dpaul20/gastos-en-pareja/commit/cdc1f7b93db69f1653ca8b402975a336ba32bbc2))
+* **ui:** replace hardcoded hex colors with semantic DS tokens ([d5a996d](https://github.com/dpaul20/gastos-en-pareja/commit/d5a996ddf59464e4695ed847b2adc2533deba09b))
+* **ui:** restore DS visual quality — Tabs accent, Card padding, Badge a11y contrast ([91e8970](https://github.com/dpaul20/gastos-en-pareja/commit/91e8970f3cfe236cbffd876c9536115b98876cfa))
+
 ## [1.8.0](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.7.0...gastos-en-pareja-v1.8.0) (2026-05-06)
 
 
