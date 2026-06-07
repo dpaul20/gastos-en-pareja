@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -18,6 +18,8 @@ import { sendInvitation, createCouple } from "@/lib/actions/couple";
 import { getMonthDate, getInitials, formatARS } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { NoCoupleCard } from "./_components/no-couple-card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 export default function SettingsPage() {
   const { data: member, isLoading } = useCoupleMember();
@@ -98,21 +100,8 @@ export default function SettingsPage() {
 
   if (isLoading) {
     return (
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          minHeight: "100%",
-        }}
-      >
-        <span
-          style={{
-            fontSize: 14,
-            color: "var(--fg-3)",
-            fontFamily: "var(--font-sans)",
-          }}
-        >
+      <div className="flex items-center justify-center" style={{ minHeight: "100%" }}>
+        <span className="text-sm" style={{ color: "var(--fg-3)", fontFamily: "var(--font-sans)" }}>
           Cargando...
         </span>
       </div>
@@ -121,12 +110,8 @@ export default function SettingsPage() {
 
   return (
     <main
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        minHeight: "100%",
-        background: "var(--bg-base)",
-      }}
+      className="flex flex-col"
+      style={{ minHeight: "100%", background: "var(--bg-base)" }}
     >
       <div
         style={{
@@ -136,37 +121,23 @@ export default function SettingsPage() {
         }}
       >
         <h1
-          style={{
-            fontSize: 20,
-            fontWeight: 700,
-            color: "var(--fg-1)",
-            fontFamily: "var(--font-sans)",
-            margin: 0,
-          }}
+          className="text-xl font-bold m-0"
+          style={{ color: "var(--fg-1)", fontFamily: "var(--font-sans)" }}
         >
           Configuración
         </h1>
       </div>
 
       <div
-        style={{
-          flex: 1,
-          padding: "16px",
-          display: "flex",
-          flexDirection: "column",
-          gap: 16,
-        }}
+        className="flex-1 p-4 flex flex-col gap-4"
       >
         {/* Pareja */}
         <section>
           <div
+            className="text-xs font-semibold mb-2 uppercase"
             style={{
-              fontSize: 11,
-              fontWeight: 600,
               color: "var(--fg-3)",
-              textTransform: "uppercase",
               letterSpacing: "0.05em",
-              marginBottom: 8,
               fontFamily: "var(--font-sans)",
             }}
           >
@@ -183,15 +154,8 @@ export default function SettingsPage() {
           >
             {member ? (
               <>
-                <div
-                  style={{
-                    padding: "16px",
-                    display: "flex",
-                    gap: 12,
-                    alignItems: "center",
-                  }}
-                >
-                  <div style={{ display: "flex", flexShrink: 0 }}>
+                <div className="p-4 flex gap-3 items-center">
+                  <div className="flex shrink-0">
                     <Avatar
                       initials={
                         profiles[0] ? getInitials(profiles[0].full_name) : "?"
@@ -217,9 +181,9 @@ export default function SettingsPage() {
                   </div>
                   <div>
                     <div
+                      className="font-semibold"
                       style={{
                         fontSize: 15,
-                        fontWeight: 600,
                         color: "var(--fg-1)",
                         fontFamily: "var(--font-sans)",
                       }}
@@ -229,11 +193,8 @@ export default function SettingsPage() {
                         .join(" y ") || "Tu pareja"}
                     </div>
                     <div
-                      style={{
-                        fontSize: 12,
-                        color: "var(--fg-3)",
-                        fontFamily: "var(--font-sans)",
-                      }}
+                      className="text-xs"
+                      style={{ color: "var(--fg-3)", fontFamily: "var(--font-sans)" }}
                     >
                       {member.couples?.status === "PENDING"
                         ? "⏳ Invitación pendiente"
@@ -250,11 +211,10 @@ export default function SettingsPage() {
                     }}
                   >
                     <div
+                      className="font-semibold mb-2"
                       style={{
                         fontSize: 13,
-                        fontWeight: 600,
                         color: "var(--fg-1)",
-                        marginBottom: 8,
                         fontFamily: "var(--font-sans)",
                       }}
                     >
@@ -290,50 +250,31 @@ export default function SettingsPage() {
                       <>
                         <form
                           onSubmit={handleInvite}
-                          style={{ display: "flex", gap: 8 }}
+                          className="flex gap-2"
                         >
-                          <input
+                          <Input
                             type="email"
                             value={inviteEmail}
                             onChange={(e) => setInviteEmail(e.target.value)}
                             placeholder="email@ejemplo.com"
+                            className="flex-1"
                             style={{
-                              flex: 1,
-                              border: "1.5px solid var(--border-default)",
-                              borderRadius: 10,
-                              padding: "10px 12px",
-                              fontSize: 14,
                               fontFamily: "var(--font-sans)",
-                              background: "var(--bg-elevated)",
-                              color: "var(--fg-1)",
-                              outline: "none",
                             }}
                           />
-                          <button
+                          <Button
                             type="submit"
                             disabled={isPending || !inviteEmail}
-                            style={{
-                              background: "var(--accent)",
-                              color: "var(--accent-foreground)",
-                              border: "none",
-                              borderRadius: 10,
-                              padding: "10px 14px",
-                              fontSize: 13,
-                              fontWeight: 600,
-                              cursor: "pointer",
-                              fontFamily: "var(--font-sans)",
-                              whiteSpace: "nowrap",
-                            }}
+                            style={{ whiteSpace: "nowrap" }}
                           >
                             Invitar
-                          </button>
+                          </Button>
                         </form>
                         {inviteMsg && (
                           <div
                             aria-live="polite"
+                            className="mt-1.5 text-xs"
                             style={{
-                              marginTop: 6,
-                              fontSize: 12,
                               color: inviteMsg.includes("✓")
                                 ? "var(--status-success)"
                                 : "var(--status-danger)",
@@ -363,13 +304,10 @@ export default function SettingsPage() {
         {member && (
           <section>
             <div
+              className="text-xs font-semibold mb-2 uppercase"
               style={{
-                fontSize: 11,
-                fontWeight: 600,
                 color: "var(--fg-3)",
-                textTransform: "uppercase",
                 letterSpacing: "0.05em",
-                marginBottom: 8,
                 fontFamily: "var(--font-sans)",
               }}
             >
@@ -386,20 +324,17 @@ export default function SettingsPage() {
             >
               <div style={{ padding: "14px 16px" }}>
                 <div
+                  className="flex items-center overflow-hidden"
                   style={{
-                    display: "flex",
-                    alignItems: "center",
                     background: "var(--bg-sunken)",
                     borderRadius: 10,
                     border: "1.5px solid var(--border-default)",
-                    overflow: "hidden",
                   }}
                 >
                   <span
+                    className="font-semibold text-base"
                     style={{
                       padding: "10px 6px 10px 12px",
-                      fontSize: 16,
-                      fontWeight: 600,
                       color: "var(--fg-3)",
                       fontFamily: "var(--font-mono)",
                     }}
@@ -411,15 +346,10 @@ export default function SettingsPage() {
                     onChange={(e) => setMyIncome(e.target.value)}
                     inputMode="numeric"
                     placeholder="0"
+                    className="flex-1 border-none bg-transparent text-base font-semibold outline-none"
                     style={{
-                      flex: 1,
-                      border: "none",
-                      background: "transparent",
                       padding: "10px 12px 10px 4px",
-                      fontSize: 16,
                       fontFamily: "var(--font-mono)",
-                      fontWeight: 600,
-                      outline: "none",
                       color: "var(--fg-1)",
                     }}
                   />
@@ -429,48 +359,32 @@ export default function SettingsPage() {
                 currentIncome === null &&
                 !myIncome && (
                   <div style={{ padding: "0 16px 10px" }}>
-                    <button
+                    <Button
                       type="button"
+                      variant="outline"
                       onClick={() => setMyIncome(String(previousIncome.amount))}
+                      className="w-full justify-start"
                       style={{
-                        width: "100%",
-                        background: "var(--accent-subtle)",
                         color: "var(--accent)",
-                        border: "1px solid var(--border-subtle)",
-                        borderRadius: 10,
-                        padding: "9px 12px",
-                        fontSize: 13,
-                        fontWeight: 600,
-                        cursor: "pointer",
+                        background: "var(--accent-subtle)",
+                        borderColor: "var(--border-subtle)",
                         fontFamily: "var(--font-sans)",
-                        textAlign: "left",
                       }}
                     >
                       Igual al mes pasado — {formatARS(previousIncome.amount)}
-                    </button>
+                    </Button>
                   </div>
                 )}
               <div style={{ padding: "0 16px 14px" }}>
-                <button
+                <Button
                   onClick={handleSaveIncome}
                   disabled={isPending || !myIncome || parsedIncome <= 0}
                   aria-busy={isPending}
-                  style={{
-                    width: "100%",
-                    background: "var(--accent)",
-                    color: "var(--accent-foreground)",
-                    border: "none",
-                    borderRadius: 10,
-                    padding: "11px",
-                    fontSize: 14,
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    fontFamily: "var(--font-sans)",
-                    opacity: isPending ? 0.7 : 1,
-                  }}
+                  className="w-full"
+                  style={{ fontFamily: "var(--font-sans)" }}
                 >
                   {isPending ? "Guardando..." : "Guardar ingreso"}
-                </button>
+                </Button>
               </div>
             </div>
           </section>
@@ -479,13 +393,10 @@ export default function SettingsPage() {
         {/* Cuenta */}
         <section>
           <div
+            className="text-xs font-semibold mb-2 uppercase"
             style={{
-              fontSize: 11,
-              fontWeight: 600,
               color: "var(--fg-3)",
-              textTransform: "uppercase",
               letterSpacing: "0.05em",
-              marginBottom: 8,
               fontFamily: "var(--font-sans)",
             }}
           >
@@ -501,50 +412,36 @@ export default function SettingsPage() {
             }}
           >
             <div
+              className="flex justify-between"
               style={{
                 padding: "14px 16px",
                 borderBottom: "1px solid var(--border-subtle)",
-                display: "flex",
-                justifyContent: "space-between",
               }}
             >
               <span
-                style={{
-                  fontSize: 14,
-                  fontWeight: 500,
-                  color: "var(--fg-1)",
-                  fontFamily: "var(--font-sans)",
-                }}
+                className="text-sm font-medium"
+                style={{ color: "var(--fg-1)", fontFamily: "var(--font-sans)" }}
               >
                 Moneda
               </span>
               <span
-                style={{
-                  fontSize: 13,
-                  color: "var(--fg-2)",
-                  fontFamily: "var(--font-sans)",
-                }}
+                style={{ fontSize: 13, color: "var(--fg-2)", fontFamily: "var(--font-sans)" }}
               >
                 ARS — Peso argentino
               </span>
             </div>
-            <button
+            <Button
+              variant="ghost"
               onClick={handleSignOut}
+              className="w-full justify-start text-sm font-medium rounded-none"
               style={{
-                width: "100%",
-                background: "none",
-                border: "none",
                 padding: "14px 16px",
-                textAlign: "left",
-                cursor: "pointer",
-                fontSize: 14,
-                fontWeight: 500,
                 color: "var(--status-danger)",
                 fontFamily: "var(--font-sans)",
               }}
             >
               Cerrar sesión
-            </button>
+            </Button>
           </div>
         </section>
       </div>
