@@ -76,14 +76,16 @@ test.describe("SCEN-01: cuota creada con pagador muestra avatar en la lista", ()
     const desc = `SCEN-01 Cuota ${TS}`;
     await page.getByLabel("Descripción").fill(desc);
     await page.getByLabel("Monto total").fill("12000");
-    await page.getByLabel("Cuotas").fill("12");
+    await page.getByRole("textbox", { name: "Cuotas" }).fill("12");
     await page.getByRole("button", { name: "Guardar" }).click();
 
-    // Wait for sheet to close and list to update
+    // Wait for sheet to close
     await expect(page.getByTestId("add-sheet-dialog")).not.toBeVisible({
       timeout: 5_000,
     });
-    await page.waitForLoadState("networkidle");
+    // Wait for the new cuota to appear in the list — this confirms the server action
+    // completed and TanStack Query invalidated (networkidle alone misses the async transition)
+    await expect(page.getByText(desc).first()).toBeVisible({ timeout: 10_000 });
 
     // Verify the purchase was saved with paid_by_user_id
     const { data } = await adminClient
@@ -389,7 +391,7 @@ test.describe("SCEN-06: toggle de fijo setea y limpia paid_by_user_id", () => {
     // Navigate to expenses → servicios tab
     await page.goto("/expenses");
     await page.waitForLoadState("networkidle");
-    await page.getByTestId("tab-fijos").click();
+    await page.getByTestId("tab-servicios").click();
     await page.waitForLoadState("networkidle");
 
     // Click on the fijo to open edit sheet
