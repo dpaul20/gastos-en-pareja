@@ -227,6 +227,8 @@ export function AddSheet({
   onClose,
   onSave,
   saveError,
+  members,
+  currentUserId,
 }: {
   readonly tab: Tab;
   readonly categories: ReturnType<typeof useCategories>["data"];
