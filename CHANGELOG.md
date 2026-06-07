@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.11.0](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.10.0...gastos-en-pareja-v1.11.0) (2026-06-07)
+
+
+### ✨ Features
+
+* **a11y:** progressbar role, icon-button labels, semantic lists, emoji aria-hidden, error regions (PR3) ([76c3d00](https://github.com/dpaul20/gastos-en-pareja/commit/76c3d0030fdb6c15a628688cec11daa443f599f6))
+* **layout:** responsive expenses page, remove maxWidth:390, inline px to Tailwind (PR2a) ([75983d8](https://github.com/dpaul20/gastos-en-pareja/commit/75983d84d8f2e593fe05c00f6d904e9cafca6b63))
+* **layout:** responsive settings page, remove hardcoded px (PR2b) ([a1efc19](https://github.com/dpaul20/gastos-en-pareja/commit/a1efc199b27295b0fc3a77d1af113ecb298fa2e4))
+* **ui:** install shadcn Switch, replace custom toggles and bare inputs/buttons (PR1) ([2d1cc40](https://github.com/dpaul20/gastos-en-pareja/commit/2d1cc4006c56596e65f532fe878dc6e359c425e4))
+* **ui:** responsive redesign, shadcn primitives, WCAG 2.1 AA hardening ([f4a8396](https://github.com/dpaul20/gastos-en-pareja/commit/f4a839620f98e15b95ab7fd46ebf7d12485d465c))
+
+
+### 🐛 Bug Fixes
+
+* **a11y:** resolve verify warnings — Switch for EditServiceSheet, remaining px to Tailwind ([289d265](https://github.com/dpaul20/gastos-en-pareja/commit/289d2655997fb6b2b18554d372c025e1161fbd6c))
+* **e2e:** SCEN-08 strict mode — getByLabel Monto matched Button aria-label ([f3b3f44](https://github.com/dpaul20/gastos-en-pareja/commit/f3b3f44079cb45089ae5798d61fef0e27af53590))
+
 ## [1.10.0](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.9.0...gastos-en-pareja-v1.10.0) (2026-06-07)
 
 
