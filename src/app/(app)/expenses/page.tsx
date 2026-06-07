@@ -24,6 +24,7 @@ import { TAB_LABEL, TAB_TESTID } from "./_components/segmented-control";
 import { AddSheet } from "./_components/add-sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import {
   Sheet,
   SheetContent,
@@ -513,39 +514,14 @@ function EditServiceSheet({
           >
             Ya lo pagué
           </span>
-          <button
-            type="button"
-            onClick={() =>
-              toggleMutation.mutate({ id: instance.id, paid: !instance.paid })
+          <Switch
+            checked={instance.paid}
+            onCheckedChange={(checked) =>
+              toggleMutation.mutate({ id: instance.id, paid: checked })
             }
             disabled={isPending}
-            className={cn("relative", isPending && "opacity-50")}
-            style={{
-              width: 44,
-              height: 26,
-              borderRadius: 99,
-              border: "none",
-              cursor: isPending ? "not-allowed" : "pointer",
-              background: instance.paid
-                ? "var(--accent)"
-                : "var(--border-default)",
-              transition: "background 150ms",
-            }}
-            aria-label="Ya lo pagué"
-          >
-            <div
-              style={{
-                width: 20,
-                height: 20,
-                borderRadius: 99,
-                background: "white",
-                position: "absolute",
-                top: 3,
-                left: instance.paid ? 21 : 3,
-                transition: "left 150ms",
-              }}
-            />
-          </button>
+            aria-label={instance.paid ? "Marcar como no pagado" : "Marcar como pagado"}
+          />
         </div>
 
         <Button
@@ -679,7 +655,7 @@ export default function ExpensesPage() {
           >
             Gastos
           </h1>
-          <div style={{ padding: "0 16px 10px" }}>
+          <div className="px-4 pb-2.5">
             <TabsList className="w-full bg-(--bg-sunken)">
               {(["cuotas", "fijos", "variables"] as Tab[]).map((t) => (
                 <TabsTrigger
@@ -695,14 +671,7 @@ export default function ExpensesPage() {
           </div>
           <TabDescription tab={tab} />
           {categories.length > 0 && (
-            <div
-              className="flex overflow-x-auto"
-              style={{
-                gap: 6,
-                padding: "8px 16px 10px",
-                scrollbarWidth: "none",
-              }}
-            >
+            <div className="flex overflow-x-auto gap-1.5 px-4 pt-2 pb-2.5 [scrollbar-width:none]">
               <button
                 onClick={() => setFilterCategory(null)}
                 className="flex-shrink-0 text-xs font-semibold cursor-pointer rounded-[20px]"
@@ -750,9 +719,8 @@ export default function ExpensesPage() {
             <div className="px-4 py-3 flex flex-col gap-2">
               {cuotas.length === 0 && (
                 <div
-                  className="text-center text-sm"
+                  className="text-center text-sm py-12"
                   style={{
-                    padding: "48px 0",
                     color: "var(--fg-3)",
                     fontFamily: "var(--font-sans)",
                   }}

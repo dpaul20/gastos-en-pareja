@@ -346,9 +346,8 @@ export default function SettingsPage() {
                     onChange={(e) => setMyIncome(e.target.value)}
                     inputMode="numeric"
                     placeholder="0"
-                    className="flex-1 border-none bg-transparent text-base font-semibold outline-none"
+                    className="flex-1 border-none bg-transparent text-base font-semibold outline-none py-2.5 pl-1 pr-3"
                     style={{
-                      padding: "10px 12px 10px 4px",
                       fontFamily: "var(--font-mono)",
                       color: "var(--fg-1)",
                     }}
