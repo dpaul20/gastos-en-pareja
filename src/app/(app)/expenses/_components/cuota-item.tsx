@@ -39,7 +39,7 @@ export function CuotaItem({
             <div style={{ fontSize: 12, color: "var(--fg-3)", marginTop: 2 }}>
               {c.credit_card && <span>{c.credit_card} · </span>}
               Cuota {c.paid_installments} de {c.installments}
-              {c.auto_renew ? " 🔄" : ""}
+              {c.auto_renew ? <span aria-hidden="true"> 🔄</span> : ""}
             </div>
           </div>
           <div className="flex flex-col items-end gap-1">
@@ -86,6 +86,11 @@ export function CuotaItem({
           </div>
         </div>
         <div
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={c.installments}
+          aria-valuenow={c.paid_installments}
+          aria-label={`Cuota ${c.paid_installments} de ${c.installments}`}
           style={{
             background: "var(--border-default)",
             borderRadius: 99,

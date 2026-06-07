@@ -158,7 +158,7 @@ function TypeSelectorSheet({
                 border: "1.5px solid var(--border-subtle)",
               }}
             >
-              <span style={{ fontSize: 28 }}>{opt.icon}</span>
+              <span aria-hidden="true" style={{ fontSize: 28 }}>{opt.icon}</span>
               <div>
                 <div
                   className="text-[15px] font-semibold"
@@ -760,14 +760,17 @@ export default function ExpensesPage() {
                   Sin compras en cuotas. Usá el + para agregar.
                 </div>
               )}
-              {cuotas.map((c) => (
-                <CuotaItem
-                  key={c.id}
-                  c={c}
-                  getPersonInitials={getPersonInitials}
-                  getPerson={getPerson}
-                />
-              ))}
+              <ul className="list-none m-0 p-0 flex flex-col gap-2">
+                {cuotas.map((c) => (
+                  <li key={c.id}>
+                    <CuotaItem
+                      c={c}
+                      getPersonInitials={getPersonInitials}
+                      getPerson={getPerson}
+                    />
+                  </li>
+                ))}
+              </ul>
             </div>
           </TabsContent>
 
@@ -811,8 +814,8 @@ export default function ExpensesPage() {
                       </Button>
                     </div>
                   )}
-                  <div
-                    className="flex flex-col rounded-2xl overflow-hidden"
+                  <ul
+                    className="list-none m-0 p-0 flex flex-col rounded-2xl overflow-hidden"
                     style={{
                       gap: 1,
                       background: "var(--bg-elevated)",
@@ -821,15 +824,16 @@ export default function ExpensesPage() {
                     }}
                   >
                     {fijos.map((fi, i) => (
-                      <FijoItem
-                        key={fi.id}
-                        fi={fi}
-                        isLast={i === fijos.length - 1}
-                        getPersonInitials={getPersonInitials}
-                        getPerson={getPerson}
-                      />
+                      <li key={fi.id}>
+                        <FijoItem
+                          fi={fi}
+                          isLast={i === fijos.length - 1}
+                          getPersonInitials={getPersonInitials}
+                          getPerson={getPerson}
+                        />
+                      </li>
                     ))}
-                  </div>
+                  </ul>
                   <div
                     className="flex justify-between rounded-xl px-4 py-3 mt-2"
                     style={{
@@ -882,14 +886,17 @@ export default function ExpensesPage() {
                   Sin gastos variables. Usá el + para agregar.
                 </div>
               )}
-              {variables.map((v) => (
-                <VariableItem
-                  key={v.id}
-                  v={v}
-                  getPersonInitials={getPersonInitials}
-                  getPerson={getPerson}
-                />
-              ))}
+              <ul className="list-none m-0 p-0 flex flex-col gap-2">
+                {variables.map((v) => (
+                  <li key={v.id}>
+                    <VariableItem
+                      v={v}
+                      getPersonInitials={getPersonInitials}
+                      getPerson={getPerson}
+                    />
+                  </li>
+                ))}
+              </ul>
             </div>
           </TabsContent>
         </div>

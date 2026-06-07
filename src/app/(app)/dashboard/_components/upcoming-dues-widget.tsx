@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toggleFixedExpenseInstance } from "@/lib/actions/expenses";
 import { getUpcomingDues } from "@/lib/utils/due-dates";
@@ -77,7 +78,7 @@ function DueItem({ due, showPayButton, onPay, isPaying }: DueItemProps) {
 }
 
 interface SectionProps {
-  readonly title: string;
+  readonly title: ReactNode;
   readonly titleColor: string;
   readonly items: UpcomingDue[];
   readonly showPayButton: boolean;
@@ -181,7 +182,7 @@ export function UpcomingDuesWidget({
         </h3>
 
         <DueSection
-          title="🔴 Vence hoy"
+          title={<><span aria-hidden="true">🔴</span> Vence hoy</>}
           titleColor="var(--accent)"
           items={todayDues}
           showPayButton
@@ -189,7 +190,7 @@ export function UpcomingDuesWidget({
           payingId={payingId}
         />
         <DueSection
-          title="⚠️ Vencidos"
+          title={<><span aria-hidden="true">⚠️</span> Vencidos</>}
           titleColor="var(--color-coral)"
           items={overdue}
           showPayButton
@@ -197,7 +198,7 @@ export function UpcomingDuesWidget({
           payingId={payingId}
         />
         <DueSection
-          title="📅 Esta semana"
+          title={<><span aria-hidden="true">📅</span> Esta semana</>}
           titleColor="var(--fg-2)"
           items={upcoming}
           showPayButton={false}
