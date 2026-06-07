@@ -15,6 +15,7 @@ import { useExpenseSave, type Tab } from "@/lib/queries/use-expense-save";
 import {
   updateFixedExpenseInstanceAmount,
   toggleFixedExpenseInstance,
+  confirmAllFixedExpenseInstances,
 } from "@/lib/actions/expenses";
 import { CuotaItem } from "./_components/cuota-item";
 import { FijoItem } from "./_components/fijo-item";
@@ -635,7 +636,7 @@ export default function ExpensesPage() {
   const [tab, setTab] = useState<Tab>("cuotas");
   const [flow, setFlow] = useState<FlowState>({ step: "idle" });
   const [filterCategory, setFilterCategory] = useState<string | null>(null);
-  const { save } = useExpenseSave(tab);
+  const { save, saveError } = useExpenseSave(tab);
 
   function handleTabChange(newTab: Tab) {
     setTab(newTab);
@@ -662,14 +663,29 @@ export default function ExpensesPage() {
     fields: Record<string, string>,
     categoryId: string | null,
     autoRenew: boolean,
+    requiresMonthlyReview: boolean,
   ) {
     setFlow({ step: "idle" });
-    save(fields, categoryId, autoRenew);
+    save(fields, categoryId, autoRenew, requiresMonthlyReview);
   }
+
+  const queryClient = useQueryClient();
+
+  const confirmAllMutation = useMutation({
+    mutationFn: () =>
+      confirmAllFixedExpenseInstances(coupleId!, month),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["monthly-data"] });
+    },
+  });
 
   const allCuotas = data?.installmentPurchases ?? [];
   const allFijos = data?.fixedExpenseInstances ?? [];
   const allVariables = data?.variableExpenses ?? [];
+
+  const pendingFijosCount = allFijos.filter(
+    (fi) => fi.status === "PENDING_CONFIRMATION",
+  ).length;
 
   const cuotas = filterCategory
     ? allCuotas.filter((c) => c.category_id === filterCategory)
@@ -854,6 +870,32 @@ export default function ExpensesPage() {
               )}
               {fijos.length > 0 && (
                 <>
+                  {pendingFijosCount > 0 && coupleId && (
+                    <div style={{ marginBottom: 8, display: "flex", justifyContent: "flex-end" }}>
+                      <button
+                        data-testid="confirm-all-fijos"
+                        onClick={() => confirmAllMutation.mutate()}
+                        disabled={confirmAllMutation.isPending}
+                        style={{
+                          padding: "6px 14px",
+                          borderRadius: 8,
+                          border: `1.5px solid var(--color-coral)`,
+                          background:
+                            "color-mix(in srgb, var(--color-coral) 10%, transparent)",
+                          color: "var(--color-coral)",
+                          cursor: confirmAllMutation.isPending
+                            ? "not-allowed"
+                            : "pointer",
+                          fontSize: 13,
+                          fontWeight: 600,
+                          fontFamily: "var(--font-sans)",
+                          opacity: confirmAllMutation.isPending ? 0.5 : 1,
+                        }}
+                      >
+                        Confirmar todos
+                      </button>
+                    </div>
+                  )}
                   <div
                     style={{
                       display: "flex",
@@ -896,6 +938,7 @@ export default function ExpensesPage() {
                       Total servicios
                     </span>
                     <span
+                      data-testid="fijos-total"
                       style={{
                         fontFamily: "var(--font-mono)",
                         fontSize: 15,
@@ -998,6 +1041,7 @@ export default function ExpensesPage() {
           categories={categories}
           onClose={() => setFlow({ step: "idle" })}
           onSave={handleSave}
+          saveError={saveError}
         />
       )}
     </main>

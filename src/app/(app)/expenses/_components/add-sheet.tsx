@@ -20,29 +20,44 @@ import { computeMonthlyInstallment } from "@/lib/utils/installments";
 import { formatARS } from "@/lib/utils";
 
 // ── SCHEMAS ───────────────────────────────────────────────────────────────────
+
+function positiveMoneyString(field = "El monto") {
+  return z
+    .string()
+    .min(1, "Requerido")
+    .refine((v) => {
+      const n = Number(v.replace(",", ".").replace(/\./g, ""));
+      return !isNaN(n) && n > 0;
+    }, `${field} debe ser mayor a 0`);
+}
+
+function positiveIntString(max = 999) {
+  return z
+    .string()
+    .min(1, "Requerido")
+    .refine((v) => {
+      const n = Number.parseInt(v, 10);
+      return !isNaN(n) && n >= 1 && n <= max;
+    }, `Debe ser un número entre 1 y ${max}`);
+}
+
 const cuotasSchema = z.object({
   description: z.string().min(1, "Requerido"),
-  total_amount: z.string().min(1, "Requerido"),
-  installments: z.string().min(1, "Requerido"),
+  total_amount: positiveMoneyString("El monto total"),
+  installments: positiveIntString(999),
   first_payment_date: z.string().optional(),
   credit_card: z.string().trim().max(40).optional(),
 });
 
 const fijosSchema = z.object({
   description: z.string().min(1, "Requerido"),
-  amount: z.string().min(1, "Requerido"),
-  due_day: z.string().min(1, "Requerido"),
+  amount: positiveMoneyString(),
+  due_day: positiveIntString(31),
 });
 
 const variablesSchema = z.object({
   description: z.string().min(1, "Requerido"),
-  amount: z
-    .string()
-    .min(1, "Requerido")
-    .refine(
-      (v) => Number(v.replace(",", ".")) > 0,
-      "El monto debe ser mayor a 0",
-    ),
+  amount: positiveMoneyString(),
   date: z.string().optional(),
 });
 
@@ -196,6 +211,7 @@ export function AddSheet({
   categories,
   onClose,
   onSave,
+  saveError,
 }: {
   readonly tab: Tab;
   readonly categories: ReturnType<typeof useCategories>["data"];
@@ -204,10 +220,13 @@ export function AddSheet({
     data: Record<string, string>,
     categoryId: string | null,
     autoRenew: boolean,
+    requiresMonthlyReview: boolean,
   ) => void;
+  readonly saveError?: string | null;
 }) {
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [autoRenew, setAutoRenew] = useState(false);
+  const [requiresMonthlyReview, setRequiresMonthlyReview] = useState(false);
 
   const {
     register,
@@ -234,6 +253,7 @@ export function AddSheet({
       ) as Record<string, string>,
       categoryId,
       autoRenew,
+      requiresMonthlyReview,
     );
   }
 
@@ -346,6 +366,60 @@ export function AddSheet({
             />
           )}
 
+          {tab === "fijos" && (
+            <div
+              style={{
+                marginBottom: 14,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <span
+                style={{
+                  fontSize: 13,
+                  fontWeight: 500,
+                  color: "var(--fg-2)",
+                  fontFamily: "var(--font-sans)",
+                }}
+              >
+                Pedirme confirmación cada mes
+              </span>
+              <button
+                type="button"
+                onClick={() => setRequiresMonthlyReview((v) => !v)}
+                data-testid="toggle-requires-review"
+                style={{
+                  width: 44,
+                  height: 26,
+                  borderRadius: 99,
+                  border: "none",
+                  cursor: "pointer",
+                  background: requiresMonthlyReview
+                    ? "var(--accent)"
+                    : "var(--border-default)",
+                  transition: "background 150ms",
+                  position: "relative",
+                }}
+                aria-label="Pedirme confirmación cada mes"
+                aria-pressed={requiresMonthlyReview}
+              >
+                <div
+                  style={{
+                    width: 20,
+                    height: 20,
+                    borderRadius: 99,
+                    background: "white",
+                    position: "absolute",
+                    top: 3,
+                    left: requiresMonthlyReview ? 21 : 3,
+                    transition: "left 150ms",
+                  }}
+                />
+              </button>
+            </div>
+          )}
+
           {tab === "variables" && (
             <InputField
               label="Fecha (AAAA-MM-DD)"
@@ -416,6 +490,22 @@ export function AddSheet({
                   }}
                 />
               </button>
+            </div>
+          )}
+
+          {saveError && (
+            <div
+              role="alert"
+              style={{
+                ...errorCss,
+                marginBottom: 12,
+                padding: "8px 12px",
+                background: "color-mix(in srgb, var(--status-danger) 10%, transparent)",
+                borderRadius: 8,
+                border: "1px solid var(--status-danger)",
+              }}
+            >
+              {saveError}
             </div>
           )}
 

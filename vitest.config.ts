@@ -16,7 +16,7 @@ export default defineConfig({
         // Custom hooks need DOM/React context — covered by Playwright e2e
         "src/lib/hooks/**",
         // Server Actions with Supabase calls — covered by Playwright e2e
-        "src/lib/actions/couple.ts",
+        "src/lib/actions/**",
         // Supabase client factories and React providers — infrastructure
         "src/lib/supabase/**",
         "src/lib/providers.tsx",
