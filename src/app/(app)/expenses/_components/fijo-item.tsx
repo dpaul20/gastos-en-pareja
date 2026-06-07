@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
+import { PersonAvatar } from "@/components/shared/avatar";
 import { formatARS } from "@/lib/utils";
 import {
   toggleFixedExpenseInstance,
@@ -17,9 +18,13 @@ type FixedExpenseInstance = MonthlyData["fixedExpenseInstances"][number];
 export function FijoItem({
   fi,
   isLast,
+  getPersonInitials,
+  getPerson,
 }: {
   readonly fi: FixedExpenseInstance;
   readonly isLast: boolean;
+  readonly getPersonInitials?: (id: string) => string;
+  readonly getPerson?: (id: string) => "a" | "b";
 }) {
   const [, startTransition] = useTransition();
   const queryClient = useQueryClient();
@@ -250,6 +255,13 @@ export function FijoItem({
             }}
           >
             <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              {fi.paid_by_user_id && getPersonInitials && getPerson && (
+                <PersonAvatar
+                  initials={getPersonInitials(fi.paid_by_user_id)}
+                  person={getPerson(fi.paid_by_user_id)}
+                  size="sm"
+                />
+              )}
               {hasOverride && (
                 <button
                   onClick={handleReset}

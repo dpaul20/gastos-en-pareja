@@ -10,15 +10,32 @@ import {
 
 export type Tab = "cuotas" | "fijos" | "variables";
 
+function normalizeAmount(raw: string): number {
+  const hasComma = raw.includes(",");
+  const hasDot = raw.includes(".");
+  let s: string;
+  if (hasComma && hasDot) {
+    // "28.847,06" — dot = miles, comma = decimal
+    s = raw.replaceAll(".", "").replace(",", ".");
+  } else if (hasComma) {
+    // "28847,06" — comma = decimal
+    s = raw.replace(",", ".");
+  } else {
+    // "28847.06" or "28847" — standard
+    s = raw;
+  }
+  return Number(s);
+}
+
 function parsePositiveNumber(value: string | undefined): number {
-  const n = Number(value?.replace(",", ".").replace(/\./g, "") ?? "");
-  if (isNaN(n) || n <= 0) throw new Error(`Monto inválido: "${value}"`);
+  const n = normalizeAmount(value ?? "");
+  if (Number.isNaN(n) || n <= 0) throw new Error(`Monto inválido: "${value}"`);
   return n;
 }
 
 function parsePositiveInt(value: string | undefined): number {
   const n = Number.parseInt(value ?? "", 10);
-  if (isNaN(n) || n < 1) throw new Error(`Número inválido: "${value}"`);
+  if (Number.isNaN(n) || n < 1) throw new Error(`Número inválido: "${value}"`);
   return n;
 }
 
@@ -32,6 +49,8 @@ export function useExpenseSave(tab: Tab) {
     categoryId: string | null,
     autoRenew: boolean,
     requiresMonthlyReview = false,
+    isShared = true,
+    payerId?: string | null,
   ) {
     setSaveError(null);
     startTransition(async () => {
@@ -47,6 +66,7 @@ export function useExpenseSave(tab: Tab) {
             category_id: categoryId ?? undefined,
             auto_renew: autoRenew || undefined,
             credit_card: fields.credit_card?.trim() || null,
+            paid_by_user_id: payerId ?? undefined,
           });
         } else if (tab === "fijos") {
           await createFixedExpenseTemplate({
@@ -62,6 +82,7 @@ export function useExpenseSave(tab: Tab) {
             amount: parsePositiveNumber(fields.amount),
             date: fields.date || new Date().toISOString().slice(0, 10),
             category_id: categoryId ?? undefined,
+            is_shared: isShared,
           });
         }
         queryClient.invalidateQueries({ queryKey: ["monthly-data"] });

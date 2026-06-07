@@ -13,22 +13,37 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { CategoryPicker } from "@/components/shared/category-picker";
+import { PersonAvatar } from "@/components/shared/avatar";
 import { useCategories } from "@/lib/queries/use-monthly-data";
 import type { Tab } from "@/lib/queries/use-expense-save";
 import { TAB_LABEL } from "./segmented-control";
 import { computeMonthlyInstallment } from "@/lib/utils/installments";
-import { formatARS } from "@/lib/utils";
+import { formatARS, getInitials } from "@/lib/utils";
 
 // ── SCHEMAS ───────────────────────────────────────────────────────────────────
+
+function normalizeAmount(raw: string): number {
+  const hasComma = raw.includes(",");
+  const hasDot = raw.includes(".");
+  let s: string;
+  if (hasComma && hasDot) {
+    s = raw.replaceAll(".", "").replace(",", ".");
+  } else if (hasComma) {
+    s = raw.replace(",", ".");
+  } else {
+    s = raw;
+  }
+  return Number(s);
+}
 
 function positiveMoneyString(field = "El monto") {
   return z
     .string()
     .min(1, "Requerido")
-    .refine((v) => {
-      const n = Number(v.replace(",", ".").replace(/\./g, ""));
-      return !isNaN(n) && n > 0;
-    }, `${field} debe ser mayor a 0`);
+    .refine(
+      (v) => { const n = normalizeAmount(v); return !Number.isNaN(n) && n > 0; },
+      `${field} debe ser mayor a 0`,
+    );
 }
 
 function positiveIntString(max = 999) {
@@ -212,6 +227,8 @@ export function AddSheet({
   onClose,
   onSave,
   saveError,
+  members,
+  currentUserId,
 }: {
   readonly tab: Tab;
   readonly categories: ReturnType<typeof useCategories>["data"];
@@ -221,12 +238,18 @@ export function AddSheet({
     categoryId: string | null,
     autoRenew: boolean,
     requiresMonthlyReview: boolean,
+    isShared: boolean,
+    payerId?: string | null,
   ) => void;
+  readonly members?: { user_id: string; full_name: string }[];
+  readonly currentUserId?: string;
   readonly saveError?: string | null;
 }) {
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [autoRenew, setAutoRenew] = useState(false);
   const [requiresMonthlyReview, setRequiresMonthlyReview] = useState(false);
+  const [isShared, setIsShared] = useState(true);
+  const [payerId, setPayerId] = useState<string | null>(currentUserId ?? null);
 
   const {
     register,
@@ -254,6 +277,8 @@ export function AddSheet({
       categoryId,
       autoRenew,
       requiresMonthlyReview,
+      isShared,
+      tab === "cuotas" ? payerId : undefined,
     );
   }
 
@@ -263,6 +288,7 @@ export function AddSheet({
         data-testid="add-sheet-dialog"
         side="bottom"
         showCloseButton={false}
+        aria-describedby={undefined}
         style={{
           maxWidth: 390,
           margin: "0 auto",
@@ -430,6 +456,73 @@ export function AddSheet({
             />
           )}
 
+          {tab === "variables" && (
+            <div
+              style={{
+                marginBottom: 14,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <div>
+                <div
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 500,
+                    color: "var(--fg-2)",
+                    fontFamily: "var(--font-sans)",
+                  }}
+                >
+                  {isShared ? "Gasto compartido" : "Gasto personal"}
+                </div>
+                <div
+                  style={{
+                    fontSize: 11,
+                    color: "var(--fg-3)",
+                    fontFamily: "var(--font-sans)",
+                    marginTop: 2,
+                  }}
+                >
+                  {isShared
+                    ? "Entra en el balance proporcional"
+                    : "No afecta el balance entre los dos"}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsShared((v) => !v)}
+                data-testid="toggle-is-shared"
+                style={{
+                  width: 44,
+                  height: 26,
+                  borderRadius: 99,
+                  border: "none",
+                  cursor: "pointer",
+                  background: isShared ? "var(--accent)" : "var(--border-default)",
+                  transition: "background 150ms",
+                  position: "relative",
+                  flexShrink: 0,
+                }}
+                aria-label={isShared ? "Gasto compartido" : "Gasto personal"}
+                aria-pressed={isShared}
+              >
+                <div
+                  style={{
+                    width: 20,
+                    height: 20,
+                    borderRadius: 99,
+                    background: "white",
+                    position: "absolute",
+                    top: 3,
+                    left: isShared ? 21 : 3,
+                    transition: "left 150ms",
+                  }}
+                />
+              </button>
+            </div>
+          )}
+
           {categories && categories.length > 0 && (
             <div style={{ marginBottom: 14 }}>
               <div style={{ ...labelCss, marginBottom: 8 }}>Categoría</div>
@@ -438,6 +531,62 @@ export function AddSheet({
                 value={categoryId}
                 onChange={setCategoryId}
               />
+            </div>
+          )}
+
+          {tab === "cuotas" && members && members.length >= 2 && (
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ ...labelCss, marginBottom: 8 }}>¿Quién paga?</div>
+              <div data-testid="payer-selector" style={{ display: "flex", gap: 8 }}>
+                {members.map((m, idx) => {
+                  const person: "a" | "b" = idx === 0 ? "a" : "b";
+                  const isSelected = payerId === m.user_id;
+                  return (
+                    <button
+                      key={m.user_id}
+                      type="button"
+                      data-testid={`payer-option-${m.user_id}`}
+                      onClick={() => setPayerId(m.user_id)}
+                      aria-pressed={isSelected}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                        flex: 1,
+                        padding: "8px 12px",
+                        borderRadius: 10,
+                        border: isSelected
+                          ? "2px solid var(--accent)"
+                          : "1.5px solid var(--border-default)",
+                        background: isSelected
+                          ? "color-mix(in srgb, var(--accent) 10%, transparent)"
+                          : "var(--bg-sunken)",
+                        cursor: "pointer",
+                        transition: "border 150ms, background 150ms",
+                      }}
+                    >
+                      <PersonAvatar
+                        initials={getInitials(m.full_name)}
+                        person={person}
+                        size="sm"
+                      />
+                      <span
+                        style={{
+                          fontSize: 13,
+                          fontWeight: isSelected ? 600 : 400,
+                          color: isSelected ? "var(--accent)" : "var(--fg-1)",
+                          fontFamily: "var(--font-sans)",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {m.full_name.split(" ")[0]}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           )}
 
