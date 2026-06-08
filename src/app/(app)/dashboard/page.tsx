@@ -173,6 +173,7 @@ export default function DashboardPage() {
     <div
       style={{ minHeight: "100%", background: "var(--bg-base)" }}
     >
+      <h1 className="sr-only">Inicio</h1>
       <MonthHeader
         month={formatMonth(month)}
         onPrev={() => setCurrentDate((d) => subMonths(d, 1))}
