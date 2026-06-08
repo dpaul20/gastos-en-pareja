@@ -270,8 +270,14 @@ export async function acceptInvitation(token: string) {
     .single();
 
   if (!invitation) throw new Error("Invitación inválida o expirada");
-  if (!canAcceptInvitationForEmail(user.email, invitation.email)) {
+  if (
+    invitation.email !== null &&
+    !canAcceptInvitationForEmail(user.email, invitation.email)
+  ) {
     throw new Error("Esta invitación no corresponde a tu cuenta");
+  }
+  if (invitation.email === null && invitation.inviter_id === user.id) {
+    throw new Error("No podés aceptar tu propio link de invitación");
   }
 
   const service = await createServiceClient();
@@ -333,6 +339,59 @@ export async function acceptInvitation(token: string) {
     .eq("id", invitation.id);
   if (acceptedError) throw new Error("No se pudo confirmar la invitación");
   return { coupleId: invitation.couple_id };
+}
+
+export async function createInvitationLink(coupleId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("No autenticado");
+
+  const now = new Date().toISOString();
+  const { data: existing } = await supabase
+    .from("invitations")
+    .select("token, expires_at")
+    .eq("couple_id", coupleId)
+    .is("email", null)
+    .is("accepted_at", null)
+    .gt("expires_at", now)
+    .maybeSingle();
+
+  if (existing) {
+    const { headers } = await import("next/headers");
+    const h = await headers();
+    return {
+      token: existing.token,
+      expiresAt: existing.expires_at,
+      url: buildInviteUrl(h.get("host"), existing.token, process.env.NODE_ENV),
+    };
+  }
+
+  const service = await createServiceClient();
+  await service
+    .from("invitations")
+    .delete()
+    .eq("couple_id", coupleId)
+    .is("email", null)
+    .is("accepted_at", null)
+    .lte("expires_at", now);
+
+  const { data: created, error } = await service
+    .from("invitations")
+    .insert({ couple_id: coupleId, inviter_id: user.id, email: null })
+    .select("token, expires_at")
+    .single();
+
+  if (error || !created) throw new Error("No se pudo generar el link");
+
+  const { headers } = await import("next/headers");
+  const h = await headers();
+  return {
+    token: created.token,
+    expiresAt: created.expires_at,
+    url: buildInviteUrl(h.get("host"), created.token, process.env.NODE_ENV),
+  };
 }
 
 export async function getCoupleMemberProfiles() {

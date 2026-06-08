@@ -10,11 +10,16 @@ import {
 } from "@/lib/queries/use-monthly-data";
 import {
   usePendingInvitation,
+  useActiveLinkInvitation,
   useIncomeWithCarry,
   useMyPendingInvitations,
 } from "@/lib/queries/settings";
 import { upsertIncome } from "@/lib/actions/expenses";
-import { sendInvitation, createCouple } from "@/lib/actions/couple";
+import {
+  sendInvitation,
+  createCouple,
+  createInvitationLink,
+} from "@/lib/actions/couple";
 import { getMonthDate, getInitials, formatARS } from "@/lib/utils";
 import { parseAmount } from "@/lib/utils/amount";
 import { createClient } from "@/lib/supabase/client";
@@ -30,6 +35,9 @@ export default function SettingsPage() {
   const { data: pendingInvitation } = usePendingInvitation(
     member?.couple_id ?? null,
   );
+  const { data: activeLinkInvitation } = useActiveLinkInvitation(
+    member?.couple_id ?? null,
+  );
   const { data: incomeData } = useIncomeWithCarry(
     member?.couple_id ?? null,
     member?.user_id ?? null,
@@ -43,9 +51,17 @@ export default function SettingsPage() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteMsg, setInviteMsg] = useState("");
   const [coupleMsg, setCoupleMsg] = useState("");
+  const [linkError, setLinkError] = useState("");
+  const [copied, setCopied] = useState(false);
   const [myIncome, setMyIncome] = useState("");
   const displayIncome = myIncome || String(currentIncome?.amount ?? "");
   const parsedIncome = parseAmount(displayIncome);
+  const inviteUrl = activeLinkInvitation?.token
+    ? typeof window !== "undefined"
+      ? `${window.location.origin}/invite/${activeLinkInvitation.token}`
+      : null
+    : null;
+  const canShare = typeof window !== "undefined" && "share" in navigator;
 
   const supabase = createClient();
 
@@ -92,6 +108,36 @@ export default function SettingsPage() {
         setInviteMsg(err instanceof Error ? err.message : "Error al enviar");
       }
     });
+  }
+
+  async function handleGenerateLink() {
+    if (!member) return;
+    setLinkError("");
+    startTransition(async () => {
+      try {
+        const result = await createInvitationLink(member.couple_id);
+        queryClient.setQueryData(["active-link-invitation", member.couple_id], {
+          token: result.token,
+          expires_at: result.expiresAt,
+        });
+      } catch (err) {
+        setLinkError(
+          err instanceof Error ? err.message : "Error al generar el link",
+        );
+      }
+    });
+  }
+
+  async function handleCopyLink() {
+    if (!inviteUrl) return;
+    await navigator.clipboard.writeText(inviteUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  async function handleShareLink() {
+    if (!inviteUrl) return;
+    await navigator.share({ title: "Gastos en Pareja", url: inviteUrl });
   }
 
   async function handleSignOut() {
@@ -219,7 +265,7 @@ export default function SettingsPage() {
                     }}
                   >
                     <div
-                      className="mb-2 font-semibold"
+                      className="mb-3 font-semibold"
                       style={{
                         fontSize: 13,
                         color: "var(--fg-1)",
@@ -228,69 +274,188 @@ export default function SettingsPage() {
                     >
                       Invitar pareja
                     </div>
-                    {inviteExpiresAt &&
-                    new Date(inviteExpiresAt) > new Date() ? (
+
+                    {/* Email invite */}
+                    <div style={{ marginBottom: 12 }}>
                       <div
-                        aria-live="polite"
                         style={{
-                          background: "var(--bg-sunken)",
-                          border: "1px solid var(--border-subtle)",
-                          borderRadius: 10,
-                          padding: "10px 12px",
-                          fontSize: 13,
-                          color: "var(--fg-2)",
+                          fontSize: 11,
+                          fontWeight: 600,
+                          color: "var(--fg-3)",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.05em",
+                          marginBottom: 8,
                           fontFamily: "var(--font-sans)",
                         }}
                       >
-                        ⏳ Invitación pendiente hasta el{" "}
-                        <strong>
-                          {new Date(inviteExpiresAt).toLocaleDateString(
-                            "es-AR",
-                            {
-                              day: "numeric",
-                              month: "long",
-                            },
-                          )}
-                        </strong>{" "}
-                        . Vas a poder reenviar cuando expire.
+                        Por email
                       </div>
-                    ) : (
-                      <>
-                        <form onSubmit={handleInvite} className="flex gap-2">
-                          <Input
-                            type="email"
-                            value={inviteEmail}
-                            onChange={(e) => setInviteEmail(e.target.value)}
-                            placeholder="email@ejemplo.com"
-                            className="flex-1"
-                            style={{
-                              fontFamily: "var(--font-sans)",
-                            }}
-                          />
-                          <Button
-                            type="submit"
-                            disabled={isPending || !inviteEmail}
-                            style={{ whiteSpace: "nowrap" }}
-                          >
-                            Invitar
-                          </Button>
-                        </form>
-                        {inviteMsg && (
+                      {inviteExpiresAt &&
+                      new Date(inviteExpiresAt) > new Date() ? (
+                        <div
+                          aria-live="polite"
+                          style={{
+                            background: "var(--bg-sunken)",
+                            border: "1px solid var(--border-subtle)",
+                            borderRadius: 10,
+                            padding: "10px 12px",
+                            fontSize: 13,
+                            color: "var(--fg-2)",
+                            fontFamily: "var(--font-sans)",
+                          }}
+                        >
+                          ⏳ Invitación pendiente hasta el{" "}
+                          <strong>
+                            {new Date(inviteExpiresAt).toLocaleDateString(
+                              "es-AR",
+                              { day: "numeric", month: "long" },
+                            )}
+                          </strong>
+                          . Vas a poder reenviar cuando expire.
+                        </div>
+                      ) : (
+                        <>
+                          <form onSubmit={handleInvite} className="flex gap-2">
+                            <Input
+                              type="email"
+                              value={inviteEmail}
+                              onChange={(e) => setInviteEmail(e.target.value)}
+                              placeholder="email@ejemplo.com"
+                              className="flex-1"
+                              style={{ fontFamily: "var(--font-sans)" }}
+                            />
+                            <Button
+                              type="submit"
+                              disabled={isPending || !inviteEmail}
+                              style={{ whiteSpace: "nowrap" }}
+                            >
+                              Invitar
+                            </Button>
+                          </form>
+                          {inviteMsg && (
+                            <div
+                              aria-live="polite"
+                              className="mt-1.5 text-xs"
+                              style={{
+                                color: inviteMsg.includes("✓")
+                                  ? "var(--status-success)"
+                                  : "var(--status-danger)",
+                                fontFamily: "var(--font-sans)",
+                              }}
+                            >
+                              {inviteMsg}
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+
+                    {/* Divider */}
+                    <div
+                      aria-hidden
+                      style={{
+                        height: 1,
+                        background: "var(--border-subtle)",
+                        margin: "12px 0",
+                      }}
+                    />
+
+                    {/* Link invite */}
+                    <div>
+                      <div
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 600,
+                          color: "var(--fg-3)",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.05em",
+                          marginBottom: 8,
+                          fontFamily: "var(--font-sans)",
+                        }}
+                      >
+                        Por link
+                      </div>
+                      {inviteUrl ? (
+                        <>
                           <div
-                            aria-live="polite"
-                            className="mt-1.5 text-xs"
-                            style={{
-                              color: inviteMsg.includes("✓")
-                                ? "var(--status-success)"
-                                : "var(--status-danger)",
-                              fontFamily: "var(--font-sans)",
-                            }}
+                            className="flex gap-2"
+                            style={{ marginBottom: 6 }}
                           >
-                            {inviteMsg}
+                            <Input
+                              readOnly
+                              value={inviteUrl}
+                              aria-label="Link de invitación"
+                              className="flex-1 text-xs"
+                              style={{
+                                fontFamily: "var(--font-mono)",
+                                color: "var(--fg-2)",
+                                background: "var(--bg-sunken)",
+                              }}
+                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={handleCopyLink}
+                              style={{ whiteSpace: "nowrap" }}
+                            >
+                              {copied ? "Copiado ✓" : "Copiar"}
+                            </Button>
+                            {canShare && (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={handleShareLink}
+                                aria-label="Compartir link"
+                              >
+                                ↗
+                              </Button>
+                            )}
                           </div>
-                        )}
-                      </>
-                    )}
+                          {activeLinkInvitation?.expires_at && (
+                            <div
+                              style={{
+                                fontSize: 11,
+                                color: "var(--fg-3)",
+                                fontFamily: "var(--font-sans)",
+                              }}
+                            >
+                              Expira el{" "}
+                              {new Date(
+                                activeLinkInvitation.expires_at,
+                              ).toLocaleDateString("es-AR", {
+                                day: "numeric",
+                                month: "long",
+                              })}
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={handleGenerateLink}
+                          disabled={isPending}
+                          className="w-full justify-start"
+                          style={{ fontFamily: "var(--font-sans)" }}
+                        >
+                          {isPending
+                            ? "Generando..."
+                            : "Generar link de invitación"}
+                        </Button>
+                      )}
+                      {linkError && (
+                        <div
+                          aria-live="polite"
+                          className="mt-1.5 text-xs"
+                          style={{
+                            color: "var(--status-danger)",
+                            fontFamily: "var(--font-sans)",
+                          }}
+                        >
+                          {linkError}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </>

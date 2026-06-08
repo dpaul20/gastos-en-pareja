@@ -18,6 +18,7 @@ export function usePendingInvitation(coupleId: string | null) {
         .from("invitations")
         .select("expires_at")
         .eq("couple_id", coupleId)
+        .not("email", "is", null)
         .is("accepted_at", null)
         .gt("expires_at", now)
         .order("created_at", { ascending: false })
@@ -57,6 +58,27 @@ export function useIncomeWithCarry(
         current: (data ?? []).find((r) => r.month === currentMonth) ?? null,
         previous: (data ?? []).find((r) => r.month === previousMonth) ?? null,
       };
+    },
+  });
+}
+
+export function useActiveLinkInvitation(coupleId: string | null) {
+  const supabase = createClient();
+  return useQuery({
+    queryKey: ["active-link-invitation", coupleId],
+    enabled: !!coupleId,
+    queryFn: async () => {
+      if (!coupleId) return null;
+      const now = new Date().toISOString();
+      const { data } = await supabase
+        .from("invitations")
+        .select("token, expires_at")
+        .eq("couple_id", coupleId)
+        .is("email", null)
+        .is("accepted_at", null)
+        .gt("expires_at", now)
+        .maybeSingle();
+      return data ?? null;
     },
   });
 }
