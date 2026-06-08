@@ -82,6 +82,7 @@ export function MonthDetail({
         <Badge variant="neutral">Solo lectura</Badge>
       </div>
       <div
+        className="mx-auto w-full max-w-3xl"
         style={{
           flex: 1,
           padding: "16px",

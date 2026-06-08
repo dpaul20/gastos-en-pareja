@@ -77,6 +77,7 @@ export default function HistoryPage() {
         )}
       </div>
       <div
+        className="mx-auto w-full max-w-3xl"
         style={{
           flex: 1,
           padding: "12px 16px",
