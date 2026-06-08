@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.12.1](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.12.0...gastos-en-pareja-v1.12.1) (2026-06-08)
+
+
+### 🐛 Bug Fixes
+
+* **actions:** log actual Supabase errors in createCouple before throwing ([ad51d08](https://github.com/dpaul20/gastos-en-pareja/commit/ad51d083d34dfc75e33194310560e7c8d9042f6b))
+* **actions:** log Supabase errors in createCouple + fix Husky hooks ([6507e61](https://github.com/dpaul20/gastos-en-pareja/commit/6507e61e51a52a6a76a4ac2ef3c67eafa19e177f))
+* **e2e:** workers=1 en CI + set -e en pre-push hook ([297a5e5](https://github.com/dpaul20/gastos-en-pareja/commit/297a5e5c374ba7a98fc96affc811339dea4a82d5))
+* **e2e:** workers=1 en CI para evitar race conditions entre test files ([fbe724b](https://github.com/dpaul20/gastos-en-pareja/commit/fbe724b5ccaa7a4a3c6a1e474aff2965eac605a4))
+* **husky:** shebang y LF en hooks de Husky, gitattributes para Windows ([4765b51](https://github.com/dpaul20/gastos-en-pareja/commit/4765b519be0e6eec3e694c13fe86b5943e337610))
+
 ## [1.12.0](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.11.0...gastos-en-pareja-v1.12.0) (2026-06-08)
 
 
