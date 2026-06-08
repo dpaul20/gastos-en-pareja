@@ -9,8 +9,10 @@ export type AppFixtures = {
   authenticatedPage: Page;
   /** Supabase admin client — bypasses RLS for test setup / teardown */
   adminClient: SupabaseClient<Database>;
-  /** couple_id belonging to the E2E test user */
+  /** couple_id belonging to the E2E test user (cached per worker) */
   coupleId: string;
+  /** user_id of the E2E test user (cached per worker) */
+  testUserId: string;
 };
 
 // ── Custom test ───────────────────────────────────────────────────────────────
@@ -30,22 +32,22 @@ export const test = base.extend<AppFixtures>({
   },
 
   /**
-   * Service-role Supabase client.
-   * Use this in beforeEach/afterEach to create or delete test data
-   * without going through the UI.  Keeps tests isolated.
+   * Service-role Supabase client — worker-scoped so it is created once per
+   * worker process and shared across all tests in that worker.
+   * Safe because the client is stateless (service role key, no session).
    */
-  adminClient: async ({}, use) => {
+  adminClient: [async ({}, use) => {
     const client = createClient<Database>(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
     await use(client);
-  },
+  }, { scope: "worker" }],
 
   /**
-   * Resolves the couple_id for the E2E test user.
-   * Fails fast if the global-setup was not run (couple doesn't exist).
+   * user_id of the E2E test user — worker-scoped so listUsers() is called
+   * exactly once per worker for the entire test run.
    */
-  coupleId: async ({ adminClient }, use) => {
+  testUserId: [async ({ adminClient }, use) => {
     const { data: users } = await adminClient.auth.admin.listUsers();
     const testUser = users?.users.find((u) => u.email === TEST_EMAIL);
     if (!testUser) {
@@ -53,11 +55,18 @@ export const test = base.extend<AppFixtures>({
         `E2E test user <${TEST_EMAIL}> not found. Did you run the global setup?`,
       );
     }
+    await use(testUser.id);
+  }, { scope: "worker" }],
 
+  /**
+   * couple_id for the E2E test user — worker-scoped, derived from testUserId
+   * so the expensive listUsers() call is shared.
+   */
+  coupleId: [async ({ adminClient, testUserId }, use) => {
     const { data: member, error } = await adminClient
       .from("couple_members")
       .select("couple_id")
-      .eq("user_id", testUser.id)
+      .eq("user_id", testUserId)
       .single();
 
     if (error || !member) {
@@ -67,7 +76,7 @@ export const test = base.extend<AppFixtures>({
     }
 
     await use(member.couple_id);
-  },
+  }, { scope: "worker" }],
 });
 
 export { expect } from "@playwright/test";
