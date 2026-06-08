@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.13.0](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.12.1...gastos-en-pareja-v1.13.0) (2026-06-08)
+
+
+### ✨ Features
+
+* **ui:** responsive modal — Dialog on desktop, Sheet on mobile for expense flows ([2bffdf8](https://github.com/dpaul20/gastos-en-pareja/commit/2bffdf8d083bdb0c6a5485090e11dc826836ba00))
+
+
+### 🐛 Bug Fixes
+
+* **layout:** constrain content width on desktop for expenses, history, settings ([a10263b](https://github.com/dpaul20/gastos-en-pareja/commit/a10263b1ebd7130ec789fce58a0dd69863600bef))
+* **layout:** constrain content width on desktop for expenses, history, settings ([836f908](https://github.com/dpaul20/gastos-en-pareja/commit/836f90866c1aaf29bee3d419342af56063999ac9))
+
 ## [1.12.1](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.12.0...gastos-en-pareja-v1.12.1) (2026-06-08)
 
 
