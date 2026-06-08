@@ -72,7 +72,7 @@ export default function HistoryPage() {
               fontFamily: "var(--font-sans)",
             }}
           >
-            Cargandoâ€¦
+            Cargando…
           </div>
         )}
       </div>

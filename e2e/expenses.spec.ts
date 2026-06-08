@@ -52,7 +52,7 @@ test.describe("Segmented control", () => {
         "Descripción",
         "Monto total",
         "Cuotas",
-        "Primer pago (AAAA-MM-DD)",
+        "Fecha del primer pago",
       ],
     };
 
@@ -417,7 +417,7 @@ test.describe("Gasto cuota — creación exitosa", () => {
     await expenses.dialogField("Monto total").fill("24000");
     await expenses.dialogField("Cuotas").fill("12");
     const today = new Date().toISOString().split("T")[0];
-    await expenses.dialogField("Primer pago (AAAA-MM-DD)").fill(today);
+    await expenses.dialogField("Fecha del primer pago").fill(today);
 
     await expenses.saveButton().click();
 

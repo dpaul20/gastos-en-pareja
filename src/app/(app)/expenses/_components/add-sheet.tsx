@@ -357,7 +357,7 @@ export function AddSheet({
                 error={errors.credit_card?.message}
               />
               <InputField
-                label="Primer pago (AAAA-MM-DD)"
+                label="Fecha del primer pago"
                 id="field-first-payment-date"
                 registration={register("first_payment_date")}
                 error={errors.first_payment_date?.message}
