@@ -8,12 +8,7 @@ import type { UseFormRegisterReturn } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+import { ResponsiveModal } from "@/components/shared/responsive-modal";
 import { CategoryPicker } from "@/components/shared/category-picker";
 import { PersonAvatar } from "@/components/shared/avatar";
 import { useCategories } from "@/lib/queries/use-monthly-data";
@@ -29,10 +24,10 @@ function positiveMoneyString(field = "El monto") {
   return z
     .string()
     .min(1, "Requerido")
-    .refine(
-      (v) => { const n = parseAmount(v); return !Number.isNaN(n) && n > 0; },
-      `${field} debe ser mayor a 0`,
-    );
+    .refine((v) => {
+      const n = parseAmount(v);
+      return !Number.isNaN(n) && n > 0;
+    }, `${field} debe ser mayor a 0`);
 }
 
 function positiveIntString(max = 999) {
@@ -141,7 +136,7 @@ function MoneyField({
           placeholder="0"
           className={cn(
             "flex-1 border-none bg-transparent shadow-none outline-none focus-visible:ring-0",
-            "font-mono font-semibold text-base",
+            "font-mono text-base font-semibold",
           )}
           style={{
             padding: "10px 12px 10px 4px",
@@ -268,271 +263,133 @@ export function AddSheet({
   }
 
   return (
-    <Sheet open onOpenChange={(open) => !open && onClose()}>
-      <SheetContent
-        data-testid="add-sheet-dialog"
-        side="bottom"
-        showCloseButton={false}
-        aria-describedby={undefined}
-        className="mx-auto w-full sm:max-w-120 rounded-t-[20px]"
-        style={{
-          padding: "20px 20px 40px",
-          background: "var(--bg-elevated)",
-          border: "none",
-        }}
-      >
-        <div
-          style={{
-            width: 36,
-            height: 4,
-            borderRadius: 99,
-            background: "var(--border-default)",
-            margin: "0 auto 20px",
-          }}
+    <ResponsiveModal
+      open
+      onOpenChange={(open) => !open && onClose()}
+      title={`Nuevo gasto — ${TAB_LABEL[tab]}`}
+      data-testid="add-sheet-dialog"
+    >
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <InputField
+          label="Descripción"
+          id="field-description"
+          registration={register("description")}
+          error={errors.description?.message}
         />
-        <SheetHeader style={{ marginBottom: 16 }}>
-          <SheetTitle
-            style={{
-              fontSize: 18,
-              fontWeight: 700,
-              color: "var(--fg-1)",
-              fontFamily: "var(--font-sans)",
-              textTransform: "capitalize",
-            }}
-          >
-            Nuevo gasto — {TAB_LABEL[tab]}
-          </SheetTitle>
-        </SheetHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <InputField
-            label="Descripción"
-            id="field-description"
-            registration={register("description")}
-            error={errors.description?.message}
-          />
-
-          {tab === "cuotas" && (
-            <>
-              <MoneyField
-                label="Monto total"
-                id="field-total-amount"
-                registration={register("total_amount")}
-                error={errors.total_amount?.message}
-              />
-              <InputField
-                label="Cuotas"
-                id="field-installments"
-                registration={register("installments")}
-                error={errors.installments?.message}
-                inputMode="numeric"
-                mono
-              />
-              {monthlyAmount !== null && (
-                <div
-                  style={{
-                    fontSize: 12,
-                    color: "var(--fg-2)",
-                    marginTop: -10,
-                    marginBottom: 14,
-                    fontFamily: "var(--font-sans)",
-                  }}
-                >
-                  ≈ {formatARS(monthlyAmount)} / mes
-                </div>
-              )}
-              <InputField
-                label="Tarjeta (opcional)"
-                id="field-credit-card"
-                registration={register("credit_card")}
-                error={errors.credit_card?.message}
-              />
-              <InputField
-                label="Fecha del primer pago"
-                id="field-first-payment-date"
-                registration={register("first_payment_date")}
-                error={errors.first_payment_date?.message}
-                type="date"
-              />
-            </>
-          )}
-
-          {(tab === "fijos" || tab === "variables") && (
+        {tab === "cuotas" && (
+          <>
             <MoneyField
-              label="Monto"
-              id="field-amount"
-              registration={register("amount")}
-              error={errors.amount?.message}
+              label="Monto total"
+              id="field-total-amount"
+              registration={register("total_amount")}
+              error={errors.total_amount?.message}
             />
-          )}
-
-          {tab === "fijos" && (
             <InputField
-              label="Día de vencimiento (1-31)"
-              id="field-due-day"
-              registration={register("due_day")}
-              error={errors.due_day?.message}
+              label="Cuotas"
+              id="field-installments"
+              registration={register("installments")}
+              error={errors.installments?.message}
+              inputMode="numeric"
               mono
             />
-          )}
-
-          {tab === "fijos" && (
-            <div
-              style={{
-                marginBottom: 14,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-              }}
-            >
-              <span
+            {monthlyAmount !== null && (
+              <div
                 style={{
-                  fontSize: 13,
-                  fontWeight: 500,
+                  fontSize: 12,
                   color: "var(--fg-2)",
+                  marginTop: -10,
+                  marginBottom: 14,
                   fontFamily: "var(--font-sans)",
                 }}
               >
-                Pedirme confirmación cada mes
-              </span>
-              <Switch
-                checked={requiresMonthlyReview}
-                onCheckedChange={setRequiresMonthlyReview}
-                data-testid="toggle-requires-review"
-                aria-label="Pedirme confirmación cada mes"
-              />
-            </div>
-          )}
-
-          {tab === "variables" && (
+                ≈ {formatARS(monthlyAmount)} / mes
+              </div>
+            )}
             <InputField
-              label="Fecha (AAAA-MM-DD)"
-              id="field-date"
-              registration={register("date")}
-              error={errors.date?.message}
+              label="Tarjeta (opcional)"
+              id="field-credit-card"
+              registration={register("credit_card")}
+              error={errors.credit_card?.message}
+            />
+            <InputField
+              label="Fecha del primer pago"
+              id="field-first-payment-date"
+              registration={register("first_payment_date")}
+              error={errors.first_payment_date?.message}
               type="date"
             />
-          )}
+          </>
+        )}
 
-          {tab === "variables" && (
-            <div
+        {(tab === "fijos" || tab === "variables") && (
+          <MoneyField
+            label="Monto"
+            id="field-amount"
+            registration={register("amount")}
+            error={errors.amount?.message}
+          />
+        )}
+
+        {tab === "fijos" && (
+          <InputField
+            label="Día de vencimiento (1-31)"
+            id="field-due-day"
+            registration={register("due_day")}
+            error={errors.due_day?.message}
+            mono
+          />
+        )}
+
+        {tab === "fijos" && (
+          <div
+            style={{
+              marginBottom: 14,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <span
               style={{
-                marginBottom: 14,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
+                fontSize: 13,
+                fontWeight: 500,
+                color: "var(--fg-2)",
+                fontFamily: "var(--font-sans)",
               }}
             >
-              <div>
-                <div
-                  style={{
-                    fontSize: 13,
-                    fontWeight: 500,
-                    color: "var(--fg-2)",
-                    fontFamily: "var(--font-sans)",
-                  }}
-                >
-                  {isShared ? "Gasto compartido" : "Gasto personal"}
-                </div>
-                <div
-                  style={{
-                    fontSize: 11,
-                    color: "var(--fg-3)",
-                    fontFamily: "var(--font-sans)",
-                    marginTop: 2,
-                  }}
-                >
-                  {isShared
-                    ? "Entra en el balance proporcional"
-                    : "No afecta el balance entre los dos"}
-                </div>
-              </div>
-              <Switch
-                checked={isShared}
-                onCheckedChange={setIsShared}
-                data-testid="toggle-is-shared"
-                aria-label="Gasto compartido"
-              />
-            </div>
-          )}
+              Pedirme confirmación cada mes
+            </span>
+            <Switch
+              checked={requiresMonthlyReview}
+              onCheckedChange={setRequiresMonthlyReview}
+              data-testid="toggle-requires-review"
+              aria-label="Pedirme confirmación cada mes"
+            />
+          </div>
+        )}
 
-          {categories && categories.length > 0 && (
-            <div style={{ marginBottom: 14 }}>
-              <div style={{ ...labelCss, marginBottom: 8 }}>Categoría</div>
-              <CategoryPicker
-                categories={categories}
-                value={categoryId}
-                onChange={setCategoryId}
-              />
-            </div>
-          )}
+        {tab === "variables" && (
+          <InputField
+            label="Fecha (AAAA-MM-DD)"
+            id="field-date"
+            registration={register("date")}
+            error={errors.date?.message}
+            type="date"
+          />
+        )}
 
-          {tab === "cuotas" && members && members.length >= 2 && (
-            <div style={{ marginBottom: 14 }}>
-              <div style={{ ...labelCss, marginBottom: 8 }}>¿Quién paga?</div>
-              <div data-testid="payer-selector" style={{ display: "flex", gap: 8 }}>
-                {members.map((m, idx) => {
-                  const person: "a" | "b" = idx === 0 ? "a" : "b";
-                  const isSelected = payerId === m.user_id;
-                  return (
-                    <button
-                      key={m.user_id}
-                      type="button"
-                      data-testid={`payer-option-${m.user_id}`}
-                      onClick={() => setPayerId(m.user_id)}
-                      aria-pressed={isSelected}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 8,
-                        flex: 1,
-                        padding: "8px 12px",
-                        borderRadius: 10,
-                        border: isSelected
-                          ? "2px solid var(--accent)"
-                          : "1.5px solid var(--border-default)",
-                        background: isSelected
-                          ? "color-mix(in srgb, var(--accent) 10%, transparent)"
-                          : "var(--bg-sunken)",
-                        cursor: "pointer",
-                        transition: "border 150ms, background 150ms",
-                      }}
-                    >
-                      <PersonAvatar
-                        initials={getInitials(m.full_name)}
-                        person={person}
-                        size="sm"
-                      />
-                      <span
-                        style={{
-                          fontSize: 13,
-                          fontWeight: isSelected ? 600 : 400,
-                          color: isSelected ? "var(--accent)" : "var(--fg-1)",
-                          fontFamily: "var(--font-sans)",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {m.full_name.split(" ")[0]}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {tab === "cuotas" && (
-            <div
-              style={{
-                marginBottom: 14,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-              }}
-            >
-              <span
+        {tab === "variables" && (
+          <div
+            style={{
+              marginBottom: 14,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <div>
+              <div
                 style={{
                   fontSize: 13,
                   fontWeight: 500,
@@ -540,37 +397,148 @@ export function AddSheet({
                   fontFamily: "var(--font-sans)",
                 }}
               >
-                Renovar automáticamente
-              </span>
-              <Switch
-                checked={autoRenew}
-                onCheckedChange={setAutoRenew}
-                aria-label="Renovación automática"
-              />
+                {isShared ? "Gasto compartido" : "Gasto personal"}
+              </div>
+              <div
+                style={{
+                  fontSize: 11,
+                  color: "var(--fg-3)",
+                  fontFamily: "var(--font-sans)",
+                  marginTop: 2,
+                }}
+              >
+                {isShared
+                  ? "Entra en el balance proporcional"
+                  : "No afecta el balance entre los dos"}
+              </div>
             </div>
-          )}
+            <Switch
+              checked={isShared}
+              onCheckedChange={setIsShared}
+              data-testid="toggle-is-shared"
+              aria-label="Gasto compartido"
+            />
+          </div>
+        )}
 
-          {saveError && (
+        {categories && categories.length > 0 && (
+          <div style={{ marginBottom: 14 }}>
+            <div style={{ ...labelCss, marginBottom: 8 }}>Categoría</div>
+            <CategoryPicker
+              categories={categories}
+              value={categoryId}
+              onChange={setCategoryId}
+            />
+          </div>
+        )}
+
+        {tab === "cuotas" && members && members.length >= 2 && (
+          <div style={{ marginBottom: 14 }}>
+            <div style={{ ...labelCss, marginBottom: 8 }}>¿Quién paga?</div>
             <div
-              role="alert"
+              data-testid="payer-selector"
+              style={{ display: "flex", gap: 8 }}
+            >
+              {members.map((m, idx) => {
+                const person: "a" | "b" = idx === 0 ? "a" : "b";
+                const isSelected = payerId === m.user_id;
+                return (
+                  <button
+                    key={m.user_id}
+                    type="button"
+                    data-testid={`payer-option-${m.user_id}`}
+                    onClick={() => setPayerId(m.user_id)}
+                    aria-pressed={isSelected}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      flex: 1,
+                      padding: "8px 12px",
+                      borderRadius: 10,
+                      border: isSelected
+                        ? "2px solid var(--accent)"
+                        : "1.5px solid var(--border-default)",
+                      background: isSelected
+                        ? "color-mix(in srgb, var(--accent) 10%, transparent)"
+                        : "var(--bg-sunken)",
+                      cursor: "pointer",
+                      transition: "border 150ms, background 150ms",
+                    }}
+                  >
+                    <PersonAvatar
+                      initials={getInitials(m.full_name)}
+                      person={person}
+                      size="sm"
+                    />
+                    <span
+                      style={{
+                        fontSize: 13,
+                        fontWeight: isSelected ? 600 : 400,
+                        color: isSelected ? "var(--accent)" : "var(--fg-1)",
+                        fontFamily: "var(--font-sans)",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {m.full_name.split(" ")[0]}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {tab === "cuotas" && (
+          <div
+            style={{
+              marginBottom: 14,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <span
               style={{
-                ...errorCss,
-                marginBottom: 12,
-                padding: "8px 12px",
-                background: "color-mix(in srgb, var(--status-danger) 10%, transparent)",
-                borderRadius: 8,
-                border: "1px solid var(--status-danger)",
+                fontSize: 13,
+                fontWeight: 500,
+                color: "var(--fg-2)",
+                fontFamily: "var(--font-sans)",
               }}
             >
-              {saveError}
-            </div>
-          )}
+              Renovar automáticamente
+            </span>
+            <Switch
+              checked={autoRenew}
+              onCheckedChange={setAutoRenew}
+              aria-label="Renovación automática"
+            />
+          </div>
+        )}
 
-          <Button type="submit" style={{ width: "100%" }}>
-            Guardar
-          </Button>
-        </form>
-      </SheetContent>
-    </Sheet>
+        {saveError && (
+          <div
+            role="alert"
+            style={{
+              ...errorCss,
+              marginBottom: 12,
+              padding: "8px 12px",
+              background:
+                "color-mix(in srgb, var(--status-danger) 10%, transparent)",
+              borderRadius: 8,
+              border: "1px solid var(--status-danger)",
+            }}
+          >
+            {saveError}
+          </div>
+        )}
+
+        <Button type="submit" style={{ width: "100%" }}>
+          Guardar
+        </Button>
+      </form>
+    </ResponsiveModal>
   );
 }

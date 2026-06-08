@@ -23,15 +23,10 @@ import { FijoItem } from "./_components/fijo-item";
 import { VariableItem } from "./_components/variable-item";
 import { TAB_LABEL, TAB_TESTID } from "./_components/segmented-control";
 import { AddSheet } from "./_components/add-sheet";
+import { ResponsiveModal } from "@/components/shared/responsive-modal";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
 
 const TAB_DESCRIPTIONS: Record<Tab, string> = {
   cuotas: "Compras en cuotas o planes de pago recurrentes",
@@ -115,81 +110,53 @@ function TypeSelectorSheet({
   ];
 
   return (
-    <Sheet open onOpenChange={(open) => !open && onClose()}>
-      <SheetContent
-        data-testid="type-selector-sheet"
-        side="bottom"
-        showCloseButton={false}
-        aria-describedby={undefined}
-        className="pb-safe-mobile mx-auto w-full rounded-t-[20px] sm:max-w-120"
-        style={{
-          background: "var(--bg-elevated)",
-          border: "none",
-          padding: "20px 20px 0",
-        }}
-      >
-        <div
-          style={{
-            width: 36,
-            height: 4,
-            borderRadius: 99,
-            background: "var(--border-default)",
-            margin: "0 auto 20px",
-          }}
-        />
-        <SheetHeader className="mb-5">
-          <SheetTitle
-            className="text-lg font-bold"
+    <ResponsiveModal
+      open
+      onOpenChange={(open) => !open && onClose()}
+      title="¿Qué querés agregar?"
+      data-testid="type-selector-sheet"
+    >
+      <div className="flex flex-col gap-2.5 pb-4">
+        {options.map((opt) => (
+          <button
+            key={opt.label}
+            data-testid={opt.testId}
+            onClick={opt.onSelect}
+            className="flex w-full cursor-pointer items-center gap-3.5 rounded-2xl px-4 py-3.5 text-left"
             style={{
-              color: "var(--fg-1)",
-              fontFamily: "var(--font-sans)",
+              background: "var(--bg-sunken)",
+              border: "1.5px solid var(--border-subtle)",
             }}
           >
-            ¿Qué querés agregar?
-          </SheetTitle>
-        </SheetHeader>
-        <div className="flex flex-col gap-[10px]">
-          {options.map((opt) => (
-            <button
-              key={opt.label}
-              data-testid={opt.testId}
-              onClick={opt.onSelect}
-              className="flex w-full cursor-pointer items-center gap-[14px] rounded-2xl px-4 py-[14px] text-left"
-              style={{
-                background: "var(--bg-sunken)",
-                border: "1.5px solid var(--border-subtle)",
-              }}
-            >
-              <span aria-hidden="true" style={{ fontSize: 28 }}>
-                {opt.icon}
-              </span>
-              <div>
-                <div
-                  className="text-[15px] font-semibold"
-                  style={{
-                    color: "var(--fg-1)",
-                    fontFamily: "var(--font-sans)",
-                  }}
-                >
-                  {opt.label}
-                </div>
-                <div
-                  className="text-xs"
-                  style={{
-                    color: "var(--fg-3)",
-                    marginTop: 2,
-                    fontFamily: "var(--font-sans)",
-                    lineHeight: 1.4,
-                  }}
-                >
-                  {opt.description}
-                </div>
+            <span aria-hidden="true" style={{ fontSize: 28 }}>
+              {opt.icon}
+            </span>
+            <div>
+              <div
+                className="text-[15px] font-semibold"
+                style={{
+                  color: "var(--fg-1)",
+                  fontFamily: "var(--font-sans)",
+                }}
+              >
+                {opt.label}
               </div>
-            </button>
-          ))}
-        </div>
-      </SheetContent>
-    </Sheet>
+              <div
+                className="text-xs"
+                style={{
+                  color: "var(--fg-3)",
+                  marginTop: 2,
+                  fontFamily: "var(--font-sans)",
+                  lineHeight: 1.4,
+                }}
+              >
+                {opt.description}
+              </div>
+            </div>
+          </button>
+        ))}
+      </div>
+    </ResponsiveModal>
   );
 }
 
@@ -212,130 +179,101 @@ function ServiceListSheet({
   onClose,
 }: ServiceListSheetProps) {
   return (
-    <Sheet open onOpenChange={(open) => !open && onClose()}>
-      <SheetContent
-        data-testid="service-list-sheet"
-        side="bottom"
-        showCloseButton={false}
-        aria-describedby={undefined}
-        className="mx-auto w-full rounded-t-[20px] sm:max-w-120"
+    <ResponsiveModal
+      open
+      onOpenChange={(open) => !open && onClose()}
+      title="Servicios del mes"
+      data-testid="service-list-sheet"
+    >
+      <div
+        className="flex flex-col overflow-hidden rounded-2xl"
         style={{
-          background: "var(--bg-elevated)",
-          border: "none",
-          padding: "20px 20px 40px",
+          gap: 1,
+          background: "var(--bg-sunken)",
+          border: "1px solid var(--border-subtle)",
         }}
       >
-        <div
-          style={{
-            width: 36,
-            height: 4,
-            borderRadius: 99,
-            background: "var(--border-default)",
-            margin: "0 auto 20px",
-          }}
-        />
-        <SheetHeader className="mb-4">
-          <SheetTitle
-            className="text-lg font-bold"
+        {instances.length === 0 && (
+          <div
+            className="text-center text-[13px]"
             style={{
-              color: "var(--fg-1)",
+              padding: "20px 16px",
+              color: "var(--fg-3)",
               fontFamily: "var(--font-sans)",
             }}
           >
-            Servicios del mes
-          </SheetTitle>
-        </SheetHeader>
-
-        <div
-          className="flex flex-col overflow-hidden rounded-2xl"
-          style={{
-            gap: 1,
-            background: "var(--bg-sunken)",
-            border: "1px solid var(--border-subtle)",
-          }}
-        >
-          {instances.length === 0 && (
-            <div
-              className="text-center text-[13px]"
+            Sin servicios este mes
+          </div>
+        )}
+        {instances.map((fi) => {
+          const amount = effectiveFixedAmount(fi);
+          return (
+            <button
+              key={fi.id}
+              onClick={() => onPickInstance(fi.id)}
+              className="flex w-full cursor-pointer items-center justify-between gap-3 px-4 py-3 text-left"
               style={{
-                padding: "20px 16px",
-                color: "var(--fg-3)",
-                fontFamily: "var(--font-sans)",
+                background: "var(--bg-elevated)",
+                border: "none",
+                borderBottom: "1px solid var(--border-subtle)",
               }}
             >
-              Sin servicios este mes
-            </div>
-          )}
-          {instances.map((fi) => {
-            const amount = effectiveFixedAmount(fi);
-            return (
-              <button
-                key={fi.id}
-                onClick={() => onPickInstance(fi.id)}
-                className="flex w-full cursor-pointer items-center justify-between gap-3 px-4 py-3 text-left"
-                style={{
-                  background: "var(--bg-elevated)",
-                  border: "none",
-                  borderBottom: "1px solid var(--border-subtle)",
-                }}
-              >
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div
-                    className="text-sm font-medium"
-                    style={{
-                      color: "var(--fg-1)",
-                      fontFamily: "var(--font-sans)",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {fi.fixed_expense_templates.description}
-                  </div>
-                  <div
-                    className="text-xs"
-                    style={{
-                      color: "var(--fg-3)",
-                      fontFamily: "var(--font-mono)",
-                      marginTop: 2,
-                    }}
-                  >
-                    {formatARS(amount)}
-                  </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div
+                  className="text-sm font-medium"
+                  style={{
+                    color: "var(--fg-1)",
+                    fontFamily: "var(--font-sans)",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {fi.fixed_expense_templates.description}
                 </div>
-                {fi.paid && (
-                  <span
-                    className="flex-shrink-0 rounded-[6px] px-2 py-[2px] text-xs font-semibold"
-                    style={{
-                      color: "var(--color-teal)",
-                      background:
-                        "color-mix(in srgb, var(--color-teal) 12%, transparent)",
-                      fontFamily: "var(--font-sans)",
-                    }}
-                  >
-                    ✓ Pagado
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
+                <div
+                  className="text-xs"
+                  style={{
+                    color: "var(--fg-3)",
+                    fontFamily: "var(--font-mono)",
+                    marginTop: 2,
+                  }}
+                >
+                  {formatARS(amount)}
+                </div>
+              </div>
+              {fi.paid && (
+                <span
+                  className="shrink-0 rounded-md px-2 py-0.5 text-xs font-semibold"
+                  style={{
+                    color: "var(--color-teal)",
+                    background:
+                      "color-mix(in srgb, var(--color-teal) 12%, transparent)",
+                    fontFamily: "var(--font-sans)",
+                  }}
+                >
+                  ✓ Pagado
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
 
-        <button
-          onClick={onCreateNew}
-          className="mt-3 flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl text-sm font-semibold"
-          style={{
-            padding: "13px 16px",
-            background: "transparent",
-            border: "1.5px dashed var(--border-default)",
-            color: "var(--accent)",
-            fontFamily: "var(--font-sans)",
-          }}
-        >
-          + Nuevo servicio
-        </button>
-      </SheetContent>
-    </Sheet>
+      <button
+        onClick={onCreateNew}
+        className="mt-3 flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl text-sm font-semibold"
+        style={{
+          padding: "13px 16px",
+          background: "transparent",
+          border: "1.5px dashed var(--border-default)",
+          color: "var(--accent)",
+          fontFamily: "var(--font-sans)",
+        }}
+      >
+        + Nuevo servicio
+      </button>
+    </ResponsiveModal>
   );
 }
 
@@ -396,150 +334,112 @@ function EditServiceSheet({
   const name = instance.fixed_expense_templates.description;
 
   return (
-    <Sheet open onOpenChange={(open) => !open && onClose()}>
-      <SheetContent
-        data-testid="edit-service-sheet"
-        side="bottom"
-        showCloseButton={false}
-        aria-describedby={undefined}
-        className="mx-auto w-full rounded-t-[20px] sm:max-w-120"
-        style={{
-          background: "var(--bg-elevated)",
-          border: "none",
-          padding: "20px 20px 40px",
-        }}
-      >
+    <ResponsiveModal
+      open
+      onOpenChange={(open) => !open && onClose()}
+      title={name}
+      data-testid="edit-service-sheet"
+    >
+      {/* Amount edit */}
+      <div className="mb-3.5">
+        <label
+          htmlFor="edit-service-amount"
+          className="mb-1.5 block text-[13px] font-medium"
+          style={{ color: "var(--fg-2)", fontFamily: "var(--font-sans)" }}
+        >
+          Monto este mes
+        </label>
         <div
+          className="flex items-center overflow-hidden"
           style={{
-            width: 36,
-            height: 4,
-            borderRadius: 99,
-            background: "var(--border-default)",
-            margin: "0 auto 20px",
+            background: "var(--bg-sunken)",
+            borderRadius: 10,
+            border: "1.5px solid var(--border-default)",
           }}
-        />
-        <SheetHeader className="mb-4">
-          <SheetTitle
-            className="text-lg font-bold"
-            style={{
-              color: "var(--fg-1)",
-              fontFamily: "var(--font-sans)",
-            }}
-          >
-            {name}
-          </SheetTitle>
-        </SheetHeader>
-
-        {/* Amount edit */}
-        <div className="mb-[14px]">
-          <label
-            htmlFor="edit-service-amount"
-            className="mb-[5px] block text-[13px] font-medium"
-            style={{
-              color: "var(--fg-2)",
-              fontFamily: "var(--font-sans)",
-            }}
-          >
-            Monto este mes
-          </label>
-          <div
-            className="flex items-center overflow-hidden"
-            style={{
-              background: "var(--bg-sunken)",
-              borderRadius: 10,
-              border: "1.5px solid var(--border-default)",
-            }}
-          >
-            <span
-              aria-hidden
-              className="text-base font-semibold"
-              style={{
-                padding: "10px 6px 10px 12px",
-                color: "var(--fg-3)",
-                fontFamily: "var(--font-mono)",
-              }}
-            >
-              $
-            </span>
-            <input
-              id="edit-service-amount"
-              type="text"
-              value={draft}
-              onChange={(e) => {
-                setDraft(e.target.value);
-                setFieldError(null);
-              }}
-              inputMode="decimal"
-              className="flex-1 text-base font-semibold"
-              style={{
-                border: "none",
-                background: "transparent",
-                padding: "10px 12px 10px 4px",
-                fontFamily: "var(--font-mono)",
-                outline: "none",
-                color: "var(--fg-1)",
-              }}
-            />
-          </div>
-          {instance.amount_override == null && (
-            <div
-              className="mt-1 text-xs"
-              style={{
-                color: "var(--fg-3)",
-                fontFamily: "var(--font-sans)",
-              }}
-            >
-              Default: {formatARS(instance.fixed_expense_templates.amount)}
-            </div>
-          )}
-          {fieldError && (
-            <div
-              role="alert"
-              className="mt-1 text-xs"
-              style={{
-                color: "var(--status-danger)",
-                fontFamily: "var(--font-sans)",
-              }}
-            >
-              {fieldError}
-            </div>
-          )}
-        </div>
-
-        {/* Paid toggle */}
-        <div className="mb-5 flex items-center justify-between">
+        >
           <span
-            className="text-[13px] font-medium"
+            aria-hidden
+            className="text-base font-semibold"
             style={{
-              color: "var(--fg-2)",
-              fontFamily: "var(--font-sans)",
+              padding: "10px 6px 10px 12px",
+              color: "var(--fg-3)",
+              fontFamily: "var(--font-mono)",
             }}
           >
-            Ya lo pagué
+            $
           </span>
-          <Switch
-            checked={instance.paid}
-            onCheckedChange={(checked) =>
-              toggleMutation.mutate({ id: instance.id, paid: checked })
-            }
-            disabled={isPending}
-            aria-label={
-              instance.paid ? "Marcar como no pagado" : "Marcar como pagado"
-            }
+          <input
+            id="edit-service-amount"
+            type="text"
+            value={draft}
+            onChange={(e) => {
+              setDraft(e.target.value);
+              setFieldError(null);
+            }}
+            inputMode="decimal"
+            className="flex-1 text-base font-semibold"
+            style={{
+              border: "none",
+              background: "transparent",
+              padding: "10px 12px 10px 4px",
+              fontFamily: "var(--font-mono)",
+              outline: "none",
+              color: "var(--fg-1)",
+            }}
           />
         </div>
+        {instance.amount_override == null && (
+          <div
+            className="mt-1 text-xs"
+            style={{ color: "var(--fg-3)", fontFamily: "var(--font-sans)" }}
+          >
+            Default: {formatARS(instance.fixed_expense_templates.amount)}
+          </div>
+        )}
+        {fieldError && (
+          <div
+            role="alert"
+            className="mt-1 text-xs"
+            style={{
+              color: "var(--status-danger)",
+              fontFamily: "var(--font-sans)",
+            }}
+          >
+            {fieldError}
+          </div>
+        )}
+      </div>
 
-        <Button
-          type="button"
-          onClick={handleSave}
-          disabled={isPending}
-          className="w-full"
-          style={{ opacity: isPending ? 0.7 : 1 }}
+      {/* Paid toggle */}
+      <div className="mb-5 flex items-center justify-between">
+        <span
+          className="text-[13px] font-medium"
+          style={{ color: "var(--fg-2)", fontFamily: "var(--font-sans)" }}
         >
-          Guardar
-        </Button>
-      </SheetContent>
-    </Sheet>
+          Ya lo pagué
+        </span>
+        <Switch
+          checked={instance.paid}
+          onCheckedChange={(checked) =>
+            toggleMutation.mutate({ id: instance.id, paid: checked })
+          }
+          disabled={isPending}
+          aria-label={
+            instance.paid ? "Marcar como no pagado" : "Marcar como pagado"
+          }
+        />
+      </div>
+
+      <Button
+        type="button"
+        onClick={handleSave}
+        disabled={isPending}
+        className="w-full"
+        style={{ opacity: isPending ? 0.7 : 1 }}
+      >
+        Guardar
+      </Button>
+    </ResponsiveModal>
   );
 }
 
