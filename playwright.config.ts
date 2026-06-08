@@ -5,7 +5,7 @@ export default defineConfig({
   globalSetup: "./e2e/global-setup.ts",
   fullyParallel: false,
   retries: process.env.CI ? 1 : 0,
-  workers: process.env.CI ? 2 : 1,
+  workers: 1,
   reporter: process.env.CI
     ? [["github"], ["html"]]
     : [["list"], ["html", { open: "never" }]],
