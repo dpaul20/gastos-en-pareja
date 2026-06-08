@@ -134,7 +134,7 @@ export default function SettingsPage() {
       >
         {/* Pareja */}
         <section>
-          <div
+          <h2
             className="text-xs font-semibold mb-2 uppercase"
             style={{
               color: "var(--fg-3)",
@@ -143,7 +143,7 @@ export default function SettingsPage() {
             }}
           >
             Pareja
-          </div>
+          </h2>
           <div
             style={{
               background: "var(--bg-elevated)",
@@ -304,7 +304,7 @@ export default function SettingsPage() {
         {/* Ingreso mensual */}
         {member && (
           <section>
-            <div
+            <h2
               className="text-xs font-semibold mb-2 uppercase"
               style={{
                 color: "var(--fg-3)",
@@ -313,7 +313,7 @@ export default function SettingsPage() {
               }}
             >
               Mi ingreso este mes
-            </div>
+            </h2>
             <div
               style={{
                 background: "var(--bg-elevated)",
@@ -343,6 +343,8 @@ export default function SettingsPage() {
                     $
                   </span>
                   <input
+                    id="income-input"
+                    aria-label="Mi ingreso este mes"
                     value={displayIncome}
                     onChange={(e) => setMyIncome(e.target.value)}
                     inputMode="numeric"
@@ -392,7 +394,7 @@ export default function SettingsPage() {
 
         {/* Cuenta */}
         <section>
-          <div
+          <h2
             className="text-xs font-semibold mb-2 uppercase"
             style={{
               color: "var(--fg-3)",
@@ -401,7 +403,7 @@ export default function SettingsPage() {
             }}
           >
             Cuenta
-          </div>
+          </h2>
           <div
             style={{
               background: "var(--bg-elevated)",

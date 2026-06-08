@@ -165,6 +165,7 @@ function InputField({
   registration,
   error,
   type = "text",
+  inputMode,
   mono = false,
 }: Readonly<{
   label: string;
@@ -172,6 +173,7 @@ function InputField({
   registration: UseFormRegisterReturn;
   error?: string;
   type?: string;
+  inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
   mono?: boolean;
 }>) {
   return (
@@ -183,6 +185,7 @@ function InputField({
         id={id}
         {...registration}
         type={type}
+        inputMode={inputMode}
         className={cn(
           "w-full rounded-xl px-3.5 py-3 text-[15px]",
           mono && "font-mono font-semibold",
@@ -322,6 +325,7 @@ export function AddSheet({
                 id="field-installments"
                 registration={register("installments")}
                 error={errors.installments?.message}
+                inputMode="numeric"
                 mono
               />
               {monthlyAmount !== null && (
