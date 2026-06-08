@@ -227,7 +227,7 @@ test.describe("Gasto fijo — edición de monto inline", () => {
     await amountButton.click();
 
     // Fill the override amount
-    const input = page.locator('input[type="number"]').first();
+    const input = page.locator('input[inputmode="decimal"]').first();
     await expect(input).toBeVisible({ timeout: 3_000 });
     await input.fill("12000");
 

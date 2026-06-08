@@ -177,6 +177,12 @@ test.describe("A11y — landmark structure", () => {
       await page.goto(route);
       await page.waitForLoadState("networkidle", { timeout: 12_000 });
       await expect(page.locator("main")).toHaveCount(1);
+
+      // On mobile (Pixel 5), the sidebar <nav> lives inside a Radix Sheet that
+      // does not pre-render its children until the sheet is opened.
+      const trigger = page.locator('[data-sidebar="trigger"]');
+      if (await trigger.isVisible()) await trigger.click();
+
       await expect(page.locator("nav")).not.toHaveCount(0);
       await expect(page.locator("h1")).not.toHaveCount(0);
     });
