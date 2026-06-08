@@ -166,3 +166,25 @@ test.describe("A11y — páginas autenticadas", () => {
     });
   }
 });
+
+// ── A11y — landmark structure ─────────────────────────────────────────────────
+
+test.describe("A11y — landmark structure", () => {
+  for (const route of ["/dashboard", "/expenses", "/history", "/settings"]) {
+    test(`${route} tiene exactamente 1 <main>, al menos 1 <nav>, y al menos 1 <h1>`, async ({
+      authenticatedPage: page,
+    }) => {
+      await page.goto(route);
+      await page.waitForLoadState("networkidle", { timeout: 12_000 });
+      await expect(page.locator("main")).toHaveCount(1);
+
+      // On mobile (Pixel 5), the sidebar <nav> lives inside a Radix Sheet that
+      // does not pre-render its children until the sheet is opened.
+      const trigger = page.locator('[data-sidebar="trigger"]');
+      if (await trigger.isVisible()) await trigger.click();
+
+      await expect(page.locator("nav")).not.toHaveCount(0);
+      await expect(page.locator("h1")).not.toHaveCount(0);
+    });
+  }
+});

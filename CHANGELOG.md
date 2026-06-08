@@ -1,5 +1,31 @@
 # Changelog
 
+## [1.12.0](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.11.0...gastos-en-pareja-v1.12.0) (2026-06-08)
+
+
+### ✨ Features
+
+* **amount:** parseAmount canónico con soporte para formato argentino y reemplaza normalizeAmount ([b70d42d](https://github.com/dpaul20/gastos-en-pareja/commit/b70d42df604cc8b9afc4f49d2694322af2d1dc43))
+
+
+### 🐛 Bug Fixes
+
+* **a11y:** add sr-only h1 to dashboard — landmark spec requires h1 on every authenticated route ([b766a2d](https://github.com/dpaul20/gastos-en-pareja/commit/b766a2dbbb9d72dad5a52ccac22fc6b3d9aaa435))
+* **a11y:** eliminar main duplicados, agregar nav landmark y assertions de estructura ([916e173](https://github.com/dpaul20/gastos-en-pareja/commit/916e173e6c222a47762870465650688f60485ab6))
+* **a11y:** h2 en secciones de settings, label al input de ingreso, inputMode en Cuotas ([769f884](https://github.com/dpaul20/gastos-en-pareja/commit/769f884f5a24d28f66ce973aaec8a25e642e1411))
+* **amount:** EditServiceSheet + MoneyField usan parseAmount y inputMode=decimal ([ae6a4bb](https://github.com/dpaul20/gastos-en-pareja/commit/ae6a4bbd10c79203f778cf3b80639da8bc896b01))
+* **content:** corregir mojibake en history y label de fecha en add-sheet ([3ad0b7e](https://github.com/dpaul20/gastos-en-pareja/commit/3ad0b7ee6057731f8fa344a85a4c6c95bab5990c))
+* **darkmode:** reemplazar colores hardcoded por tokens semánticos en badges y chart ([df6fe56](https://github.com/dpaul20/gastos-en-pareja/commit/df6fe56ee87813bc0e6bafbcd768c074125c224f))
+* frontend quality remediation — a11y, dark mode, amount parsing, responsive ([30c1d93](https://github.com/dpaul20/gastos-en-pareja/commit/30c1d93821ac40e7bf0c860f52a01c13ebd58c81))
+* **husky:** shebang + LF line endings, gitattributes para hooks en Windows ([5d3ffe2](https://github.com/dpaul20/gastos-en-pareja/commit/5d3ffe27e3763b48e2db3097e9b98594206dea1d))
+* **responsive:** expandir contenido a md+ y truncar texto largo en FijoItem ([9fd7bc3](https://github.com/dpaul20/gastos-en-pareja/commit/9fd7bc320b7c82e7d4743839101b3d3300cf5535))
+* **ts:** add missing fields to test fixtures to pass tsc check ([f06a0b4](https://github.com/dpaul20/gastos-en-pareja/commit/f06a0b405d7053ac89ce912316a7209194c8a053))
+
+
+### ⚡ Performance
+
+* **e2e:** fixtures adminClient y coupleId worker-scoped, agregar testUserId fixture ([fa71288](https://github.com/dpaul20/gastos-en-pareja/commit/fa712886e2202815d8d6598a8b217fd8cd299db0))
+
 ## [1.11.0](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.10.0...gastos-en-pareja-v1.11.0) (2026-06-07)
 
 

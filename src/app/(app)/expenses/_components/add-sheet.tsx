@@ -21,29 +21,16 @@ import type { Tab } from "@/lib/queries/use-expense-save";
 import { TAB_LABEL } from "./segmented-control";
 import { computeMonthlyInstallment } from "@/lib/utils/installments";
 import { cn, formatARS, getInitials } from "@/lib/utils";
+import { parseAmount } from "@/lib/utils/amount";
 
 // ── SCHEMAS ───────────────────────────────────────────────────────────────────
-
-function normalizeAmount(raw: string): number {
-  const hasComma = raw.includes(",");
-  const hasDot = raw.includes(".");
-  let s: string;
-  if (hasComma && hasDot) {
-    s = raw.replaceAll(".", "").replace(",", ".");
-  } else if (hasComma) {
-    s = raw.replace(",", ".");
-  } else {
-    s = raw;
-  }
-  return Number(s);
-}
 
 function positiveMoneyString(field = "El monto") {
   return z
     .string()
     .min(1, "Requerido")
     .refine(
-      (v) => { const n = normalizeAmount(v); return !Number.isNaN(n) && n > 0; },
+      (v) => { const n = parseAmount(v); return !Number.isNaN(n) && n > 0; },
       `${field} debe ser mayor a 0`,
     );
 }
@@ -150,7 +137,7 @@ function MoneyField({
         <Input
           id={id}
           {...registration}
-          inputMode="numeric"
+          inputMode="decimal"
           placeholder="0"
           className={cn(
             "flex-1 border-none bg-transparent shadow-none outline-none focus-visible:ring-0",
@@ -178,6 +165,7 @@ function InputField({
   registration,
   error,
   type = "text",
+  inputMode,
   mono = false,
 }: Readonly<{
   label: string;
@@ -185,6 +173,7 @@ function InputField({
   registration: UseFormRegisterReturn;
   error?: string;
   type?: string;
+  inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
   mono?: boolean;
 }>) {
   return (
@@ -196,6 +185,7 @@ function InputField({
         id={id}
         {...registration}
         type={type}
+        inputMode={inputMode}
         className={cn(
           "w-full rounded-xl px-3.5 py-3 text-[15px]",
           mono && "font-mono font-semibold",
@@ -257,7 +247,7 @@ export function AddSheet({
   const totalAmountRaw = useWatch({ control, name: "total_amount" });
   const installmentsRaw = useWatch({ control, name: "installments" });
   const monthlyAmount = useMemo(() => {
-    const total = Number.parseFloat(totalAmountRaw?.replace(",", ".") ?? "");
+    const total = parseAmount(totalAmountRaw ?? "");
     const count = Number.parseInt(installmentsRaw ?? "", 10);
     if (!Number.isFinite(total) || !Number.isFinite(count) || count <= 0)
       return null;
@@ -335,6 +325,7 @@ export function AddSheet({
                 id="field-installments"
                 registration={register("installments")}
                 error={errors.installments?.message}
+                inputMode="numeric"
                 mono
               />
               {monthlyAmount !== null && (
@@ -357,7 +348,7 @@ export function AddSheet({
                 error={errors.credit_card?.message}
               />
               <InputField
-                label="Primer pago (AAAA-MM-DD)"
+                label="Fecha del primer pago"
                 id="field-first-payment-date"
                 registration={register("first_payment_date")}
                 error={errors.first_payment_date?.message}

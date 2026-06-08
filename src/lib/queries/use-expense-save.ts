@@ -7,28 +7,12 @@ import {
   createFixedExpenseTemplate,
   createVariableExpense,
 } from "@/lib/actions/expenses";
+import { parseAmount } from "@/lib/utils/amount";
 
 export type Tab = "cuotas" | "fijos" | "variables";
 
-function normalizeAmount(raw: string): number {
-  const hasComma = raw.includes(",");
-  const hasDot = raw.includes(".");
-  let s: string;
-  if (hasComma && hasDot) {
-    // "28.847,06" — dot = miles, comma = decimal
-    s = raw.replaceAll(".", "").replace(",", ".");
-  } else if (hasComma) {
-    // "28847,06" — comma = decimal
-    s = raw.replace(",", ".");
-  } else {
-    // "28847.06" or "28847" — standard
-    s = raw;
-  }
-  return Number(s);
-}
-
 function parsePositiveNumber(value: string | undefined): number {
-  const n = normalizeAmount(value ?? "");
+  const n = parseAmount(value ?? "");
   if (Number.isNaN(n) || n <= 0) throw new Error(`Monto inválido: "${value}"`);
   return n;
 }

@@ -16,6 +16,7 @@ import {
 import { upsertIncome } from "@/lib/actions/expenses";
 import { sendInvitation, createCouple } from "@/lib/actions/couple";
 import { getMonthDate, getInitials, formatARS } from "@/lib/utils";
+import { parseAmount } from "@/lib/utils/amount";
 import { createClient } from "@/lib/supabase/client";
 import { NoCoupleCard } from "./_components/no-couple-card";
 import { Button } from "@/components/ui/button";
@@ -44,14 +45,14 @@ export default function SettingsPage() {
   const [coupleMsg, setCoupleMsg] = useState("");
   const [myIncome, setMyIncome] = useState("");
   const displayIncome = myIncome || String(currentIncome?.amount ?? "");
-  const parsedIncome = Number.parseInt(displayIncome.replaceAll(/\D/g, ""), 10);
+  const parsedIncome = parseAmount(displayIncome);
 
   const supabase = createClient();
 
   const inviteExpiresAt = pendingInvitation?.expires_at ?? null;
 
   async function handleSaveIncome() {
-    const amount = Number.parseInt(displayIncome.replaceAll(/\D/g, ""));
+    const amount = parseAmount(displayIncome);
     if (!amount || !member) return;
     startTransition(async () => {
       await upsertIncome(amount, getMonthDate());
@@ -109,7 +110,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <main
+    <div
       className="flex flex-col"
       style={{ minHeight: "100%", background: "var(--bg-base)" }}
     >
@@ -133,7 +134,7 @@ export default function SettingsPage() {
       >
         {/* Pareja */}
         <section>
-          <div
+          <h2
             className="text-xs font-semibold mb-2 uppercase"
             style={{
               color: "var(--fg-3)",
@@ -142,7 +143,7 @@ export default function SettingsPage() {
             }}
           >
             Pareja
-          </div>
+          </h2>
           <div
             style={{
               background: "var(--bg-elevated)",
@@ -303,7 +304,7 @@ export default function SettingsPage() {
         {/* Ingreso mensual */}
         {member && (
           <section>
-            <div
+            <h2
               className="text-xs font-semibold mb-2 uppercase"
               style={{
                 color: "var(--fg-3)",
@@ -312,7 +313,7 @@ export default function SettingsPage() {
               }}
             >
               Mi ingreso este mes
-            </div>
+            </h2>
             <div
               style={{
                 background: "var(--bg-elevated)",
@@ -342,9 +343,11 @@ export default function SettingsPage() {
                     $
                   </span>
                   <input
+                    id="income-input"
+                    aria-label="Mi ingreso este mes"
                     value={displayIncome}
                     onChange={(e) => setMyIncome(e.target.value)}
-                    inputMode="numeric"
+                    inputMode="decimal"
                     placeholder="0"
                     className="flex-1 border-none bg-transparent text-base font-semibold outline-none py-2.5 pl-1 pr-3"
                     style={{
@@ -391,7 +394,7 @@ export default function SettingsPage() {
 
         {/* Cuenta */}
         <section>
-          <div
+          <h2
             className="text-xs font-semibold mb-2 uppercase"
             style={{
               color: "var(--fg-3)",
@@ -400,7 +403,7 @@ export default function SettingsPage() {
             }}
           >
             Cuenta
-          </div>
+          </h2>
           <div
             style={{
               background: "var(--bg-elevated)",
@@ -444,6 +447,6 @@ export default function SettingsPage() {
           </div>
         </section>
       </div>
-    </main>
+    </div>
   );
 }

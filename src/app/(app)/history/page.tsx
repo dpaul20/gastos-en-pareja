@@ -37,7 +37,7 @@ export default function HistoryPage() {
   }
 
   return (
-    <main
+    <div
       style={{
         display: "flex",
         flexDirection: "column",
@@ -72,7 +72,7 @@ export default function HistoryPage() {
               fontFamily: "var(--font-sans)",
             }}
           >
-            Cargandoâ€¦
+            Cargando…
           </div>
         )}
       </div>
@@ -110,6 +110,6 @@ export default function HistoryPage() {
           </div>
         )}
       </div>
-    </main>
+    </div>
   );
 }
