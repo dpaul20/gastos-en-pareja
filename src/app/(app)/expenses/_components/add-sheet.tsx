@@ -21,29 +21,16 @@ import type { Tab } from "@/lib/queries/use-expense-save";
 import { TAB_LABEL } from "./segmented-control";
 import { computeMonthlyInstallment } from "@/lib/utils/installments";
 import { cn, formatARS, getInitials } from "@/lib/utils";
+import { parseAmount } from "@/lib/utils/amount";
 
 // ── SCHEMAS ───────────────────────────────────────────────────────────────────
-
-function normalizeAmount(raw: string): number {
-  const hasComma = raw.includes(",");
-  const hasDot = raw.includes(".");
-  let s: string;
-  if (hasComma && hasDot) {
-    s = raw.replaceAll(".", "").replace(",", ".");
-  } else if (hasComma) {
-    s = raw.replace(",", ".");
-  } else {
-    s = raw;
-  }
-  return Number(s);
-}
 
 function positiveMoneyString(field = "El monto") {
   return z
     .string()
     .min(1, "Requerido")
     .refine(
-      (v) => { const n = normalizeAmount(v); return !Number.isNaN(n) && n > 0; },
+      (v) => { const n = parseAmount(v); return !Number.isNaN(n) && n > 0; },
       `${field} debe ser mayor a 0`,
     );
 }

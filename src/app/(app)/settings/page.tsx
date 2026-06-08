@@ -16,6 +16,7 @@ import {
 import { upsertIncome } from "@/lib/actions/expenses";
 import { sendInvitation, createCouple } from "@/lib/actions/couple";
 import { getMonthDate, getInitials, formatARS } from "@/lib/utils";
+import { parseAmount } from "@/lib/utils/amount";
 import { createClient } from "@/lib/supabase/client";
 import { NoCoupleCard } from "./_components/no-couple-card";
 import { Button } from "@/components/ui/button";
@@ -44,14 +45,14 @@ export default function SettingsPage() {
   const [coupleMsg, setCoupleMsg] = useState("");
   const [myIncome, setMyIncome] = useState("");
   const displayIncome = myIncome || String(currentIncome?.amount ?? "");
-  const parsedIncome = Number.parseInt(displayIncome.replaceAll(/\D/g, ""), 10);
+  const parsedIncome = parseAmount(displayIncome);
 
   const supabase = createClient();
 
   const inviteExpiresAt = pendingInvitation?.expires_at ?? null;
 
   async function handleSaveIncome() {
-    const amount = Number.parseInt(displayIncome.replaceAll(/\D/g, ""));
+    const amount = parseAmount(displayIncome);
     if (!amount || !member) return;
     startTransition(async () => {
       await upsertIncome(amount, getMonthDate());

@@ -14,6 +14,7 @@ import {
 } from "@/lib/actions/expenses";
 import { effectiveFixedAmount } from "@/lib/utils/balance";
 import { useMonthlyData } from "@/lib/queries/use-monthly-data";
+import { parseAmount } from "@/lib/utils/amount";
 
 type MonthlyData = NonNullable<ReturnType<typeof useMonthlyData>["data"]>;
 type FixedExpenseInstance = MonthlyData["fixedExpenseInstances"][number];
@@ -66,7 +67,7 @@ export function FijoItem({
   });
 
   function handleSave() {
-    const parsed = parseFloat(draft.replace(",", "."));
+    const parsed = parseAmount(draft);
     if (!Number.isFinite(parsed) || parsed <= 0) {
       setMutationError("El monto debe ser mayor a cero");
       return;
@@ -174,7 +175,8 @@ export function FijoItem({
           >
             <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
               <Input
-                type="number"
+                type="text"
+                inputMode="decimal"
                 value={draft}
                 autoFocus
                 onChange={(e) => setDraft(e.target.value)}
