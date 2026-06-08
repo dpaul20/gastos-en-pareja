@@ -121,7 +121,7 @@ function TypeSelectorSheet({
         side="bottom"
         showCloseButton={false}
         aria-describedby={undefined}
-        className="mx-auto w-full sm:max-w-120 rounded-t-[20px] pb-safe-mobile"
+        className="pb-safe-mobile mx-auto w-full rounded-t-[20px] sm:max-w-120"
         style={{
           background: "var(--bg-elevated)",
           border: "none",
@@ -154,13 +154,15 @@ function TypeSelectorSheet({
               key={opt.label}
               data-testid={opt.testId}
               onClick={opt.onSelect}
-              className="flex items-center w-full text-left cursor-pointer rounded-2xl px-4 py-[14px] gap-[14px]"
+              className="flex w-full cursor-pointer items-center gap-[14px] rounded-2xl px-4 py-[14px] text-left"
               style={{
                 background: "var(--bg-sunken)",
                 border: "1.5px solid var(--border-subtle)",
               }}
             >
-              <span aria-hidden="true" style={{ fontSize: 28 }}>{opt.icon}</span>
+              <span aria-hidden="true" style={{ fontSize: 28 }}>
+                {opt.icon}
+              </span>
               <div>
                 <div
                   className="text-[15px] font-semibold"
@@ -216,7 +218,7 @@ function ServiceListSheet({
         side="bottom"
         showCloseButton={false}
         aria-describedby={undefined}
-        className="mx-auto w-full sm:max-w-120 rounded-t-[20px]"
+        className="mx-auto w-full rounded-t-[20px] sm:max-w-120"
         style={{
           background: "var(--bg-elevated)",
           border: "none",
@@ -245,7 +247,7 @@ function ServiceListSheet({
         </SheetHeader>
 
         <div
-          className="flex flex-col rounded-2xl overflow-hidden"
+          className="flex flex-col overflow-hidden rounded-2xl"
           style={{
             gap: 1,
             background: "var(--bg-sunken)",
@@ -254,7 +256,7 @@ function ServiceListSheet({
         >
           {instances.length === 0 && (
             <div
-              className="text-[13px] text-center"
+              className="text-center text-[13px]"
               style={{
                 padding: "20px 16px",
                 color: "var(--fg-3)",
@@ -270,7 +272,7 @@ function ServiceListSheet({
               <button
                 key={fi.id}
                 onClick={() => onPickInstance(fi.id)}
-                className="flex items-center justify-between gap-3 px-4 py-3 w-full text-left cursor-pointer"
+                className="flex w-full cursor-pointer items-center justify-between gap-3 px-4 py-3 text-left"
                 style={{
                   background: "var(--bg-elevated)",
                   border: "none",
@@ -303,7 +305,7 @@ function ServiceListSheet({
                 </div>
                 {fi.paid && (
                   <span
-                    className="text-xs font-semibold flex-shrink-0 rounded-[6px] px-2 py-[2px]"
+                    className="flex-shrink-0 rounded-[6px] px-2 py-[2px] text-xs font-semibold"
                     style={{
                       color: "var(--color-teal)",
                       background:
@@ -321,7 +323,7 @@ function ServiceListSheet({
 
         <button
           onClick={onCreateNew}
-          className="flex items-center justify-center gap-2 mt-3 w-full text-sm font-semibold rounded-2xl cursor-pointer"
+          className="mt-3 flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl text-sm font-semibold"
           style={{
             padding: "13px 16px",
             background: "transparent",
@@ -400,7 +402,7 @@ function EditServiceSheet({
         side="bottom"
         showCloseButton={false}
         aria-describedby={undefined}
-        className="mx-auto w-full sm:max-w-120 rounded-t-[20px]"
+        className="mx-auto w-full rounded-t-[20px] sm:max-w-120"
         style={{
           background: "var(--bg-elevated)",
           border: "none",
@@ -432,7 +434,7 @@ function EditServiceSheet({
         <div className="mb-[14px]">
           <label
             htmlFor="edit-service-amount"
-            className="block text-[13px] font-medium mb-[5px]"
+            className="mb-[5px] block text-[13px] font-medium"
             style={{
               color: "var(--fg-2)",
               fontFamily: "var(--font-sans)",
@@ -481,7 +483,7 @@ function EditServiceSheet({
           </div>
           {instance.amount_override == null && (
             <div
-              className="text-xs mt-1"
+              className="mt-1 text-xs"
               style={{
                 color: "var(--fg-3)",
                 fontFamily: "var(--font-sans)",
@@ -493,7 +495,7 @@ function EditServiceSheet({
           {fieldError && (
             <div
               role="alert"
-              className="text-xs mt-1"
+              className="mt-1 text-xs"
               style={{
                 color: "var(--status-danger)",
                 fontFamily: "var(--font-sans)",
@@ -521,7 +523,9 @@ function EditServiceSheet({
               toggleMutation.mutate({ id: instance.id, paid: checked })
             }
             disabled={isPending}
-            aria-label={instance.paid ? "Marcar como no pagado" : "Marcar como pagado"}
+            aria-label={
+              instance.paid ? "Marcar como no pagado" : "Marcar como pagado"
+            }
           />
         </div>
 
@@ -588,14 +592,20 @@ export default function ExpensesPage() {
     payerId?: string | null,
   ) {
     setFlow({ step: "idle" });
-    save(fields, categoryId, autoRenew, requiresMonthlyReview, isShared, payerId);
+    save(
+      fields,
+      categoryId,
+      autoRenew,
+      requiresMonthlyReview,
+      isShared,
+      payerId,
+    );
   }
 
   const queryClient = useQueryClient();
 
   const confirmAllMutation = useMutation({
-    mutationFn: () =>
-      confirmAllFixedExpenseInstances(coupleId!, month),
+    mutationFn: () => confirmAllFixedExpenseInstances(coupleId!, month),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["monthly-data"] });
     },
@@ -647,80 +657,84 @@ export default function ExpensesPage() {
             paddingTop: 14,
           }}
         >
-          <h1
-            className="text-lg font-bold px-5 pb-[10px] m-0"
-            style={{
-              color: "var(--fg-1)",
-              fontFamily: "var(--font-sans)",
-            }}
-          >
-            Gastos
-          </h1>
-          <div className="px-4 pb-2.5">
-            <TabsList className="w-full bg-(--bg-sunken)">
-              {(["cuotas", "fijos", "variables"] as Tab[]).map((t) => (
-                <TabsTrigger
-                  key={t}
-                  value={t}
-                  data-testid={TAB_TESTID[t]}
-                  className="flex-1 text-(--fg-2) data-[state=active]:bg-(--bg-elevated) data-[state=active]:font-semibold data-[state=active]:text-(--accent) data-[state=active]:shadow-sm"
-                >
-                  {TAB_LABEL[t]}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </div>
-          <TabDescription tab={tab} />
-          {categories.length > 0 && (
-            <div className="flex overflow-x-auto gap-1.5 px-4 pt-2 pb-2.5 [scrollbar-width:none]">
-              <button
-                onClick={() => setFilterCategory(null)}
-                className="flex-shrink-0 text-xs font-semibold cursor-pointer rounded-[20px]"
-                style={{
-                  padding: "4px 12px",
-                  border: "1px solid var(--border-subtle)",
-                  background:
-                    filterCategory === null
-                      ? "var(--accent)"
-                      : "var(--bg-sunken)",
-                  color: filterCategory === null ? "#fff" : "var(--fg-2)",
-                  fontFamily: "var(--font-sans)",
-                }}
-              >
-                Todos
-              </button>
-              {categories.map((cat) => (
+          <div className="mx-auto w-full max-w-3xl">
+            <h1
+              className="m-0 px-5 pb-[10px] text-lg font-bold"
+              style={{
+                color: "var(--fg-1)",
+                fontFamily: "var(--font-sans)",
+              }}
+            >
+              Gastos
+            </h1>
+            <div className="px-4 pb-2.5">
+              <TabsList className="w-full bg-(--bg-sunken)">
+                {(["cuotas", "fijos", "variables"] as Tab[]).map((t) => (
+                  <TabsTrigger
+                    key={t}
+                    value={t}
+                    data-testid={TAB_TESTID[t]}
+                    className="flex-1 text-(--fg-2) data-[state=active]:bg-(--bg-elevated) data-[state=active]:font-semibold data-[state=active]:text-(--accent) data-[state=active]:shadow-sm"
+                  >
+                    {TAB_LABEL[t]}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </div>
+            <TabDescription tab={tab} />
+            {categories.length > 0 && (
+              <div className="flex gap-1.5 overflow-x-auto px-4 pt-2 pb-2.5 [scrollbar-width:none]">
                 <button
-                  key={cat.id}
-                  onClick={() =>
-                    setFilterCategory(filterCategory === cat.id ? null : cat.id)
-                  }
-                  className="flex-shrink-0 text-xs font-semibold cursor-pointer rounded-[20px]"
+                  onClick={() => setFilterCategory(null)}
+                  className="flex-shrink-0 cursor-pointer rounded-[20px] text-xs font-semibold"
                   style={{
                     padding: "4px 12px",
                     border: "1px solid var(--border-subtle)",
                     background:
-                      filterCategory === cat.id
+                      filterCategory === null
                         ? "var(--accent)"
                         : "var(--bg-sunken)",
-                    color: filterCategory === cat.id ? "#fff" : "var(--fg-2)",
+                    color: filterCategory === null ? "#fff" : "var(--fg-2)",
                     fontFamily: "var(--font-sans)",
                   }}
                 >
-                  {cat.icon} {cat.name}
+                  Todos
                 </button>
-              ))}
-            </div>
-          )}
+                {categories.map((cat) => (
+                  <button
+                    key={cat.id}
+                    onClick={() =>
+                      setFilterCategory(
+                        filterCategory === cat.id ? null : cat.id,
+                      )
+                    }
+                    className="flex-shrink-0 cursor-pointer rounded-[20px] text-xs font-semibold"
+                    style={{
+                      padding: "4px 12px",
+                      border: "1px solid var(--border-subtle)",
+                      background:
+                        filterCategory === cat.id
+                          ? "var(--accent)"
+                          : "var(--bg-sunken)",
+                      color: filterCategory === cat.id ? "#fff" : "var(--fg-2)",
+                      fontFamily: "var(--font-sans)",
+                    }}
+                  >
+                    {cat.icon} {cat.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         <div style={{ flex: 1, overflowY: "auto" }}>
           {/* CUOTAS */}
           <TabsContent value="cuotas" className="mt-0">
-            <div className="px-4 py-3 flex flex-col gap-2">
+            <div className="mx-auto flex w-full max-w-3xl flex-col gap-2 px-4 py-3">
               {cuotas.length === 0 && (
                 <div
-                  className="text-center text-sm py-12"
+                  className="py-12 text-center text-sm"
                   style={{
                     color: "var(--fg-3)",
                     fontFamily: "var(--font-sans)",
@@ -729,7 +743,7 @@ export default function ExpensesPage() {
                   Sin compras en cuotas. Usá el + para agregar.
                 </div>
               )}
-              <ul className="list-none m-0 p-0 flex flex-col gap-2">
+              <ul className="m-0 flex list-none flex-col gap-2 p-0">
                 {cuotas.map((c) => (
                   <li key={c.id}>
                     <CuotaItem
@@ -745,7 +759,7 @@ export default function ExpensesPage() {
 
           {/* FIJOS */}
           <TabsContent value="fijos" className="mt-0">
-            <div style={{ padding: "12px 16px" }}>
+            <div className="mx-auto w-full max-w-3xl px-4 py-3">
               {fijos.length === 0 && (
                 <div
                   className="text-center text-sm"
@@ -784,7 +798,7 @@ export default function ExpensesPage() {
                     </div>
                   )}
                   <ul
-                    className="list-none m-0 p-0 flex flex-col rounded-2xl overflow-hidden"
+                    className="m-0 flex list-none flex-col overflow-hidden rounded-2xl p-0"
                     style={{
                       gap: 1,
                       background: "var(--bg-elevated)",
@@ -804,7 +818,7 @@ export default function ExpensesPage() {
                     ))}
                   </ul>
                   <div
-                    className="flex justify-between rounded-xl px-4 py-3 mt-2"
+                    className="mt-2 flex justify-between rounded-xl px-4 py-3"
                     style={{
                       background: "var(--bg-elevated)",
                       border: "1px solid var(--border-subtle)",
@@ -842,7 +856,7 @@ export default function ExpensesPage() {
 
           {/* VARIABLES */}
           <TabsContent value="variables" className="mt-0">
-            <div className="px-4 py-3 flex flex-col gap-2">
+            <div className="mx-auto flex w-full max-w-3xl flex-col gap-2 px-4 py-3">
               {variables.length === 0 && (
                 <div
                   className="text-center text-sm"
@@ -855,7 +869,7 @@ export default function ExpensesPage() {
                   Sin gastos variables. Usá el + para agregar.
                 </div>
               )}
-              <ul className="list-none m-0 p-0 flex flex-col gap-2">
+              <ul className="m-0 flex list-none flex-col gap-2 p-0">
                 {variables.map((v) => (
                   <li key={v.id}>
                     <VariableItem

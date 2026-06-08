@@ -101,8 +101,14 @@ export default function SettingsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center" style={{ minHeight: "100%" }}>
-        <span className="text-sm" style={{ color: "var(--fg-3)", fontFamily: "var(--font-sans)" }}>
+      <div
+        className="flex items-center justify-center"
+        style={{ minHeight: "100%" }}
+      >
+        <span
+          className="text-sm"
+          style={{ color: "var(--fg-3)", fontFamily: "var(--font-sans)" }}
+        >
           Cargando...
         </span>
       </div>
@@ -122,20 +128,18 @@ export default function SettingsPage() {
         }}
       >
         <h1
-          className="text-xl font-bold m-0"
+          className="m-0 text-xl font-bold"
           style={{ color: "var(--fg-1)", fontFamily: "var(--font-sans)" }}
         >
           Configuración
         </h1>
       </div>
 
-      <div
-        className="flex-1 p-4 flex flex-col gap-4"
-      >
+      <div className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-4 p-4">
         {/* Pareja */}
         <section>
           <h2
-            className="text-xs font-semibold mb-2 uppercase"
+            className="mb-2 text-xs font-semibold uppercase"
             style={{
               color: "var(--fg-3)",
               letterSpacing: "0.05em",
@@ -155,7 +159,7 @@ export default function SettingsPage() {
           >
             {member ? (
               <>
-                <div className="p-4 flex gap-3 items-center">
+                <div className="flex items-center gap-3 p-4">
                   <div className="flex shrink-0">
                     <Avatar
                       initials={
@@ -195,7 +199,10 @@ export default function SettingsPage() {
                     </div>
                     <div
                       className="text-xs"
-                      style={{ color: "var(--fg-3)", fontFamily: "var(--font-sans)" }}
+                      style={{
+                        color: "var(--fg-3)",
+                        fontFamily: "var(--font-sans)",
+                      }}
                     >
                       {member.couples?.status === "PENDING"
                         ? "⏳ Invitación pendiente"
@@ -212,7 +219,7 @@ export default function SettingsPage() {
                     }}
                   >
                     <div
-                      className="font-semibold mb-2"
+                      className="mb-2 font-semibold"
                       style={{
                         fontSize: 13,
                         color: "var(--fg-1)",
@@ -249,10 +256,7 @@ export default function SettingsPage() {
                       </div>
                     ) : (
                       <>
-                        <form
-                          onSubmit={handleInvite}
-                          className="flex gap-2"
-                        >
+                        <form onSubmit={handleInvite} className="flex gap-2">
                           <Input
                             type="email"
                             value={inviteEmail}
@@ -305,7 +309,7 @@ export default function SettingsPage() {
         {member && (
           <section>
             <h2
-              className="text-xs font-semibold mb-2 uppercase"
+              className="mb-2 text-xs font-semibold uppercase"
               style={{
                 color: "var(--fg-3)",
                 letterSpacing: "0.05em",
@@ -333,7 +337,7 @@ export default function SettingsPage() {
                   }}
                 >
                   <span
-                    className="font-semibold text-base"
+                    className="text-base font-semibold"
                     style={{
                       padding: "10px 6px 10px 12px",
                       color: "var(--fg-3)",
@@ -349,7 +353,7 @@ export default function SettingsPage() {
                     onChange={(e) => setMyIncome(e.target.value)}
                     inputMode="decimal"
                     placeholder="0"
-                    className="flex-1 border-none bg-transparent text-base font-semibold outline-none py-2.5 pl-1 pr-3"
+                    className="flex-1 border-none bg-transparent py-2.5 pr-3 pl-1 text-base font-semibold outline-none"
                     style={{
                       fontFamily: "var(--font-mono)",
                       color: "var(--fg-1)",
@@ -395,7 +399,7 @@ export default function SettingsPage() {
         {/* Cuenta */}
         <section>
           <h2
-            className="text-xs font-semibold mb-2 uppercase"
+            className="mb-2 text-xs font-semibold uppercase"
             style={{
               color: "var(--fg-3)",
               letterSpacing: "0.05em",
@@ -427,7 +431,11 @@ export default function SettingsPage() {
                 Moneda
               </span>
               <span
-                style={{ fontSize: 13, color: "var(--fg-2)", fontFamily: "var(--font-sans)" }}
+                style={{
+                  fontSize: 13,
+                  color: "var(--fg-2)",
+                  fontFamily: "var(--font-sans)",
+                }}
               >
                 ARS — Peso argentino
               </span>
@@ -435,7 +443,7 @@ export default function SettingsPage() {
             <Button
               variant="ghost"
               onClick={handleSignOut}
-              className="w-full justify-start text-sm font-medium rounded-none"
+              className="w-full justify-start rounded-none text-sm font-medium"
               style={{
                 padding: "14px 16px",
                 color: "var(--status-danger)",
