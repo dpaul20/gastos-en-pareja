@@ -347,7 +347,7 @@ export default function SettingsPage() {
                     aria-label="Mi ingreso este mes"
                     value={displayIncome}
                     onChange={(e) => setMyIncome(e.target.value)}
-                    inputMode="numeric"
+                    inputMode="decimal"
                     placeholder="0"
                     className="flex-1 border-none bg-transparent text-base font-semibold outline-none py-2.5 pl-1 pr-3"
                     style={{

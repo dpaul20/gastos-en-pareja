@@ -137,7 +137,7 @@ function MoneyField({
         <Input
           id={id}
           {...registration}
-          inputMode="numeric"
+          inputMode="decimal"
           placeholder="0"
           className={cn(
             "flex-1 border-none bg-transparent shadow-none outline-none focus-visible:ring-0",
@@ -247,7 +247,7 @@ export function AddSheet({
   const totalAmountRaw = useWatch({ control, name: "total_amount" });
   const installmentsRaw = useWatch({ control, name: "installments" });
   const monthlyAmount = useMemo(() => {
-    const total = Number.parseFloat(totalAmountRaw?.replace(",", ".") ?? "");
+    const total = parseAmount(totalAmountRaw ?? "");
     const count = Number.parseInt(installmentsRaw ?? "", 10);
     if (!Number.isFinite(total) || !Number.isFinite(count) || count <= 0)
       return null;

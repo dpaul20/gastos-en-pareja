@@ -5,6 +5,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { FAB as Fab } from "@/components/shared/fab";
 import { formatARS, getMonthDate, getInitials, cn } from "@/lib/utils";
 import { effectiveFixedAmount } from "@/lib/utils/balance";
+import { parseAmount } from "@/lib/utils/amount";
 import {
   useCoupleMember,
   useMonthlyData,
@@ -377,7 +378,7 @@ function EditServiceSheet({
   });
 
   function handleSave() {
-    const parsed = parseFloat(draft.replace(",", "."));
+    const parsed = parseAmount(draft);
     if (!Number.isFinite(parsed) || parsed <= 0) {
       setFieldError("El monto debe ser mayor a cero");
       return;
@@ -460,13 +461,13 @@ function EditServiceSheet({
             </span>
             <input
               id="edit-service-amount"
-              type="number"
+              type="text"
               value={draft}
               onChange={(e) => {
                 setDraft(e.target.value);
                 setFieldError(null);
               }}
-              inputMode="numeric"
+              inputMode="decimal"
               className="flex-1 text-base font-semibold"
               style={{
                 border: "none",
