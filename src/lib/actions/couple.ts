@@ -31,6 +31,12 @@ export async function createCouple() {
         .maybeSingle();
 
     if (pendingInvitationError) {
+      console.error("[createCouple] invitations query failed:", {
+        code: pendingInvitationError.code,
+        message: pendingInvitationError.message,
+        details: pendingInvitationError.details,
+        hint: pendingInvitationError.hint,
+      });
       throw new Error("No se pudo verificar tus invitaciones pendientes");
     }
 
@@ -51,6 +57,12 @@ export async function createCouple() {
     .maybeSingle();
 
   if (existingMemberError) {
+    console.error("[createCouple] couple_members query failed:", {
+      code: existingMemberError.code,
+      message: existingMemberError.message,
+      details: existingMemberError.details,
+      hint: existingMemberError.hint,
+    });
     throw new Error("No se pudo verificar tu pareja actual");
   }
 
@@ -66,6 +78,12 @@ export async function createCouple() {
     .single();
 
   if (coupleError || !couple) {
+    console.error("[createCouple] couples INSERT failed:", {
+      code: coupleError?.code,
+      message: coupleError?.message,
+      details: coupleError?.details,
+      hint: coupleError?.hint,
+    });
     throw new Error("Error al crear la pareja");
   }
 
@@ -76,6 +94,12 @@ export async function createCouple() {
   });
 
   if (memberError) {
+    console.error("[createCouple] couple_members INSERT failed:", {
+      code: memberError.code,
+      message: memberError.message,
+      details: memberError.details,
+      hint: memberError.hint,
+    });
     await service.from("couples").delete().eq("id", couple.id);
     throw new Error("Error al vincular tu usuario a la pareja");
   }
