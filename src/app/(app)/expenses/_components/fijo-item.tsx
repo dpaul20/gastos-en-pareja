@@ -101,13 +101,16 @@ export function FijoItem({
       }}
     >
       {/* Left: description + meta */}
-      <div style={{ flex: 1 }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
         <div
           style={{
             fontSize: 14,
             fontWeight: 500,
             color: "var(--fg-1)",
             fontFamily: "var(--font-sans)",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
           }}
         >
           {fi.fixed_expense_templates.description}

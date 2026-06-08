@@ -19,7 +19,7 @@ export default function AppLayout({
         </header>
 
         <div className="flex-1">
-          <div className="mx-auto w-full max-w-97.5 lg:mx-0 lg:max-w-none">
+          <div className="mx-auto w-full max-w-97.5 md:mx-0 md:max-w-none">
             {children}
           </div>
         </div>
