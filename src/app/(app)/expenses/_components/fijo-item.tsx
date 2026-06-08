@@ -14,6 +14,7 @@ import {
 } from "@/lib/actions/expenses";
 import { effectiveFixedAmount } from "@/lib/utils/balance";
 import { useMonthlyData } from "@/lib/queries/use-monthly-data";
+import { parseAmount } from "@/lib/utils/amount";
 
 type MonthlyData = NonNullable<ReturnType<typeof useMonthlyData>["data"]>;
 type FixedExpenseInstance = MonthlyData["fixedExpenseInstances"][number];
@@ -66,7 +67,7 @@ export function FijoItem({
   });
 
   function handleSave() {
-    const parsed = parseFloat(draft.replace(",", "."));
+    const parsed = parseAmount(draft);
     if (!Number.isFinite(parsed) || parsed <= 0) {
       setMutationError("El monto debe ser mayor a cero");
       return;
@@ -101,13 +102,16 @@ export function FijoItem({
       }}
     >
       {/* Left: description + meta */}
-      <div style={{ flex: 1 }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
         <div
           style={{
             fontSize: 14,
             fontWeight: 500,
             color: "var(--fg-1)",
             fontFamily: "var(--font-sans)",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
           }}
         >
           {fi.fixed_expense_templates.description}
@@ -144,9 +148,8 @@ export function FijoItem({
             style={{
               display: "inline-block",
               marginTop: 3,
-              background:
-                "color-mix(in srgb, var(--color-coral) 12%, transparent)",
-              color: "var(--color-coral)",
+              background: "var(--status-danger-subtle)",
+              color: "var(--status-danger)",
               fontSize: 10,
               fontWeight: 600,
               borderRadius: 4,
@@ -172,7 +175,8 @@ export function FijoItem({
           >
             <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
               <Input
-                type="number"
+                type="text"
+                inputMode="decimal"
                 value={draft}
                 autoFocus
                 onChange={(e) => setDraft(e.target.value)}
@@ -328,10 +332,9 @@ export function FijoItem({
             height: 28,
             paddingInline: 10,
             borderRadius: 8,
-            border: `1.5px solid var(--color-coral)`,
-            background:
-              "color-mix(in srgb, var(--color-coral) 10%, transparent)",
-            color: "var(--color-coral)",
+            border: `1.5px solid var(--status-danger)`,
+            background: "var(--status-danger-subtle)",
+            color: "var(--status-danger)",
             fontSize: 11,
             fontWeight: 600,
             fontFamily: "var(--font-sans)",

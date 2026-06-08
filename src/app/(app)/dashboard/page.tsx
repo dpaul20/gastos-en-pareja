@@ -170,10 +170,10 @@ export default function DashboardPage() {
   }
 
   return (
-    <main
-      aria-label="Inicio"
+    <div
       style={{ minHeight: "100%", background: "var(--bg-base)" }}
     >
+      <h1 className="sr-only">Inicio</h1>
       <MonthHeader
         month={formatMonth(month)}
         onPrev={() => setCurrentDate((d) => subMonths(d, 1))}
@@ -260,6 +260,6 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
-    </main>
+    </div>
   );
 }

@@ -152,7 +152,7 @@ test.describe("Expenses — tabs del segmented control", () => {
     await expect(expenses.dialogField("Monto total")).toBeVisible();
     await expect(expenses.dialogField("Cuotas")).toBeVisible();
     await expect(
-      expenses.dialogField("Primer pago (AAAA-MM-DD)"),
+      expenses.dialogField("Fecha del primer pago"),
     ).toBeVisible();
   });
 
