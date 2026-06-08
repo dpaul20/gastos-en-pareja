@@ -269,6 +269,15 @@ body {
 }
 @media (max-width: 1023px) {
   .pb-safe-mobile {
-    padding-bottom: max(var(--space-14, 56px), env(safe-area-inset-bottom, 56px));
+    padding-bottom: max(
+      var(--space-14, 56px),
+      env(safe-area-inset-bottom, 56px)
+    );
+  }
+}
+
+@media (min-width: 768px) {
+  :root {
+    --bottom-nav-height: 0px;
   }
 }
