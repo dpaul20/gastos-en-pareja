@@ -144,9 +144,8 @@ export function FijoItem({
             style={{
               display: "inline-block",
               marginTop: 3,
-              background:
-                "color-mix(in srgb, var(--color-coral) 12%, transparent)",
-              color: "var(--color-coral)",
+              background: "var(--status-danger-subtle)",
+              color: "var(--status-danger)",
               fontSize: 10,
               fontWeight: 600,
               borderRadius: 4,
@@ -328,10 +327,9 @@ export function FijoItem({
             height: 28,
             paddingInline: 10,
             borderRadius: 8,
-            border: `1.5px solid var(--color-coral)`,
-            background:
-              "color-mix(in srgb, var(--color-coral) 10%, transparent)",
-            color: "var(--color-coral)",
+            border: `1.5px solid var(--status-danger)`,
+            background: "var(--status-danger-subtle)",
+            color: "var(--status-danger)",
             fontSize: 11,
             fontWeight: 600,
             fontFamily: "var(--font-sans)",

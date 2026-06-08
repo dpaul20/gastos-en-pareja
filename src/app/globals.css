@@ -93,6 +93,7 @@
   --status-danger-subtle: var(--color-coral-50);
   --status-warning: var(--color-amber-400);
   --status-warning-subtle: var(--color-amber-50);
+  --status-warning-fg: #92400e;
   --status-pending: var(--color-neutral-400);
   --status-pending-subtle: var(--color-neutral-100);
 
@@ -190,6 +191,7 @@
     --status-success-subtle: rgba(0, 184, 148, 0.12);
     --status-danger-subtle: rgba(225, 112, 85, 0.12);
     --status-warning-subtle: rgba(253, 203, 110, 0.12);
+    --status-warning-fg: var(--color-amber-300);
     --status-pending-subtle: rgba(255, 255, 255, 0.06);
 
     --border-subtle: rgba(255, 255, 255, 0.06);

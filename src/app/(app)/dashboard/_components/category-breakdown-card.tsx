@@ -22,7 +22,7 @@ function CategoryBarShape({
   y = 0,
   width = 0,
   height = 0,
-  color = "var(--color-neutral-300)",
+  color = "var(--fg-3)",
 }: CategoryBarShapeProps) {
   return (
     <rect
@@ -71,7 +71,7 @@ export function CategoryBreakdownCard({
   const chartData = breakdown.map((g) => ({
     name: g.category ? `${g.category.icon} ${g.category.name}` : "📦 Sin cat.",
     total: g.total,
-    color: g.category?.color ?? "var(--color-neutral-300)",
+    color: g.category?.color ?? "var(--fg-3)",
   }));
 
   const rowHeight = 36;
