@@ -37,7 +37,7 @@ export default function HistoryPage() {
   }
 
   return (
-    <main
+    <div
       style={{
         display: "flex",
         flexDirection: "column",
@@ -110,6 +110,6 @@ export default function HistoryPage() {
           </div>
         )}
       </div>
-    </main>
+    </div>
   );
 }

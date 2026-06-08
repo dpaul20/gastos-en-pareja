@@ -109,7 +109,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <main
+    <div
       className="flex flex-col"
       style={{ minHeight: "100%", background: "var(--bg-base)" }}
     >
@@ -444,6 +444,6 @@ export default function SettingsPage() {
           </div>
         </section>
       </div>
-    </main>
+    </div>
   );
 }

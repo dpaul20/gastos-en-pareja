@@ -627,7 +627,7 @@ export default function ExpensesPage() {
       : null;
 
   return (
-    <main
+    <div
       className="flex flex-col"
       style={{
         minHeight: "100%",
@@ -921,6 +921,6 @@ export default function ExpensesPage() {
           currentUserId={member?.user_id ?? undefined}
         />
       )}
-    </main>
+    </div>
   );
 }

@@ -60,6 +60,7 @@ export function AppSidebar() {
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupContent>
+            <nav aria-label="Navegación principal">
             <SidebarMenu>
               {items.map((item) => {
                 const isActive =
@@ -80,6 +81,7 @@ export function AppSidebar() {
                 );
               })}
             </SidebarMenu>
+            </nav>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>

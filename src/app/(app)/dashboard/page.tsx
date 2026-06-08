@@ -170,8 +170,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <main
-      aria-label="Inicio"
+    <div
       style={{ minHeight: "100%", background: "var(--bg-base)" }}
     >
       <MonthHeader
@@ -260,6 +259,6 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
-    </main>
+    </div>
   );
 }

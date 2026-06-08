@@ -18,11 +18,11 @@ export default function AppLayout({
           <SidebarTrigger />
         </header>
 
-        <main className="flex-1">
+        <div className="flex-1">
           <div className="mx-auto w-full max-w-97.5 lg:mx-0 lg:max-w-none">
             {children}
           </div>
-        </main>
+        </div>
       </SidebarInset>
     </SidebarProvider>
   );
