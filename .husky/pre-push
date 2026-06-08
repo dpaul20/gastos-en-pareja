@@ -1,3 +1,4 @@
+#!/usr/bin/env sh
 npx tsc --noEmit
 npm run test:coverage
 npm run test:a11y
