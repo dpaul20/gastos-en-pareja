@@ -45,6 +45,7 @@ function makeInstance(
     paid: false,
     amount_override: null,
     status: "CONFIRMED",
+    paid_by_user_id: null,
     created_at: "2026-05-01T00:00:00Z",
     ...instanceOverrides,
     fixed_expense_templates: makeTemplate(templateOverrides),
