@@ -1,0 +1,6 @@
+# Normalize line endings
+* text=auto
+
+# Force LF for shell scripts and Husky hooks
+.husky/* text eol=lf
+*.sh text eol=lf
