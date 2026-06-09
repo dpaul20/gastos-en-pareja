@@ -51,6 +51,19 @@ next-env.d.ts
 # GGA (Gentleman Guardian Angel) AI code review config
 .gga
 
+# Claude Code / AI agent artifacts
+.claude/worktrees/
+.claude/scheduled_tasks.lock
+.playwright-mcp/
+*.worktree
+
+# Audit screenshots dumped in root
+/*.png
+
+# Ad-hoc scripts and test reports
+/qacito_tests/
+/scripts/
+
 # Serwist generated service worker
 /public/sw.js
 
