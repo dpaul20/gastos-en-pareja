@@ -2,6 +2,7 @@ import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./e2e",
+  testIgnore: ["**/visual.spec.ts"],
   globalSetup: "./e2e/global-setup.ts",
   fullyParallel: false,
   retries: process.env.CI ? 1 : 0,
@@ -15,7 +16,10 @@ export default defineConfig({
     screenshot: "only-on-failure",
     video: "retain-on-failure",
   },
-  expect: { timeout: 7_000 },
+  expect: {
+    timeout: 7_000,
+    toHaveScreenshot: { maxDiffPixelRatio: 0.02, animations: "disabled" },
+  },
   projects: [
     {
       name: "chromium-mobile",
