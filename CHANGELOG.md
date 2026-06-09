@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.14.0](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.13.0...gastos-en-pareja-v1.14.0) (2026-06-09)
+
+
+### ✨ Features
+
+* **settings:** add shareable link invitation as alternative to email ([6cb3bd2](https://github.com/dpaul20/gastos-en-pareja/commit/6cb3bd2eacf80c2a2bd2b54c3f9f3d4314c43c7d))
+* **settings:** shareable link invitation ([52f429b](https://github.com/dpaul20/gastos-en-pareja/commit/52f429be25945d32f5b0325d405a02312eb88a33))
+
+
+### 🐛 Bug Fixes
+
+* **login:** two-column desktop layout — remove maxWidth 390 hardcode ([cf76252](https://github.com/dpaul20/gastos-en-pareja/commit/cf762522887d6245848dfebfd7c2de15e4cbc000))
+
 ## [1.13.0](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.12.1...gastos-en-pareja-v1.13.0) (2026-06-08)
 
 
