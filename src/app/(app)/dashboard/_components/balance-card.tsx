@@ -22,7 +22,13 @@ export function BalanceCard({
   const myFirstName = myProfile?.full_name.split(" ")[0] ?? "Vos";
   const partnerFirstName =
     partnerProfile?.full_name.split(" ")[0] ?? "Tu pareja";
-  const myPct = Math.round((balance.balances[0]?.percentage ?? 0.5) * 100);
+  const myBalance = balance.balances.find(
+    (b) => b.userId === myProfile?.user_id,
+  );
+  const partnerBalance = balance.balances.find(
+    (b) => b.userId === partnerProfile?.user_id,
+  );
+  const myPct = Math.round((myBalance?.percentage ?? 0.5) * 100);
 
   return (
     <div
@@ -78,7 +84,7 @@ export function BalanceCard({
                 fontFamily: "var(--font-sans)",
               }}
             >
-              {balance.debtor === balance.balances[0]?.userId
+              {balance.debtor === myProfile?.user_id
                 ? `${myFirstName} le debe a ${partnerFirstName}`
                 : `${partnerFirstName} le debe a ${myFirstName}`}
             </div>
@@ -121,7 +127,7 @@ export function BalanceCard({
               person: "a" as const,
               name: myFirstName,
               pct: myPct,
-              amt: balance.balances[0]?.obligation ?? 0,
+              amt: myBalance?.obligation ?? 0,
               color: "var(--person-a)",
               bg: "var(--person-a-subtle)",
             },
@@ -130,7 +136,7 @@ export function BalanceCard({
               person: "b" as const,
               name: partnerFirstName,
               pct: 100 - myPct,
-              amt: balance.balances[1]?.obligation ?? 0,
+              amt: partnerBalance?.obligation ?? 0,
               color: "var(--person-b)",
               bg: "var(--person-b-subtle)",
             },

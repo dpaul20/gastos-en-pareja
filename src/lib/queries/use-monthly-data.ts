@@ -22,7 +22,8 @@ export function monthlyDataQueryOptions(
           .from("incomes")
           .select("*")
           .eq("couple_id", coupleId)
-          .eq("month", month),
+          .eq("month", month)
+          .order("created_at", { ascending: true }),
 
         supabase
           .from("installment_purchases")
