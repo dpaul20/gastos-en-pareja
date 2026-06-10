@@ -2,6 +2,34 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@layer base {
+  button,
+  [role="button"],
+  select,
+  label[for] {
+    cursor: pointer;
+  }
+}
+
+/* ── UTILITIES ── */
+
+.category-filter-scroll {
+  mask-image: linear-gradient(
+    to right,
+    black calc(100% - 80px),
+    transparent 100%
+  );
+}
+.category-filter-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .category-filter-scroll {
+    mask-image: none;
+  }
+}
+
 /* ── DESIGN TOKENS — Gastos en Pareja ─────────────────────── */
 
 :root {
@@ -252,6 +280,25 @@ body {
 }
 
 @theme inline {
+  --color-background: var(--bg-base);
+  --color-foreground: var(--fg-1);
+  --color-card: var(--bg-elevated);
+  --color-card-foreground: var(--fg-1);
+  --color-popover: var(--bg-elevated);
+  --color-popover-foreground: var(--fg-1);
+  --color-secondary: var(--bg-sunken);
+  --color-secondary-foreground: var(--fg-2);
+  --color-muted: var(--bg-sunken);
+  --color-accent: var(--accent-subtle);
+  --color-accent-foreground: var(--accent);
+  --color-destructive-foreground: var(--fg-inverse);
+  --color-ring: var(--ring);
+  --color-border: var(--border-default);
+  --color-input: var(--border-default);
+  --color-primary: var(--accent);
+  --color-primary-foreground: var(--accent-foreground);
+  --color-destructive: var(--status-danger);
+  --color-muted-foreground: var(--fg-3);
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);

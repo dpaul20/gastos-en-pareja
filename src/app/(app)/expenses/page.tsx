@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { FAB as Fab } from "@/components/shared/fab";
 import { formatARS, getMonthDate, getInitials, cn } from "@/lib/utils";
@@ -476,6 +476,20 @@ export default function ExpensesPage() {
   );
   const { data: categories = [] } = useCategories(coupleId);
 
+  const [categoryRowOverflows, setCategoryRowOverflows] = useState(false);
+  const categoryRowRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = categoryRowRef.current;
+    if (!el) return;
+    const check = () =>
+      setCategoryRowOverflows(el.scrollWidth > el.clientWidth);
+    check();
+    const ro = new ResizeObserver(check);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [categories]);
+
   const getPersonInitials = (userId: string) => {
     const p = profiles.find((pr) => pr.user_id === userId);
     return p ? getInitials(p.full_name) : "?";
@@ -583,7 +597,13 @@ export default function ExpensesPage() {
             </div>
             <TabDescription tab={tab} />
             {categories.length > 0 && (
-              <div className="flex gap-1.5 overflow-x-auto px-4 pt-2 pb-2.5 [scrollbar-width:none]">
+              <div
+                ref={categoryRowRef}
+                className={cn(
+                  "flex flex-nowrap gap-1.5 overflow-x-auto px-4 pe-8 pt-2 pb-2.5 [scrollbar-width:none] lg:flex-wrap lg:overflow-x-visible lg:pe-0",
+                  categoryRowOverflows && "category-filter-scroll",
+                )}
+              >
                 <button
                   onClick={() => setFilterCategory(null)}
                   className="flex-shrink-0 cursor-pointer rounded-[20px] text-xs font-semibold"

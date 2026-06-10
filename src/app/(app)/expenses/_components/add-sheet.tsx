@@ -133,7 +133,7 @@ function MoneyField({
           id={id}
           {...registration}
           inputMode="decimal"
-          placeholder="0"
+          placeholder=""
           className={cn(
             "flex-1 border-none bg-transparent shadow-none outline-none focus-visible:ring-0",
             "font-mono text-base font-semibold",
@@ -162,6 +162,7 @@ function InputField({
   type = "text",
   inputMode,
   mono = false,
+  placeholder,
 }: Readonly<{
   label: string;
   id: string;
@@ -170,6 +171,7 @@ function InputField({
   type?: string;
   inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
   mono?: boolean;
+  placeholder?: string;
 }>) {
   return (
     <div style={{ marginBottom: 14 }}>
@@ -181,6 +183,7 @@ function InputField({
         {...registration}
         type={type}
         inputMode={inputMode}
+        placeholder={placeholder}
         className={cn(
           "w-full rounded-xl px-3.5 py-3 text-[15px]",
           mono && "font-mono font-semibold",
@@ -291,6 +294,7 @@ export function AddSheet({
               registration={register("installments")}
               error={errors.installments?.message}
               inputMode="numeric"
+              placeholder="ej: 12"
               mono
             />
             {monthlyAmount !== null && (
@@ -311,6 +315,7 @@ export function AddSheet({
               id="field-credit-card"
               registration={register("credit_card")}
               error={errors.credit_card?.message}
+              placeholder="ej: Visa, Mastercard"
             />
             <InputField
               label="Fecha del primer pago"
@@ -348,6 +353,7 @@ export function AddSheet({
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
+              minHeight: 44,
             }}
           >
             <span
@@ -386,6 +392,7 @@ export function AddSheet({
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
+              minHeight: 44,
             }}
           >
             <div>
@@ -498,17 +505,29 @@ export function AddSheet({
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
+              minHeight: 44,
             }}
           >
-            <span
-              style={{
-                fontSize: 13,
-                fontWeight: 500,
-                color: "var(--fg-2)",
-                fontFamily: "var(--font-sans)",
-              }}
-            >
-              Renovar automáticamente
+            <span style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              <span
+                style={{
+                  fontSize: 13,
+                  fontWeight: 500,
+                  color: "var(--fg-2)",
+                  fontFamily: "var(--font-sans)",
+                }}
+              >
+                Renovar automáticamente
+              </span>
+              <span
+                style={{
+                  fontSize: 11,
+                  color: "var(--fg-3)",
+                  fontFamily: "var(--font-sans)",
+                }}
+              >
+                Las cuotas se reinician al terminar
+              </span>
             </span>
             <Switch
               checked={autoRenew}
