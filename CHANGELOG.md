@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.15.0](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.14.1...gastos-en-pareja-v1.15.0) (2026-06-10)
+
+
+### ✨ Features
+
+* **nav:** replace mobile hamburger with bottom tab bar ([90d287d](https://github.com/dpaul20/gastos-en-pareja/commit/90d287d478569d7aa3c04b343e49eaaaa4307c5c))
+* **nav:** replace mobile hamburger with bottom tab bar ([3810d4a](https://github.com/dpaul20/gastos-en-pareja/commit/3810d4a1e0973e18013e61f02247ef4a2738c99c))
+
+
+### 🐛 Bug Fixes
+
+* **forms:** improve touch targets and accessibility in expense forms ([3aa5af2](https://github.com/dpaul20/gastos-en-pareja/commit/3aa5af255e99fe018a554f27262c7c23aff8928d))
+* **forms:** improve touch targets and accessibility in expense forms ([175906c](https://github.com/dpaul20/gastos-en-pareja/commit/175906c7640f68bd9677431c1d087395bf9bef22))
+* **nav:** expose accessible name 'Configuración' on bottom nav settings link ([cb6eeee](https://github.com/dpaul20/gastos-en-pareja/commit/cb6eeee3a1e0799ff0d8cd2715a9c41cb67bda8b))
+
 ## [1.14.1](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.14.0...gastos-en-pareja-v1.14.1) (2026-06-09)
 
 
