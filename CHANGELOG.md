@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.14.1](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.14.0...gastos-en-pareja-v1.14.1) (2026-06-09)
+
+
+### 🐛 Bug Fixes
+
+* **dashboard:** look up balance by userId instead of array index ([f7437f4](https://github.com/dpaul20/gastos-en-pareja/commit/f7437f49b04c4c1bf39ce5e3cd63bb7b1f2c8201))
+* **dashboard:** look up balance by userId instead of array index ([bb644f7](https://github.com/dpaul20/gastos-en-pareja/commit/bb644f739d55b66ad516b3b1b4135a2787eeea65))
+
 ## [1.14.0](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.13.0...gastos-en-pareja-v1.14.0) (2026-06-09)
 
 
