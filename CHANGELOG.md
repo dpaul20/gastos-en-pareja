@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.15.1](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.15.0...gastos-en-pareja-v1.15.1) (2026-06-10)
+
+
+### 🐛 Bug Fixes
+
+* **fijo:** enforce amount_override &gt; 0 via DB CHECK constraint ([c16e030](https://github.com/dpaul20/gastos-en-pareja/commit/c16e03026a57e9c38b18a29a496438d60f27a561))
+* **fijo:** enforce amount_override &gt; 0 via DB CHECK constraint ([ba82eca](https://github.com/dpaul20/gastos-en-pareja/commit/ba82eca457bbc34cc39b99173f46091014611a7e))
+
 ## [1.15.0](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.14.1...gastos-en-pareja-v1.15.0) (2026-06-10)
 
 
