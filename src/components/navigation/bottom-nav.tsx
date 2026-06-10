@@ -34,6 +34,9 @@ export function BottomNav() {
               key={item.id}
               href={item.href}
               aria-current={isActive ? "page" : undefined}
+              // "Config" fits the tab width; accessible name stays
+              // "Configuración" to match the desktop sidebar nav.
+              aria-label={item.id === "settings" ? "Configuración" : undefined}
               className={cn(
                 "flex flex-1 flex-col items-center justify-center gap-1 text-[10px] font-semibold transition-colors",
                 isActive
