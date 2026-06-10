@@ -1,5 +1,6 @@
 "use client";
 
+import { cn } from "@/lib/utils";
 import type { Database } from "@/types/database";
 
 type Category = Database["public"]["Tables"]["expense_categories"]["Row"];
@@ -17,9 +18,11 @@ export function CategoryPicker({
 }: Readonly<CategoryPickerProps>) {
   return (
     <fieldset
+      className={cn(
+        "flex flex-nowrap overflow-x-auto lg:flex-wrap lg:overflow-x-visible",
+        "[scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+      )}
       style={{
-        display: "flex",
-        flexWrap: "wrap",
         gap: 6,
         margin: 0,
         padding: 0,
