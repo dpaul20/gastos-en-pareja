@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.15.2](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.15.1...gastos-en-pareja-v1.15.2) (2026-06-13)
+
+
+### 🐛 Bug Fixes
+
+* **ci:** use supabase link before db push in release workflow ([d1be226](https://github.com/dpaul20/gastos-en-pareja/commit/d1be2262cd35311189013f6fae58b66bc189da99))
+* **ci:** use supabase link before db push in release workflow ([1364c86](https://github.com/dpaul20/gastos-en-pareja/commit/1364c869c9237f885ab3611706dc7fa4dbdd394b)), closes [#48](https://github.com/dpaul20/gastos-en-pareja/issues/48)
+
 ## [1.15.1](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.15.0...gastos-en-pareja-v1.15.1) (2026-06-10)
 
 
