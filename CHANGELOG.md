@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.15.3](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.15.2...gastos-en-pareja-v1.15.3) (2026-06-17)
+
+
+### 🐛 Bug Fixes
+
+* **husky:** normalize Windows drive letter in pre-push ([c566f0f](https://github.com/dpaul20/gastos-en-pareja/commit/c566f0f5e7cff32b366ebaa4ebb466c62da12fa7))
+* **husky:** replace coverage+a11y with npm test in pre-push ([b131541](https://github.com/dpaul20/gastos-en-pareja/commit/b1315418e4f96cb7ff6695011e1769f1b2d7c609))
+* **husky:** use bash shebang in pre-push for V8 coverage on Windows ([0ce50b6](https://github.com/dpaul20/gastos-en-pareja/commit/0ce50b69c5aff5485322671b8bbdfc9c686632a1))
+
 ## [1.15.2](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.15.1...gastos-en-pareja-v1.15.2) (2026-06-13)
 
 
