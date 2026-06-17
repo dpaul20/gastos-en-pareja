@@ -60,7 +60,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#6C5CE7",
+  themeColor: "#5849D1",
 };
 
 export default function RootLayout({
@@ -68,6 +68,12 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="es" className={`${dmSans.variable} ${jetbrainsMono.variable}`}>
+      {/* Pre-paint dark mode detection — must run before first paint to avoid FOUC */}
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `(function(){try{if(window.matchMedia('(prefers-color-scheme: dark)').matches){document.documentElement.classList.add('dark')}}catch(e){}})()`,
+        }}
+      />
       <body>
         <Providers>{children}</Providers>
       </body>
