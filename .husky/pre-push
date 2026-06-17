@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
 set -e
+# Normalize Windows drive letter to uppercase so Vitest workers can resolve
+# file:// URLs correctly (lowercase cwd from git causes module resolution errors)
+WIN_ROOT="$(pwd -W 2>/dev/null)"
+[[ -n "$WIN_ROOT" ]] && cd "$WIN_ROOT"
 npx tsc --noEmit
 npm test
