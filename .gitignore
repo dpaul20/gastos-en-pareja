@@ -57,6 +57,9 @@ next-env.d.ts
 .playwright-mcp/
 *.worktree
 
+# Agent Teams Lite skill registry cache (local, regenerated per machine)
+.atl/
+
 # Audit screenshots dumped in root
 /*.png
 
