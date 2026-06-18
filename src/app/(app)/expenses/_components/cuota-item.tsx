@@ -1,13 +1,19 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useRef, useTransition } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { PersonAvatar } from "@/components/shared/avatar";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import { useToast } from "@/components/shared/toast/use-toast";
 import { formatARS } from "@/lib/utils";
-import { incrementPaidInstallments } from "@/lib/actions/expenses";
+import {
+  incrementPaidInstallments,
+  deleteInstallmentPurchase,
+} from "@/lib/actions/expenses";
 import { useMonthlyData } from "@/lib/queries/use-monthly-data";
 
 type MonthlyData = NonNullable<ReturnType<typeof useMonthlyData>["data"]>;
@@ -15,17 +21,70 @@ type InstallmentPurchase = MonthlyData["installmentPurchases"][number];
 
 export function CuotaItem({
   c,
+  coupleId,
+  month,
   getPersonInitials,
   getPerson,
 }: {
   readonly c: InstallmentPurchase;
+  readonly coupleId: string;
+  readonly month: string;
   readonly getPersonInitials?: (id: string) => string;
   readonly getPerson?: (id: string) => "a" | "b";
 }) {
   const [, startTransition] = useTransition();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const deleteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const isPaid = c.paid_installments >= c.installments;
   const cuota = Math.round(c.total_amount / c.installments);
+
+  function handleUndo() {
+    if (deleteTimerRef.current !== null) {
+      clearTimeout(deleteTimerRef.current);
+      deleteTimerRef.current = null;
+    }
+    queryClient.invalidateQueries({
+      queryKey: ["monthly-data", coupleId, month],
+    });
+  }
+
+  function handleDelete() {
+    // Optimistically remove from cache
+    queryClient.setQueryData(
+      ["monthly-data", coupleId, month],
+      (old: MonthlyData | undefined) => {
+        if (!old) return old;
+        return {
+          ...old,
+          installmentPurchases: old.installmentPurchases.filter(
+            (item) => item.id !== c.id,
+          ),
+        };
+      },
+    );
+
+    toast.danger("Compra eliminada", {
+      undo: {
+        label: "Deshacer",
+        onUndo: handleUndo,
+      },
+      duration: 5000,
+    });
+
+    deleteTimerRef.current = setTimeout(() => {
+      deleteTimerRef.current = null;
+      startTransition(async () => {
+        await deleteInstallmentPurchase(c.id);
+        queryClient.invalidateQueries({
+          queryKey: ["monthly-data", coupleId, month],
+        });
+      });
+    }, 5000);
+  }
+
   return (
     <Card>
       <CardContent className="p-[14px_16px]">
@@ -82,6 +141,21 @@ export function CuotaItem({
                   +1
                 </Button>
               )}
+              <button
+                type="button"
+                aria-label="Eliminar cuota"
+                onClick={() => setConfirmOpen(true)}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  padding: 4,
+                  lineHeight: 0,
+                  color: "var(--status-danger)",
+                }}
+              >
+                <Trash2 size={16} color="var(--status-danger)" />
+              </button>
             </div>
           </div>
         </div>
@@ -108,6 +182,15 @@ export function CuotaItem({
           />
         </div>
       </CardContent>
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Eliminar compra en cuotas"
+        description="Se eliminará la compra y todas sus cuotas pendientes."
+        confirmLabel="Sí, eliminar"
+        destructive
+        onConfirm={handleDelete}
+      />
     </Card>
   );
 }
