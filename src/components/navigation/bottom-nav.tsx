@@ -20,7 +20,9 @@ export function BottomNav() {
       aria-label="Navegación principal"
       className="fixed right-0 bottom-0 left-0 z-50 lg:hidden"
       style={{
-        background: "var(--bg-elevated)",
+        background: "color-mix(in srgb, var(--bg-elevated) 92%, transparent)",
+        backdropFilter: "blur(20px)",
+        WebkitBackdropFilter: "blur(20px)",
         borderTop: "1px solid var(--border-subtle)",
         paddingBottom: "env(safe-area-inset-bottom)",
       }}
@@ -49,6 +51,17 @@ export function BottomNav() {
                 className={cn("size-5 shrink-0", isActive && "stroke-[2.2]")}
               />
               {item.label}
+              <span
+                style={{
+                  width: 4,
+                  height: 4,
+                  borderRadius: "50%",
+                  background: "var(--accent)",
+                  margin: "2px auto 0",
+                  visibility: isActive ? "visible" : "hidden",
+                }}
+                aria-hidden="true"
+              />
             </Link>
           );
         })}

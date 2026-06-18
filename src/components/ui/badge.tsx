@@ -25,8 +25,7 @@ const badgeVariants = cva(
           "[background-color:var(--status-danger-subtle)] [color:var(--status-danger)]",
         warning:
           "[background-color:var(--status-warning-subtle)] [color:var(--status-warning-fg)]",
-        neutral:
-          "[background-color:var(--color-neutral-100)] [color:var(--fg-2)]",
+        neutral: "[background-color:var(--bg-sunken)] [color:var(--fg-2)]",
         accent: "[background-color:var(--accent-subtle)] [color:var(--accent)]",
       },
     },

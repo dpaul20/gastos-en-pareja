@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useQueries } from "@tanstack/react-query";
 import {
   useCoupleMember,
+  useCoupleMemberProfiles,
   monthlyDataQueryOptions,
 } from "@/lib/queries/use-monthly-data";
 import { getHistoryMonths } from "@/lib/queries/history";
@@ -14,6 +15,12 @@ export default function HistoryPage() {
   const [selected, setSelected] = useState<string | null>(null);
   const { data: member } = useCoupleMember();
   const coupleId = member?.couple_id ?? null;
+  const { data: profiles = [] } = useCoupleMemberProfiles(
+    member?.user_id ?? null,
+  );
+  const getPersonName = (userId: string) =>
+    profiles.find((p) => p.user_id === userId)?.full_name ??
+    userId.slice(0, 6) + "…";
   const months = getHistoryMonths();
 
   const queries = useQueries({
@@ -32,6 +39,7 @@ export default function HistoryPage() {
         data={queries[idx]?.data ?? undefined}
         isLoading={queries[idx]?.isLoading ?? false}
         onBack={() => setSelected(null)}
+        getPersonName={getPersonName}
       />
     );
   }

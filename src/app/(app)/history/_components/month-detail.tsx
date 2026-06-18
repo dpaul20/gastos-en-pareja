@@ -10,11 +10,13 @@ export function MonthDetail({
   data,
   isLoading = false,
   onBack,
+  getPersonName,
 }: {
   readonly month: string;
   readonly data: MonthlyData | undefined;
   readonly isLoading?: boolean;
   readonly onBack: () => void;
+  readonly getPersonName?: (userId: string) => string;
 }) {
   const balance = data
     ? calculateMonthlyBalance({
@@ -164,7 +166,7 @@ export function MonthDetail({
               <div
                 style={{
                   marginTop: 14,
-                  background: "var(--color-neutral-200)",
+                  background: "var(--border-default)",
                   borderRadius: 99,
                   height: 6,
                   display: "flex",
@@ -180,6 +182,33 @@ export function MonthDetail({
                         i === 0 ? "var(--person-a)" : "var(--person-b)",
                     }}
                   />
+                ))}
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  marginTop: 6,
+                }}
+              >
+                {balance.balances.map((b, i) => (
+                  <span
+                    key={b.userId}
+                    style={{
+                      fontSize: "var(--text-sm)",
+                      fontWeight: "var(--weight-medium)",
+                      fontFamily: "var(--font-sans)",
+                      color:
+                        i === 0
+                          ? "var(--person-a-text)"
+                          : "var(--person-b-text)",
+                    }}
+                  >
+                    {getPersonName
+                      ? getPersonName(b.userId)
+                      : b.userId.slice(0, 6) + "…"}{" "}
+                    {Math.round(b.percentage * 100)}%
+                  </span>
                 ))}
               </div>
             </div>

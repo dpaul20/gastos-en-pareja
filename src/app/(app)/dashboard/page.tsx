@@ -57,7 +57,7 @@ function MonthlyFixedSummary({
           <span
             style={{
               fontSize: 12,
-              color: "var(--color-teal)",
+              color: "var(--status-success-text)",
               fontWeight: 600,
             }}
           >
@@ -67,7 +67,7 @@ function MonthlyFixedSummary({
             <span
               style={{
                 fontSize: 12,
-                color: "var(--color-coral)",
+                color: "var(--status-danger-text)",
                 fontWeight: 600,
               }}
             >
@@ -170,9 +170,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div
-      style={{ minHeight: "100%", background: "var(--bg-base)" }}
-    >
+    <div style={{ minHeight: "100%", background: "var(--bg-base)" }}>
       <h1 className="sr-only">Inicio</h1>
       <MonthHeader
         month={formatMonth(month)}
@@ -244,12 +242,12 @@ export default function DashboardPage() {
                   background: "var(--accent)",
                   borderRadius: 14,
                   padding: "15px 20px",
-                  color: "white",
+                  color: "var(--accent-foreground)",
                   fontSize: 15,
                   fontWeight: 600,
                   fontFamily: "var(--font-sans)",
                   textDecoration: "none",
-                  boxShadow: "0 4px 16px rgba(108,92,231,0.35)",
+                  boxShadow: "var(--shadow-accent)",
                   marginBottom: 8,
                 }}
               >
