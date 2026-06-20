@@ -151,6 +151,7 @@ export function Toaster() {
         }
       `}</style>
       <div
+        role="region"
         aria-label="Notifications"
         style={{
           position: "fixed",
