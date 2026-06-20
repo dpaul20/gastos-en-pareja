@@ -6,7 +6,7 @@ import { ToastContext } from "./toast-provider";
 const DEFAULT_DURATION = 4000;
 
 function generateId(): string {
-  return `toast-${Math.random().toString(36).slice(2, 9)}-${Date.now()}`;
+  return crypto.randomUUID();
 }
 
 interface UndoOptions {
