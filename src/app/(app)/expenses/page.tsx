@@ -27,6 +27,7 @@ import { ResponsiveModal } from "@/components/shared/responsive-modal";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { useToast } from "@/components/shared/toast/use-toast";
 
 const TAB_DESCRIPTIONS: Record<Tab, string> = {
   cuotas: "Compras en cuotas o planes de pago recurrentes",
@@ -293,6 +294,7 @@ function EditServiceSheet({
   onClose,
 }: EditServiceSheetProps) {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const currentAmount = effectiveFixedAmount(instance);
   const [draft, setDraft] = useState(String(currentAmount));
   const [fieldError, setFieldError] = useState<string | null>(null);
@@ -310,10 +312,13 @@ function EditServiceSheet({
   const toggleMutation = useMutation({
     mutationFn: ({ id, paid }: { id: string; paid: boolean }) =>
       toggleFixedExpenseInstance(id, paid),
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: ["monthly-data", coupleId, month],
       });
+      toast.success(
+        variables.paid ? "Marcado como pagado" : "Marcado como pendiente",
+      );
     },
   });
 
@@ -668,6 +673,8 @@ export default function ExpensesPage() {
                   <li key={c.id}>
                     <CuotaItem
                       c={c}
+                      coupleId={coupleId ?? ""}
+                      month={month}
                       getPersonInitials={getPersonInitials}
                       getPerson={getPerson}
                     />
@@ -794,6 +801,8 @@ export default function ExpensesPage() {
                   <li key={v.id}>
                     <VariableItem
                       v={v}
+                      coupleId={coupleId ?? ""}
+                      month={month}
                       getPersonInitials={getPersonInitials}
                       getPerson={getPerson}
                     />

@@ -8,6 +8,7 @@ import {
   createVariableExpense,
 } from "@/lib/actions/expenses";
 import { parseAmount } from "@/lib/utils/amount";
+import { useToast } from "@/components/shared/toast/use-toast";
 
 export type Tab = "cuotas" | "fijos" | "variables";
 
@@ -27,6 +28,7 @@ export function useExpenseSave(tab: Tab) {
   const [isPending, startTransition] = useTransition();
   const [saveError, setSaveError] = useState<string | null>(null);
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   function save(
     fields: Record<string, string>,
@@ -70,10 +72,12 @@ export function useExpenseSave(tab: Tab) {
           });
         }
         queryClient.invalidateQueries({ queryKey: ["monthly-data"] });
+        toast.success("Gasto guardado");
       } catch (err) {
-        setSaveError(
-          err instanceof Error ? err.message : "No se pudo guardar el gasto",
-        );
+        const message =
+          err instanceof Error ? err.message : "No se pudo guardar el gasto";
+        setSaveError(message);
+        toast.danger("No se pudo guardar el gasto");
       }
     });
   }
