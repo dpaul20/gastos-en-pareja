@@ -18,32 +18,29 @@ function useIsClient() {
 // ── SUB-COMPONENTS ───
 
 interface ToastItemProps {
-  toast: Toast;
-  onDismiss: (id: string) => void;
+  readonly toast: Toast;
+  readonly onDismiss: (id: string) => void;
 }
 
 function ToastItem({ toast, onDismiss }: ToastItemProps) {
   const isSuccess = toast.variant === "success";
 
-  return (
-    <div
-      role={isSuccess ? "status" : "alert"}
-      aria-live={isSuccess ? "polite" : "assertive"}
-      className={cn("toast-item")}
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 12,
-        padding: "12px 16px",
-        borderRadius: "var(--radius-md)",
-        background: "var(--bg-elevated)",
-        border: "1px solid var(--border-subtle)",
-        boxShadow: "var(--shadow-md)",
-        minWidth: 240,
-        maxWidth: 360,
-        animation: "toast-slide-in var(--duration-normal) var(--ease-out) both",
-      }}
-    >
+  const sharedStyle: React.CSSProperties = {
+    display: "flex",
+    alignItems: "center",
+    gap: 12,
+    padding: "12px 16px",
+    borderRadius: "var(--radius-md)",
+    background: "var(--bg-elevated)",
+    border: "1px solid var(--border-subtle)",
+    boxShadow: "var(--shadow-md)",
+    minWidth: 240,
+    maxWidth: 360,
+    animation: "toast-slide-in var(--duration-normal) var(--ease-out) both",
+  };
+
+  const inner = (
+    <>
       {isSuccess ? (
         <CheckCircle
           size={18}
@@ -57,7 +54,6 @@ function ToastItem({ toast, onDismiss }: ToastItemProps) {
           style={{ flexShrink: 0, color: "var(--status-danger-text)" }}
         />
       )}
-
       <span
         style={{
           flex: 1,
@@ -69,7 +65,6 @@ function ToastItem({ toast, onDismiss }: ToastItemProps) {
       >
         {toast.title}
       </span>
-
       {toast.undo && (
         <button
           onClick={() => toast.undo?.onUndo()}
@@ -87,7 +82,6 @@ function ToastItem({ toast, onDismiss }: ToastItemProps) {
           {toast.undo.label}
         </button>
       )}
-
       <button
         onClick={() => onDismiss(toast.id)}
         aria-label="Dismiss notification"
@@ -104,6 +98,29 @@ function ToastItem({ toast, onDismiss }: ToastItemProps) {
       >
         <X size={14} aria-hidden />
       </button>
+    </>
+  );
+
+  if (isSuccess) {
+    return (
+      <output
+        aria-live="polite"
+        className={cn("toast-item")}
+        style={sharedStyle}
+      >
+        {inner}
+      </output>
+    );
+  }
+
+  return (
+    <div
+      role="alert"
+      aria-live="assertive"
+      className={cn("toast-item")}
+      style={sharedStyle}
+    >
+      {inner}
     </div>
   );
 }

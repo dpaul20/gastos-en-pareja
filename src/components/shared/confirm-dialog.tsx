@@ -13,23 +13,23 @@ import {
 } from "@/components/ui/sheet";
 
 export interface ConfirmDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  title: string;
-  description: string;
-  confirmLabel?: string;
-  destructive?: boolean;
-  onConfirm: () => void;
+  readonly open: boolean;
+  readonly onOpenChange: (open: boolean) => void;
+  readonly title: string;
+  readonly description: string;
+  readonly confirmLabel?: string;
+  readonly destructive?: boolean;
+  readonly onConfirm: () => void;
 }
 
 // ── SUB-COMPONENTS ───
 
 interface DialogBodyProps {
-  description: string;
-  confirmLabel: string;
-  destructive: boolean;
-  onConfirm: () => void;
-  onCancel: () => void;
+  readonly description: string;
+  readonly confirmLabel: string;
+  readonly destructive: boolean;
+  readonly onConfirm: () => void;
+  readonly onCancel: () => void;
 }
 
 function DialogBody({

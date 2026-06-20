@@ -4,7 +4,7 @@ import * as React from "react";
 import { ToastProvider } from "@/components/shared/toast/toast-provider";
 
 interface AppShellProps {
-  children: React.ReactNode;
+  readonly children: React.ReactNode;
 }
 
 export function AppShell({ children }: AppShellProps) {

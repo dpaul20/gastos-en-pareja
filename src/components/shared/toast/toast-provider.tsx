@@ -43,7 +43,7 @@ interface ToastContextValue {
 export const ToastContext = React.createContext<ToastContextValue | null>(null);
 
 interface ToastProviderProps {
-  children: React.ReactNode;
+  readonly children: React.ReactNode;
 }
 
 export function ToastProvider({ children }: ToastProviderProps) {
