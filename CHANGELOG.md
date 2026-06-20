@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.16.0](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.15.3...gastos-en-pareja-v1.16.0) (2026-06-20)
+
+
+### ✨ Features
+
+* **ui:** add Toast and ConfirmDialog primitives with AppShell provider ([d6e304a](https://github.com/dpaul20/gastos-en-pareja/commit/d6e304affb7225400aace872a64acb789295a546))
+* **ui:** Toast + ConfirmDialog primitives with AppShell provider ([3e2abaa](https://github.com/dpaul20/gastos-en-pareja/commit/3e2abaab321e5c526187b6324cbc8a00aa591be0))
+
+
+### 🐛 Bug Fixes
+
+* **a11y:** add role=region to Toaster container to allow aria-label on div ([c2b5781](https://github.com/dpaul20/gastos-en-pareja/commit/c2b578140f5042853826ac388e923068011a67cc))
+* **a11y:** resolve SonarCloud quality gate failures on Toast and ConfirmDialog ([5c3ab92](https://github.com/dpaul20/gastos-en-pareja/commit/5c3ab92c3717e78ed926492fd5beec96ab888abe))
+* **security:** replace Math.random() with crypto.randomUUID() for toast IDs ([a3c7daa](https://github.com/dpaul20/gastos-en-pareja/commit/a3c7daa427ee959f90b09b656da354da7eb5161e))
+
 ## [1.15.3](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.15.2...gastos-en-pareja-v1.15.3) (2026-06-17)
 
 
