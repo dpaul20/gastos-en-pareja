@@ -1,6 +1,7 @@
 import { AppSidebar } from "@/components/navigation/sidebar-nav";
 import { BottomNav } from "@/components/navigation/bottom-nav";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { AppShell } from "./_components/app-shell";
 
 export default function AppLayout({
   children,
@@ -15,7 +16,7 @@ export default function AppLayout({
       <SidebarInset className="bg-(--bg-base)">
         <div className="flex-1 pb-16 lg:pb-0">
           <div className="mx-auto w-full max-w-97.5 md:mx-0 md:max-w-none">
-            {children}
+            <AppShell>{children}</AppShell>
           </div>
         </div>
       </SidebarInset>
