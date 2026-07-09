@@ -20,9 +20,9 @@ const badgeVariants = cva(
         link: "text-primary underline-offset-4 [a&]:hover:underline",
         // ── App variants ──────────────────────────────────────
         success:
-          "[background-color:var(--status-success-subtle)] [color:var(--status-success)]",
+          "[background-color:var(--status-success-subtle)] [color:var(--status-success-text)]",
         danger:
-          "[background-color:var(--status-danger-subtle)] [color:var(--status-danger)]",
+          "[background-color:var(--status-danger-subtle)] [color:var(--status-danger-text)]",
         warning:
           "[background-color:var(--status-warning-subtle)] [color:var(--status-warning-fg)]",
         neutral:

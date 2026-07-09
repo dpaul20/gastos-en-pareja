@@ -40,6 +40,62 @@ export async function upsertIncome(amount: number, month: string) {
   revalidatePath("/settings");
 }
 
+export async function ensureIncomeCarriedForward(
+  coupleId: string,
+  month: string,
+): Promise<{ created: number }> {
+  const { supabase } = await getCouple();
+
+  const { data: members } = await supabase
+    .from("couple_members")
+    .select("user_id")
+    .eq("couple_id", coupleId);
+
+  if (!members?.length) return { created: 0 };
+
+  const { data: existing } = await supabase
+    .from("incomes")
+    .select("user_id")
+    .eq("couple_id", coupleId)
+    .eq("month", month);
+
+  const existingUserIds = new Set(existing?.map((e) => e.user_id));
+  const missingUserIds = members
+    .map((m) => m.user_id)
+    .filter((id) => !existingUserIds.has(id));
+
+  if (!missingUserIds.length) return { created: 0 };
+
+  let created = 0;
+  for (const userId of missingUserIds) {
+    const { data: lastIncome } = await supabase
+      .from("incomes")
+      .select("amount")
+      .eq("couple_id", coupleId)
+      .eq("user_id", userId)
+      .lt("month", month)
+      .order("month", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (lastIncome) {
+      await supabase.from("incomes").insert({
+        couple_id: coupleId,
+        user_id: userId,
+        month,
+        amount: lastIncome.amount,
+      });
+      created++;
+    }
+  }
+
+  if (created > 0) {
+    revalidatePath("/dashboard");
+    revalidatePath("/settings");
+  }
+  return { created };
+}
+
 // ── INSTALLMENT PURCHASES ─────────────────────────────────────
 
 export async function createInstallmentPurchase(data: {
@@ -225,12 +281,57 @@ export async function updateFixedExpenseInstanceAmount(
 
   const { supabase } = await getCouple();
 
+  // Storing the template amount as an override would keep the "editado" badge
+  // showing forever, so re-entering the template amount clears the override instead.
+  let amountOverride = amount;
+  if (amount !== null) {
+    const { data: instance } = await supabase
+      .from("fixed_expense_instances")
+      .select("fixed_expense_templates(amount)")
+      .eq("id", instanceId)
+      .single();
+
+    if (instance?.fixed_expense_templates?.amount === amount) {
+      amountOverride = null;
+    }
+  }
+
   const { error } = await supabase
     .from("fixed_expense_instances")
-    .update({ amount_override: amount })
+    .update({ amount_override: amountOverride })
     .eq("id", instanceId);
 
   if (error) throw new Error("No se pudo actualizar el monto");
+
+  revalidatePath("/expenses");
+  revalidatePath("/dashboard");
+}
+
+export async function updateFixedExpenseInstanceDueDay(
+  instanceId: string,
+  dueDay: number,
+): Promise<void> {
+  if (!Number.isInteger(dueDay) || dueDay < 1 || dueDay > 31) {
+    throw new Error("El día de vencimiento debe estar entre 1 y 31");
+  }
+
+  const { supabase } = await getCouple();
+
+  const { data: instance } = await supabase
+    .from("fixed_expense_instances")
+    .select("fixed_expense_templates(due_day)")
+    .eq("id", instanceId)
+    .single();
+
+  const dueDayOverride =
+    instance?.fixed_expense_templates?.due_day === dueDay ? null : dueDay;
+
+  const { error } = await supabase
+    .from("fixed_expense_instances")
+    .update({ due_day: dueDayOverride })
+    .eq("id", instanceId);
+
+  if (error) throw new Error("No se pudo actualizar el día de vencimiento");
 
   revalidatePath("/expenses");
   revalidatePath("/dashboard");

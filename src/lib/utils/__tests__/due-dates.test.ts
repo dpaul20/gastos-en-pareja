@@ -44,6 +44,7 @@ function makeInstance(
     month: "2026-05-01",
     paid: false,
     amount_override: null,
+    due_day: null,
     status: "CONFIRMED",
     paid_by_user_id: null,
     created_at: "2026-05-01T00:00:00Z",

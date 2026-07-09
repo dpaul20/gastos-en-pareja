@@ -1,7 +1,8 @@
 "use client";
 
 import type { Tab } from "@/lib/queries/use-expense-save";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+export type ExpenseFilter = Tab | "todo";
 
 export const TAB_LABEL: Record<Tab, string> = {
   cuotas: "Cuotas",
@@ -15,35 +16,59 @@ export const TAB_TESTID: Record<Tab, string> = {
   variables: "tab-compras",
 };
 
+const FILTER_ORDER: readonly ExpenseFilter[] = [
+  "todo",
+  "cuotas",
+  "fijos",
+  "variables",
+];
+
+const FILTER_LABEL: Record<ExpenseFilter, string> = {
+  todo: "Todo",
+  ...TAB_LABEL,
+};
+
+const FILTER_TESTID: Record<ExpenseFilter, string> = {
+  todo: "tab-todo",
+  ...TAB_TESTID,
+};
+
 export function SegmentedControl({
   active,
   onChange,
 }: {
-  readonly active: Tab;
-  readonly onChange: (t: Tab) => void;
+  readonly active: ExpenseFilter;
+  readonly onChange: (filter: ExpenseFilter) => void;
 }) {
   return (
     <div
-      style={{
-        padding: "10px 16px",
-        background: "var(--bg-elevated)",
-        borderBottom: "1px solid var(--border-subtle)",
-      }}
+      role="tablist"
+      aria-label="Filtrar gastos por tipo"
+      className="flex w-full gap-1 rounded-full p-1"
+      style={{ background: "var(--bg-sunken)" }}
     >
-      <Tabs value={active} onValueChange={(v) => onChange(v as Tab)}>
-        <TabsList className="w-full">
-          {(["cuotas", "fijos", "variables"] as Tab[]).map((t) => (
-            <TabsTrigger
-              key={t}
-              value={t}
-              data-testid={TAB_TESTID[t]}
-              className="flex-1"
-            >
-              {TAB_LABEL[t]}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </Tabs>
+      {FILTER_ORDER.map((f) => {
+        const isActive = active === f;
+        return (
+          <button
+            key={f}
+            type="button"
+            role="tab"
+            aria-selected={isActive}
+            data-testid={FILTER_TESTID[f]}
+            onClick={() => onChange(f)}
+            className="flex-1 cursor-pointer rounded-full px-2 py-1.5 text-[13px] font-semibold transition-colors"
+            style={{
+              background: isActive ? "var(--bg-elevated)" : "transparent",
+              color: isActive ? "var(--accent)" : "var(--fg-2)",
+              boxShadow: isActive ? "var(--shadow-sm)" : "none",
+              fontFamily: "var(--font-sans)",
+            }}
+          >
+            {FILTER_LABEL[f]}
+          </button>
+        );
+      })}
     </div>
   );
 }

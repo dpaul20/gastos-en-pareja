@@ -52,7 +52,7 @@ export function NoCoupleCard({
             aria-live="polite"
             style={{
               fontSize: 12,
-              color: "var(--status-danger)",
+              color: "var(--status-danger-text)",
               fontFamily: "var(--font-sans)",
             }}
           >

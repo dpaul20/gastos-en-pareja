@@ -1,7 +1,8 @@
 ﻿"use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useState, useEffect, useMemo, Suspense } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { addMonths, subMonths } from "date-fns";
 import { Card, CardContent } from "@/components/ui/card";
 import { MonthHeader } from "@/components/shared/month-header";
@@ -21,7 +22,10 @@ import {
 } from "@/lib/utils/balance";
 import { groupByCategory } from "@/lib/utils/categories";
 import { MonthSummaryCard } from "@/components/shared/month-summary-card";
-import { ensureFixedExpenseInstances } from "@/lib/actions/expenses";
+import {
+  ensureFixedExpenseInstances,
+  ensureIncomeCarriedForward,
+} from "@/lib/actions/expenses";
 import { NoCoupleState } from "./_components/no-couple-state";
 import { NewInstancesBanner } from "./_components/new-instances-banner";
 import { PendingReviewBanner } from "./_components/pending-review-banner";
@@ -57,7 +61,7 @@ function MonthlyFixedSummary({
           <span
             style={{
               fontSize: 12,
-              color: "var(--color-teal)",
+              color: "var(--status-success-text)",
               fontWeight: 600,
             }}
           >
@@ -67,7 +71,7 @@ function MonthlyFixedSummary({
             <span
               style={{
                 fontSize: 12,
-                color: "var(--color-coral)",
+                color: "var(--status-danger-text)",
                 fontWeight: 600,
               }}
             >
@@ -82,11 +86,46 @@ function MonthlyFixedSummary({
 
 // ── PAGE ──────────────────────────────────────────────────────────────────────
 
-export default function DashboardPage() {
-  const [currentDate, setCurrentDate] = useState(new Date());
+/** Parses a "YYYY-MM" URL param into the first day of that month (local). */
+function monthParamToDate(param: string | null): Date {
+  if (param && /^\d{4}-\d{2}$/.test(param)) {
+    const [y, m] = param.split("-").map(Number);
+    if (m >= 1 && m <= 12) return new Date(y, m - 1, 1);
+  }
+  return new Date();
+}
+
+function DashboardView() {
+  const queryClient = useQueryClient();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  const [currentDate, setCurrentDate] = useState(() =>
+    monthParamToDate(searchParams.get("mes")),
+  );
   const [newInstancesBanner, setNewInstancesBanner] = useState(0);
   const month = getMonthDate(currentDate);
   const isCurrentMonth = month === getMonthDate();
+
+  // Sync the selected month to the URL (?mes=YYYY-MM). Current month = clean URL.
+  useEffect(() => {
+    const params = new URLSearchParams(Array.from(searchParams.entries()));
+    if (isCurrentMonth) {
+      params.delete("mes");
+    } else {
+      params.set(
+        "mes",
+        `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, "0")}`,
+      );
+    }
+    const next = params.toString();
+    if (next !== searchParams.toString()) {
+      router.replace(next ? `${pathname}?${next}` : pathname, {
+        scroll: false,
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- URL sync keys on the selected month; router/searchParams/pathname are stable and excluded to avoid loops
+  }, [currentDate, isCurrentMonth]);
 
   const { data: member, isLoading: loadingMember } = useCoupleMember();
   const { data: myPendingInvitations = [] } = useMyPendingInvitations();
@@ -105,9 +144,26 @@ export default function DashboardPage() {
     },
   });
 
+  const { mutate: ensureIncomeCarry } = useMutation({
+    mutationFn: (vars: { coupleId: string; month: string }) =>
+      ensureIncomeCarriedForward(vars.coupleId, vars.month),
+    onSuccess: ({ created }) => {
+      if (created > 0) {
+        queryClient.invalidateQueries({ queryKey: ["monthly-data"] });
+        queryClient.invalidateQueries({ queryKey: ["income-with-carry"] });
+      }
+    },
+  });
+
   useEffect(() => {
     if (coupleId) ensureInstances({ coupleId, month });
     // ensureInstances is stable (useMutation)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [coupleId, month]);
+
+  useEffect(() => {
+    if (coupleId) ensureIncomeCarry({ coupleId, month });
+    // ensureIncomeCarry is stable (useMutation)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [coupleId, month]);
 
@@ -170,9 +226,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div
-      style={{ minHeight: "100%", background: "var(--bg-base)" }}
-    >
+    <div style={{ minHeight: "100%", background: "var(--bg-base)" }}>
       <h1 className="sr-only">Inicio</h1>
       <MonthHeader
         month={formatMonth(month)}
@@ -261,5 +315,13 @@ export default function DashboardPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={null}>
+      <DashboardView />
+    </Suspense>
   );
 }

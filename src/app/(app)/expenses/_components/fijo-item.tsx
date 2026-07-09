@@ -124,7 +124,7 @@ export function FijoItem({
             fontFamily: "var(--font-sans)",
           }}
         >
-          Vence día {fi.fixed_expense_templates.due_day}
+          Vence día {fi.due_day ?? fi.fixed_expense_templates.due_day}
         </div>
         {hasOverride && (
           <span
@@ -149,7 +149,7 @@ export function FijoItem({
               display: "inline-block",
               marginTop: 3,
               background: "var(--status-danger-subtle)",
-              color: "var(--status-danger)",
+              color: "var(--status-danger-text)",
               fontSize: 10,
               fontWeight: 600,
               borderRadius: 4,
@@ -237,7 +237,7 @@ export function FijoItem({
                 role="alert"
                 style={{
                   fontSize: 11,
-                  color: "var(--status-danger)",
+                  color: "var(--status-danger-text)",
                   fontFamily: "var(--font-sans)",
                 }}
               >
@@ -283,14 +283,12 @@ export function FijoItem({
               )}
               <Button
                 variant="ghost"
-                size="icon"
                 onClick={handleStartEdit}
                 title="Editar monto"
                 aria-label="Editar monto"
                 style={{
-                  padding: "0 4px",
-                  minWidth: 44,
-                  minHeight: 44,
+                  height: 32,
+                  padding: "0 8px",
                   justifyContent: "flex-end",
                 }}
               >
@@ -332,9 +330,9 @@ export function FijoItem({
             height: 28,
             paddingInline: 10,
             borderRadius: 8,
-            border: `1.5px solid var(--status-danger)`,
+            border: `1.5px solid var(--status-danger-text)`,
             background: "var(--status-danger-subtle)",
-            color: "var(--status-danger)",
+            color: "var(--status-danger-text)",
             fontSize: 11,
             fontWeight: 600,
             fontFamily: "var(--font-sans)",
@@ -346,18 +344,38 @@ export function FijoItem({
         </Button>
       )}
 
-      {/* Right: paid toggle */}
-      <Switch
-        checked={fi.paid}
-        onCheckedChange={(checked) =>
-          startTransition(async () => {
-            await toggleFixedExpenseInstance(fi.id, checked);
-            queryClient.invalidateQueries({ queryKey: ["monthly-data"] });
-          })
-        }
-        disabled={editing || amountMutation.isPending}
-        aria-label={fi.paid ? "Marcar como no pagado" : "Marcar como pagado"}
-      />
+      {/* Right: paid toggle with visible status label */}
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 3,
+          flexShrink: 0,
+        }}
+      >
+        <span
+          style={{
+            fontSize: 10,
+            fontWeight: 600,
+            fontFamily: "var(--font-sans)",
+            color: fi.paid ? "var(--status-success-text)" : "var(--fg-3)",
+          }}
+        >
+          {fi.paid ? "Pagado" : "Sin pagar"}
+        </span>
+        <Switch
+          checked={fi.paid}
+          onCheckedChange={(checked) =>
+            startTransition(async () => {
+              await toggleFixedExpenseInstance(fi.id, checked);
+              queryClient.invalidateQueries({ queryKey: ["monthly-data"] });
+            })
+          }
+          disabled={editing || amountMutation.isPending}
+          aria-label={fi.paid ? "Marcar como no pagado" : "Marcar como pagado"}
+        />
+      </div>
     </div>
   );
 }

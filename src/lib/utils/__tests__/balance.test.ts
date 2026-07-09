@@ -135,6 +135,7 @@ describe("calculateMonthlyBalance", () => {
           created_at: "",
           status: "CONFIRMED" as string,
           amount_override: null as number | null,
+          due_day: null as number | null,
           paid_by_user_id: null as string | null,
           fixed_expense_templates: {
             id: "t1",
@@ -157,6 +158,7 @@ describe("calculateMonthlyBalance", () => {
           created_at: "",
           status: "CONFIRMED" as string,
           amount_override: null as number | null,
+          due_day: null as number | null,
           paid_by_user_id: null as string | null,
           fixed_expense_templates: {
             id: "t2",
@@ -396,6 +398,7 @@ describe("calculateMonthlyBalance", () => {
       created_at: "",
       status: "CONFIRMED" as string,
       amount_override: null as number | null,
+      due_day: null as number | null,
       paid_by_user_id: null as string | null,
       fixed_expense_templates: baseTemplate,
     };
@@ -578,6 +581,7 @@ describe("calculateMonthlyBalance — payer attribution (payer-attribution)", ()
       created_at: "",
       status: "CONFIRMED" as string,
       amount_override: null as number | null,
+      due_day: null as number | null,
       fixed_expense_templates: { ...template, amount },
     };
   }
@@ -803,6 +807,7 @@ describe("effectiveFixedAmount", () => {
     created_at: "",
     status: "CONFIRMED" as string,
     amount_override: null as number | null,
+    due_day: null as number | null,
     paid_by_user_id: null as string | null,
     fixed_expense_templates: baseTemplate,
   };
@@ -851,6 +856,7 @@ describe("calculateMonthlyBalance — PENDING_CONFIRMATION status (RF-07)", () =
     created_at: "",
     status: "PENDING_CONFIRMATION" as string,
     amount_override: null as number | null,
+    due_day: null as number | null,
     paid_by_user_id: null as string | null,
     fixed_expense_templates: template,
   };
