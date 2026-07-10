@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.17.0](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.16.0...gastos-en-pareja-v1.17.0) (2026-07-10)
+
+
+### ✨ Features
+
+* design-system fidelity, dark-mode a11y, and UX bug-fix pass ([3fa0f16](https://github.com/dpaul20/gastos-en-pareja/commit/3fa0f16f372ace27e361c7ba57374b8130c9f17a))
+* design-system fidelity, dark-mode a11y, and UX bug-fix pass ([efba48e](https://github.com/dpaul20/gastos-en-pareja/commit/efba48e9e90f7f45ff017f92dd33d6263d21ab9e))
+
 ## [1.16.0](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.15.3...gastos-en-pareja-v1.16.0) (2026-06-20)
 
 
