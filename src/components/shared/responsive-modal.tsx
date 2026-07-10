@@ -42,6 +42,7 @@ export function ResponsiveModal({
             background: "var(--bg-elevated)",
             border: "none",
             padding: "20px 20px 0",
+            overscrollBehavior: "contain",
           }}
         >
           <div
@@ -98,6 +99,7 @@ export function ResponsiveModal({
             boxShadow: "0 20px 60px rgba(0,0,0,0.18)",
             padding: "28px 24px 32px",
             maxHeight: "85vh",
+            overscrollBehavior: "contain",
           }}
         >
           <DialogPrimitive.Close

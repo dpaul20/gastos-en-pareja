@@ -1,7 +1,11 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useForm, useWatch } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { FAB as Fab } from "@/components/shared/fab";
 import { formatARS, getMonthDate, getInitials, cn } from "@/lib/utils";
 import { effectiveFixedAmount } from "@/lib/utils/balance";
@@ -15,16 +19,20 @@ import {
 import { useExpenseSave, type Tab } from "@/lib/queries/use-expense-save";
 import {
   updateFixedExpenseInstanceAmount,
+  updateFixedExpenseInstanceDueDay,
   toggleFixedExpenseInstance,
   confirmAllFixedExpenseInstances,
 } from "@/lib/actions/expenses";
 import { CuotaItem } from "./_components/cuota-item";
 import { FijoItem } from "./_components/fijo-item";
 import { VariableItem } from "./_components/variable-item";
-import { TAB_LABEL, TAB_TESTID } from "./_components/segmented-control";
+import {
+  SegmentedControl,
+  type ExpenseFilter,
+} from "./_components/segmented-control";
 import { AddSheet } from "./_components/add-sheet";
+import { DueDayPicker } from "./_components/due-day-picker";
 import { ResponsiveModal } from "@/components/shared/responsive-modal";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 
@@ -33,6 +41,20 @@ const TAB_DESCRIPTIONS: Record<Tab, string> = {
   fijos: "Agua, luz, expensas y servicios que se repiten cada mes",
   variables: "Gastos puntuales del mes, compartidos o personales",
 };
+
+// ── SCHEMAS ───────────────────────────────────────────────────────────────────
+
+const dueDaySchema = z.object({
+  due_day: z
+    .string()
+    .min(1, "Requerido")
+    .refine((v) => {
+      const n = Number.parseInt(v, 10);
+      return !Number.isNaN(n) && n >= 1 && n <= 31;
+    }, "Debe ser un número entre 1 y 31"),
+});
+
+type DueDayFields = z.infer<typeof dueDaySchema>;
 
 // ── FLOW STATE ────────────────────────────────────────────────────────────────
 
@@ -61,6 +83,102 @@ function TabDescription({ tab }: { tab: Tab }) {
     >
       {TAB_DESCRIPTIONS[tab]}
     </p>
+  );
+}
+
+function SectionLabel({ children }: { readonly children: string }) {
+  return (
+    <div
+      className="mb-1.5 px-1 text-[11px] font-bold uppercase"
+      style={{
+        color: "var(--fg-3)",
+        letterSpacing: "0.05em",
+        fontFamily: "var(--font-sans)",
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+function FilterFunnelIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="var(--fg-2)"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+    </svg>
+  );
+}
+
+// ── CATEGORY FILTER SHEET ────────────────────────────────────────────────────
+
+type Categories = NonNullable<ReturnType<typeof useCategories>["data"]>;
+
+interface CategoryFilterSheetProps {
+  readonly categories: Categories;
+  readonly filterCategory: string | null;
+  readonly onSelect: (categoryId: string | null) => void;
+  readonly onClose: () => void;
+}
+
+function CategoryFilterSheet({
+  categories,
+  filterCategory,
+  onSelect,
+  onClose,
+}: CategoryFilterSheetProps) {
+  return (
+    <ResponsiveModal
+      open
+      onOpenChange={(open) => !open && onClose()}
+      title="Filtrar por categoría"
+      data-testid="category-filter-sheet"
+    >
+      <div className="flex flex-wrap gap-1.5 pb-4">
+        <button
+          onClick={() => onSelect(null)}
+          className="cursor-pointer rounded-[20px] text-xs font-semibold"
+          style={{
+            padding: "6px 14px",
+            border: "1px solid var(--border-subtle)",
+            background:
+              filterCategory === null ? "var(--accent)" : "var(--bg-sunken)",
+            color: filterCategory === null ? "#fff" : "var(--fg-2)",
+            fontFamily: "var(--font-sans)",
+          }}
+        >
+          Todos
+        </button>
+        {categories.map((cat) => (
+          <button
+            key={cat.id}
+            onClick={() => onSelect(filterCategory === cat.id ? null : cat.id)}
+            className="cursor-pointer rounded-[20px] text-xs font-semibold"
+            style={{
+              padding: "6px 14px",
+              border: "1px solid var(--border-subtle)",
+              background:
+                filterCategory === cat.id
+                  ? "var(--accent)"
+                  : "var(--bg-sunken)",
+              color: filterCategory === cat.id ? "#fff" : "var(--fg-2)",
+              fontFamily: "var(--font-sans)",
+            }}
+          >
+            {cat.icon} {cat.name}
+          </button>
+        ))}
+      </div>
+    </ResponsiveModal>
   );
 }
 
@@ -246,9 +364,9 @@ function ServiceListSheet({
                 <span
                   className="shrink-0 rounded-md px-2 py-0.5 text-xs font-semibold"
                   style={{
-                    color: "var(--color-teal)",
+                    color: "var(--status-success-text)",
                     background:
-                      "color-mix(in srgb, var(--color-teal) 12%, transparent)",
+                      "color-mix(in srgb, var(--status-success) 12%, transparent)",
                     fontFamily: "var(--font-sans)",
                   }}
                 >
@@ -294,12 +412,41 @@ function EditServiceSheet({
 }: EditServiceSheetProps) {
   const queryClient = useQueryClient();
   const currentAmount = effectiveFixedAmount(instance);
+  const currentDueDay =
+    instance.due_day ?? instance.fixed_expense_templates.due_day;
   const [draft, setDraft] = useState(String(currentAmount));
   const [fieldError, setFieldError] = useState<string | null>(null);
+
+  const {
+    register,
+    control,
+    setValue,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<DueDayFields>({
+    resolver: zodResolver(dueDaySchema),
+    defaultValues: { due_day: String(currentDueDay) },
+  });
+
+  const dueDayRaw = useWatch({ control, name: "due_day" });
+  const dueDayValue = (() => {
+    const n = Number.parseInt(dueDayRaw ?? "", 10);
+    return Number.isFinite(n) && n >= 1 && n <= 31 ? n : null;
+  })();
 
   const amountMutation = useMutation({
     mutationFn: ({ id, amount }: { id: string; amount: number | null }) =>
       updateFixedExpenseInstanceAmount(id, amount),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["monthly-data", coupleId, month],
+      });
+    },
+  });
+
+  const dueDayMutation = useMutation({
+    mutationFn: ({ id, dueDay }: { id: string; dueDay: number }) =>
+      updateFixedExpenseInstanceDueDay(id, dueDay),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["monthly-data", coupleId, month],
@@ -317,20 +464,36 @@ function EditServiceSheet({
     },
   });
 
-  function handleSave() {
+  function handleSave(values: DueDayFields) {
     const parsed = parseAmount(draft);
     if (!Number.isFinite(parsed) || parsed <= 0) {
       setFieldError("El monto debe ser mayor a cero");
       return;
     }
     setFieldError(null);
+    const dueDay = Number.parseInt(values.due_day, 10);
+
     amountMutation.mutate(
       { id: instance.id, amount: parsed },
-      { onSuccess: onClose },
+      {
+        onSuccess: () => {
+          if (dueDay !== currentDueDay) {
+            dueDayMutation.mutate(
+              { id: instance.id, dueDay },
+              { onSuccess: onClose },
+            );
+          } else {
+            onClose();
+          }
+        },
+      },
     );
   }
 
-  const isPending = amountMutation.isPending || toggleMutation.isPending;
+  const isPending =
+    amountMutation.isPending ||
+    toggleMutation.isPending ||
+    dueDayMutation.isPending;
   const name = instance.fixed_expense_templates.description;
 
   return (
@@ -340,131 +503,219 @@ function EditServiceSheet({
       title={name}
       data-testid="edit-service-sheet"
     >
-      {/* Amount edit */}
-      <div className="mb-3.5">
-        <label
-          htmlFor="edit-service-amount"
-          className="mb-1.5 block text-[13px] font-medium"
-          style={{ color: "var(--fg-2)", fontFamily: "var(--font-sans)" }}
-        >
-          Monto este mes
-        </label>
-        <div
-          className="flex items-center overflow-hidden"
-          style={{
-            background: "var(--bg-sunken)",
-            borderRadius: 10,
-            border: "1.5px solid var(--border-default)",
-          }}
-        >
-          <span
-            aria-hidden
-            className="text-base font-semibold"
+      <form onSubmit={handleSubmit(handleSave)}>
+        {/* Amount edit */}
+        <div className="mb-3.5">
+          <label
+            htmlFor="edit-service-amount"
+            className="mb-1.5 block text-[13px] font-medium"
+            style={{ color: "var(--fg-2)", fontFamily: "var(--font-sans)" }}
+          >
+            Monto este mes
+          </label>
+          <div
+            className="flex items-center overflow-hidden focus-within:ring-2 focus-within:ring-(--accent)"
             style={{
-              padding: "10px 6px 10px 12px",
-              color: "var(--fg-3)",
-              fontFamily: "var(--font-mono)",
+              background: "var(--bg-sunken)",
+              borderRadius: 10,
+              border: "1.5px solid var(--border-default)",
             }}
           >
-            $
-          </span>
+            <span
+              aria-hidden
+              className="text-base font-semibold"
+              style={{
+                padding: "10px 6px 10px 12px",
+                color: "var(--fg-3)",
+                fontFamily: "var(--font-mono)",
+              }}
+            >
+              $
+            </span>
+            <input
+              id="edit-service-amount"
+              type="text"
+              value={draft}
+              onChange={(e) => {
+                setDraft(e.target.value);
+                setFieldError(null);
+              }}
+              inputMode="decimal"
+              className="flex-1 text-base font-semibold"
+              style={{
+                border: "none",
+                background: "transparent",
+                padding: "10px 12px 10px 4px",
+                fontFamily: "var(--font-mono)",
+                outline: "none",
+                color: "var(--fg-1)",
+              }}
+            />
+          </div>
+          {instance.amount_override == null && (
+            <div
+              className="mt-1 text-xs"
+              style={{ color: "var(--fg-3)", fontFamily: "var(--font-sans)" }}
+            >
+              Default: {formatARS(instance.fixed_expense_templates.amount)}
+            </div>
+          )}
+          {fieldError && (
+            <div
+              role="alert"
+              className="mt-1 text-xs"
+              style={{
+                color: "var(--status-danger-text)",
+                fontFamily: "var(--font-sans)",
+              }}
+            >
+              {fieldError}
+            </div>
+          )}
+        </div>
+
+        {/* Due day edit */}
+        <div className="mb-3.5">
+          <label
+            htmlFor="edit-service-due-day"
+            className="mb-1.5 block text-[13px] font-medium"
+            style={{ color: "var(--fg-2)", fontFamily: "var(--font-sans)" }}
+          >
+            Día de vencimiento
+          </label>
+          {/* Visually-hidden native input keeps the field addressable while
+              the grid is the visual control. */}
           <input
-            id="edit-service-amount"
+            id="edit-service-due-day"
+            data-testid="edit-service-due-day"
             type="text"
-            value={draft}
-            onChange={(e) => {
-              setDraft(e.target.value);
-              setFieldError(null);
-            }}
-            inputMode="decimal"
-            className="flex-1 text-base font-semibold"
-            style={{
-              border: "none",
-              background: "transparent",
-              padding: "10px 12px 10px 4px",
-              fontFamily: "var(--font-mono)",
-              outline: "none",
-              color: "var(--fg-1)",
-            }}
+            inputMode="numeric"
+            className="sr-only"
+            {...register("due_day")}
+          />
+          <DueDayPicker
+            value={dueDayValue}
+            onChange={(day) =>
+              setValue("due_day", String(day), {
+                shouldValidate: true,
+                shouldDirty: true,
+              })
+            }
+          />
+          {errors.due_day && (
+            <div
+              role="alert"
+              className="mt-1 text-xs"
+              style={{
+                color: "var(--status-danger-text)",
+                fontFamily: "var(--font-sans)",
+              }}
+            >
+              {errors.due_day.message}
+            </div>
+          )}
+        </div>
+
+        {/* Paid toggle */}
+        <div className="mb-5 flex items-center justify-between">
+          <span
+            className="text-[13px] font-medium"
+            style={{ color: "var(--fg-2)", fontFamily: "var(--font-sans)" }}
+          >
+            Ya lo pagué
+          </span>
+          <Switch
+            checked={instance.paid}
+            onCheckedChange={(checked) =>
+              toggleMutation.mutate({ id: instance.id, paid: checked })
+            }
+            disabled={isPending}
+            aria-label={
+              instance.paid ? "Marcar como no pagado" : "Marcar como pagado"
+            }
           />
         </div>
-        {instance.amount_override == null && (
-          <div
-            className="mt-1 text-xs"
-            style={{ color: "var(--fg-3)", fontFamily: "var(--font-sans)" }}
-          >
-            Default: {formatARS(instance.fixed_expense_templates.amount)}
-          </div>
-        )}
-        {fieldError && (
-          <div
-            role="alert"
-            className="mt-1 text-xs"
-            style={{
-              color: "var(--status-danger)",
-              fontFamily: "var(--font-sans)",
-            }}
-          >
-            {fieldError}
-          </div>
-        )}
-      </div>
 
-      {/* Paid toggle */}
-      <div className="mb-5 flex items-center justify-between">
-        <span
-          className="text-[13px] font-medium"
-          style={{ color: "var(--fg-2)", fontFamily: "var(--font-sans)" }}
-        >
-          Ya lo pagué
-        </span>
-        <Switch
-          checked={instance.paid}
-          onCheckedChange={(checked) =>
-            toggleMutation.mutate({ id: instance.id, paid: checked })
-          }
+        <Button
+          type="submit"
           disabled={isPending}
-          aria-label={
-            instance.paid ? "Marcar como no pagado" : "Marcar como pagado"
-          }
-        />
-      </div>
-
-      <Button
-        type="button"
-        onClick={handleSave}
-        disabled={isPending}
-        className="w-full"
-        style={{ opacity: isPending ? 0.7 : 1 }}
-      >
-        Guardar
-      </Button>
+          className="w-full"
+          style={{ opacity: isPending ? 0.7 : 1 }}
+        >
+          Guardar
+        </Button>
+      </form>
     </ResponsiveModal>
   );
 }
 
 // ── PAGE ──────────────────────────────────────────────────────────────────────
 
-export default function ExpensesPage() {
-  const [tab, setTab] = useState<Tab>("cuotas");
+// Maps the internal filter value to a user-facing URL param and back.
+const FILTER_TO_PARAM: Record<ExpenseFilter, string | null> = {
+  todo: null,
+  cuotas: "cuotas",
+  fijos: "servicios",
+  variables: "compras",
+};
+const PARAM_TO_FILTER: Record<string, ExpenseFilter> = {
+  cuotas: "cuotas",
+  servicios: "fijos",
+  compras: "variables",
+};
+
+function flowStepToAddTab(step: FlowState["step"]): Tab | null {
+  if (step === "cuota-form") return "cuotas";
+  if (step === "new-service") return "fijos";
+  if (step === "compra-form") return "variables";
+  return null;
+}
+
+function ExpensesView() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  const [filter, setFilter] = useState<ExpenseFilter>(
+    () => PARAM_TO_FILTER[searchParams.get("tipo") ?? ""] ?? "todo",
+  );
   const [flow, setFlow] = useState<FlowState>({ step: "idle" });
-  const [filterCategory, setFilterCategory] = useState<string | null>(null);
+  const [filterCategory, setFilterCategory] = useState<string | null>(() =>
+    searchParams.get("cat"),
+  );
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
+
+  // Sync filter + category to the URL (?tipo=...&cat=...). Defaults = clean URL.
+  useEffect(() => {
+    const params = new URLSearchParams(Array.from(searchParams.entries()));
+    const tipo = FILTER_TO_PARAM[filter];
+    if (tipo) params.set("tipo", tipo);
+    else params.delete("tipo");
+    if (filterCategory) params.set("cat", filterCategory);
+    else params.delete("cat");
+    const next = params.toString();
+    if (next !== searchParams.toString()) {
+      router.replace(next ? `${pathname}?${next}` : pathname, {
+        scroll: false,
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- URL sync keys on filter/category; router/searchParams/pathname are stable and excluded to avoid loops
+  }, [filter, filterCategory]);
 
   // Map flow steps to AddSheet tab — must be computed before useExpenseSave
-  const addSheetTab: Tab | null =
-    flow.step === "cuota-form"
-      ? "cuotas"
-      : flow.step === "new-service"
-        ? "fijos"
-        : flow.step === "compra-form"
-          ? "variables"
-          : null;
+  const addSheetTab: Tab | null = flowStepToAddTab(flow.step);
 
-  const { save, saveError } = useExpenseSave(addSheetTab ?? tab);
+  const { save, saveError } = useExpenseSave(
+    addSheetTab ?? (filter === "todo" ? "cuotas" : filter),
+  );
 
-  function handleTabChange(newTab: Tab) {
-    setTab(newTab);
+  function handleFilterChange(newFilter: ExpenseFilter) {
+    setFilter(newFilter);
     setFilterCategory(null);
+  }
+
+  function handleCategorySelect(categoryId: string | null) {
+    setFilterCategory(categoryId);
+    setFilterSheetOpen(false);
   }
 
   const { data: member } = useCoupleMember();
@@ -475,20 +726,6 @@ export default function ExpensesPage() {
     member?.user_id ?? null,
   );
   const { data: categories = [] } = useCategories(coupleId);
-
-  const [categoryRowOverflows, setCategoryRowOverflows] = useState(false);
-  const categoryRowRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const el = categoryRowRef.current;
-    if (!el) return;
-    const check = () =>
-      setCategoryRowOverflows(el.scrollWidth > el.clientWidth);
-    check();
-    const ro = new ResizeObserver(check);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [categories]);
 
   const getPersonInitials = (userId: string) => {
     const p = profiles.find((pr) => pr.user_id === userId);
@@ -545,6 +782,14 @@ export default function ExpensesPage() {
     ? allVariables.filter((v) => v.category_id === filterCategory)
     : allVariables;
 
+  const showTodo = filter === "todo";
+  const cuotasVisible = filter === "cuotas" || (showTodo && cuotas.length > 0);
+  const fijosVisible = filter === "fijos" || (showTodo && fijos.length > 0);
+  const variablesVisible =
+    filter === "variables" || (showTodo && variables.length > 0);
+  const allEmpty =
+    cuotas.length === 0 && fijos.length === 0 && variables.length === 0;
+
   // Resolve the active fixed instance for edit-service step
   const activeInstance =
     flow.step === "edit-service"
@@ -559,100 +804,81 @@ export default function ExpensesPage() {
         background: "var(--bg-base)",
       }}
     >
-      <Tabs
-        value={tab}
-        onValueChange={(v) => handleTabChange(v as Tab)}
-        className="flex flex-1 flex-col"
+      <div
+        style={{
+          background: "var(--bg-elevated)",
+          borderBottom: "1px solid var(--border-subtle)",
+          paddingTop: 14,
+        }}
       >
-        <div
-          style={{
-            background: "var(--bg-elevated)",
-            borderBottom: "1px solid var(--border-subtle)",
-            paddingTop: 14,
-          }}
-        >
-          <div className="mx-auto w-full max-w-3xl">
-            <h1
-              className="m-0 px-5 pb-[10px] text-lg font-bold"
-              style={{
-                color: "var(--fg-1)",
-                fontFamily: "var(--font-sans)",
-              }}
-            >
-              Gastos
-            </h1>
-            <div className="px-4 pb-2.5">
-              <TabsList className="w-full bg-(--bg-sunken)">
-                {(["cuotas", "fijos", "variables"] as Tab[]).map((t) => (
-                  <TabsTrigger
-                    key={t}
-                    value={t}
-                    data-testid={TAB_TESTID[t]}
-                    className="flex-1 text-(--fg-2) data-[state=active]:bg-(--bg-elevated) data-[state=active]:font-semibold data-[state=active]:text-(--accent) data-[state=active]:shadow-sm"
-                  >
-                    {TAB_LABEL[t]}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
+        <div className="mx-auto w-full max-w-3xl">
+          <h1
+            className="m-0 px-5 pb-[10px] text-lg font-bold"
+            style={{
+              color: "var(--fg-1)",
+              fontFamily: "var(--font-sans)",
+            }}
+          >
+            Gastos
+          </h1>
+          <div className="flex items-center gap-2 px-4 pb-2.5">
+            <div className="flex-1">
+              <SegmentedControl active={filter} onChange={handleFilterChange} />
             </div>
-            <TabDescription tab={tab} />
             {categories.length > 0 && (
-              <div
-                ref={categoryRowRef}
-                className={cn(
-                  "flex flex-nowrap gap-1.5 overflow-x-auto px-4 pe-8 pt-2 pb-2.5 [scrollbar-width:none] lg:flex-wrap lg:overflow-x-visible lg:pe-0",
-                  categoryRowOverflows && "category-filter-scroll",
-                )}
+              <button
+                type="button"
+                onClick={() => setFilterSheetOpen(true)}
+                aria-label="Más filtros"
+                data-testid="expenses-filters-button"
+                className="relative flex shrink-0 cursor-pointer items-center justify-center rounded-xl"
+                style={{
+                  width: 40,
+                  height: 40,
+                  background: "var(--bg-sunken)",
+                  border: "1px solid var(--border-subtle)",
+                }}
               >
-                <button
-                  onClick={() => setFilterCategory(null)}
-                  className="flex-shrink-0 cursor-pointer rounded-[20px] text-xs font-semibold"
-                  style={{
-                    padding: "4px 12px",
-                    border: "1px solid var(--border-subtle)",
-                    background:
-                      filterCategory === null
-                        ? "var(--accent)"
-                        : "var(--bg-sunken)",
-                    color: filterCategory === null ? "#fff" : "var(--fg-2)",
-                    fontFamily: "var(--font-sans)",
-                  }}
-                >
-                  Todos
-                </button>
-                {categories.map((cat) => (
-                  <button
-                    key={cat.id}
-                    onClick={() =>
-                      setFilterCategory(
-                        filterCategory === cat.id ? null : cat.id,
-                      )
-                    }
-                    className="flex-shrink-0 cursor-pointer rounded-[20px] text-xs font-semibold"
+                <FilterFunnelIcon />
+                {filterCategory !== null && (
+                  <span
+                    className="absolute flex items-center justify-center rounded-full text-[10px] font-bold"
                     style={{
-                      padding: "4px 12px",
-                      border: "1px solid var(--border-subtle)",
-                      background:
-                        filterCategory === cat.id
-                          ? "var(--accent)"
-                          : "var(--bg-sunken)",
-                      color: filterCategory === cat.id ? "#fff" : "var(--fg-2)",
+                      top: -4,
+                      right: -4,
+                      width: 16,
+                      height: 16,
+                      background: "var(--accent)",
+                      color: "var(--accent-foreground)",
                       fontFamily: "var(--font-sans)",
                     }}
                   >
-                    {cat.icon} {cat.name}
-                  </button>
-                ))}
-              </div>
+                    1
+                  </span>
+                )}
+              </button>
             )}
           </div>
+          {!showTodo && <TabDescription tab={filter} />}
         </div>
+      </div>
 
-        <div style={{ flex: 1, overflowY: "auto" }}>
+      <div style={{ flex: 1, overflowY: "auto" }}>
+        <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-4 py-3">
+          {showTodo && allEmpty && (
+            <div
+              className="py-12 text-center text-sm"
+              style={{ color: "var(--fg-3)", fontFamily: "var(--font-sans)" }}
+            >
+              Sin gastos este mes. Usá el + para agregar.
+            </div>
+          )}
+
           {/* CUOTAS */}
-          <TabsContent value="cuotas" className="mt-0">
-            <div className="mx-auto flex w-full max-w-3xl flex-col gap-2 px-4 py-3">
-              {cuotas.length === 0 && (
+          {cuotasVisible && (
+            <div>
+              {showTodo && <SectionLabel>Cuotas</SectionLabel>}
+              {filter === "cuotas" && cuotas.length === 0 && (
                 <div
                   className="py-12 text-center text-sm"
                   style={{
@@ -675,12 +901,13 @@ export default function ExpensesPage() {
                 ))}
               </ul>
             </div>
-          </TabsContent>
+          )}
 
           {/* FIJOS */}
-          <TabsContent value="fijos" className="mt-0">
-            <div className="mx-auto w-full max-w-3xl px-4 py-3">
-              {fijos.length === 0 && (
+          {fijosVisible && (
+            <div>
+              {showTodo && <SectionLabel>Servicios</SectionLabel>}
+              {filter === "fijos" && fijos.length === 0 && (
                 <div
                   className="text-center text-sm"
                   style={{
@@ -707,10 +934,10 @@ export default function ExpensesPage() {
                           confirmAllMutation.isPending && "opacity-50",
                         )}
                         style={{
-                          border: `1.5px solid var(--color-coral)`,
+                          border: `1.5px solid var(--status-danger-text)`,
                           background:
-                            "color-mix(in srgb, var(--color-coral) 10%, transparent)",
-                          color: "var(--color-coral)",
+                            "color-mix(in srgb, var(--status-danger) 10%, transparent)",
+                          color: "var(--status-danger-text)",
                         }}
                       >
                         Confirmar todos
@@ -772,12 +999,13 @@ export default function ExpensesPage() {
                 </>
               )}
             </div>
-          </TabsContent>
+          )}
 
           {/* VARIABLES */}
-          <TabsContent value="variables" className="mt-0">
-            <div className="mx-auto flex w-full max-w-3xl flex-col gap-2 px-4 py-3">
-              {variables.length === 0 && (
+          {variablesVisible && (
+            <div>
+              {showTodo && <SectionLabel>Compras</SectionLabel>}
+              {filter === "variables" && variables.length === 0 && (
                 <div
                   className="text-center text-sm"
                   style={{
@@ -801,9 +1029,18 @@ export default function ExpensesPage() {
                 ))}
               </ul>
             </div>
-          </TabsContent>
+          )}
         </div>
-      </Tabs>
+      </div>
+
+      {filterSheetOpen && (
+        <CategoryFilterSheet
+          categories={categories}
+          filterCategory={filterCategory}
+          onSelect={handleCategorySelect}
+          onClose={() => setFilterSheetOpen(false)}
+        />
+      )}
 
       {flow.step === "idle" && (
         <Fab
@@ -857,5 +1094,13 @@ export default function ExpensesPage() {
         />
       )}
     </div>
+  );
+}
+
+export default function ExpensesPage() {
+  return (
+    <Suspense fallback={null}>
+      <ExpensesView />
+    </Suspense>
   );
 }

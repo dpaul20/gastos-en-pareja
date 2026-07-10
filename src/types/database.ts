@@ -127,6 +127,7 @@ export type Database = {
           amount_override: number | null;
           couple_id: string;
           created_at: string;
+          due_day: number | null;
           id: string;
           month: string;
           paid: boolean;
@@ -138,6 +139,7 @@ export type Database = {
           amount_override?: number | null;
           couple_id: string;
           created_at?: string;
+          due_day?: number | null;
           id?: string;
           month: string;
           paid?: boolean;
@@ -149,6 +151,7 @@ export type Database = {
           amount_override?: number | null;
           couple_id?: string;
           created_at?: string;
+          due_day?: number | null;
           id?: string;
           month?: string;
           paid?: boolean;

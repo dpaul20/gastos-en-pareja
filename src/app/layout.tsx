@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { DM_Sans, JetBrains_Mono } from "next/font/google";
+import Script from "next/script";
 import { Providers } from "@/lib/providers";
 import "./globals.css";
 
@@ -67,14 +68,16 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="es" className={`${dmSans.variable} ${jetbrainsMono.variable}`}>
-      {/* Pre-paint dark mode detection — must run before first paint to avoid FOUC */}
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `(function(){try{if(window.matchMedia('(prefers-color-scheme: dark)').matches){document.documentElement.classList.add('dark')}}catch(e){}})()`,
-        }}
-      />
+    <html
+      lang="es"
+      className={`${dmSans.variable} ${jetbrainsMono.variable}`}
+      suppressHydrationWarning
+    >
       <body>
+        {/* Pre-paint dark mode detection — must run before first paint to avoid FOUC */}
+        <Script id="theme-detect" strategy="beforeInteractive">
+          {`(function(){try{if(window.matchMedia('(prefers-color-scheme: dark)').matches){document.documentElement.classList.add('dark')}}catch(e){}})()`}
+        </Script>
         <Providers>{children}</Providers>
       </body>
     </html>

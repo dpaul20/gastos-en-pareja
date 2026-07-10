@@ -1,6 +1,6 @@
 import { PersonAvatar } from "@/components/shared/avatar";
 import { Card, CardContent } from "@/components/ui/card";
-import { formatARS } from "@/lib/utils";
+import { formatARS, formatDayMonth } from "@/lib/utils";
 import { useMonthlyData } from "@/lib/queries/use-monthly-data";
 
 type MonthlyData = NonNullable<ReturnType<typeof useMonthlyData>["data"]>;
@@ -23,12 +23,30 @@ export function VariableItem({
           person={getPerson(v.user_id)}
           size="md"
         />
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 14, fontWeight: 500, color: "var(--fg-1)" }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div
+            style={{
+              fontSize: 14,
+              fontWeight: 500,
+              color: "var(--fg-1)",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
             {v.description}
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
-            <span style={{ fontSize: 12, color: "var(--fg-3)" }}>{v.date}</span>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              marginTop: 2,
+            }}
+          >
+            <span style={{ fontSize: 12, color: "var(--fg-3)" }}>
+              {formatDayMonth(v.date)}
+            </span>
             {!v.is_shared && (
               <span
                 style={{

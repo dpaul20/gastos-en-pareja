@@ -3,6 +3,17 @@
 @custom-variant dark (&:is(.dark *));
 
 @layer base {
+  /* Tailwind v4 defaults border-color to currentColor; without this, shadcn
+     components using a bare `border` utility inherit the text color as their
+     border (near-white in dark, near-black in light). Pin the default to the
+     DS subtle border token — explicit border-color utilities still win. */
+  *,
+  ::before,
+  ::after,
+  ::backdrop {
+    border-color: var(--border-subtle);
+  }
+
   button,
   [role="button"],
   select,
@@ -128,7 +139,7 @@
   --border-subtle: rgba(0, 0, 0, 0.06);
   --border-default: var(--color-neutral-200);
   --border-strong: var(--color-neutral-300);
-  --border-focus: var(--color-violet-600);
+  --border-focus: var(--color-violet-500);
 
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
   --shadow-md: 0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 16px rgba(0, 0, 0, 0.06);
@@ -212,6 +223,7 @@
   --bg-base: var(--color-neutral-900);
   --bg-elevated: var(--color-neutral-800);
   --bg-sunken: rgba(255, 255, 255, 0.05);
+  --bg-overlay: rgba(0, 0, 0, 0.6);
 
   --fg-1: var(--color-neutral-50);
   --fg-2: var(--color-neutral-450); /* #9a9aa6 → 6.88:1 sobre dark bg ✅ */
@@ -268,6 +280,19 @@ select:focus-visible {
 :focus:not(:focus-visible) {
   outline: none;
   box-shadow: none;
+}
+
+/* ── REDUCED MOTION ───────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* ── BASE ─────────────────────────────────────────────────── */

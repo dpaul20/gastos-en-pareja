@@ -182,7 +182,11 @@ export function UpcomingDuesWidget({
         </h3>
 
         <DueSection
-          title={<><span aria-hidden="true">🔴</span> Vence hoy</>}
+          title={
+            <>
+              <span aria-hidden="true">🔴</span> Vence hoy
+            </>
+          }
           titleColor="var(--accent)"
           items={todayDues}
           showPayButton
@@ -190,15 +194,23 @@ export function UpcomingDuesWidget({
           payingId={payingId}
         />
         <DueSection
-          title={<><span aria-hidden="true">⚠️</span> Vencidos</>}
-          titleColor="var(--color-coral)"
+          title={
+            <>
+              <span aria-hidden="true">⚠️</span> Vencidos
+            </>
+          }
+          titleColor="var(--status-danger-text)"
           items={overdue}
           showPayButton
           onPay={pay}
           payingId={payingId}
         />
         <DueSection
-          title={<><span aria-hidden="true">📅</span> Esta semana</>}
+          title={
+            <>
+              <span aria-hidden="true">📅</span> Esta semana
+            </>
+          }
           titleColor="var(--fg-2)"
           items={upcoming}
           showPayButton={false}

@@ -69,7 +69,7 @@ export function BalanceCard({
                 fontFamily: "var(--font-mono)",
                 fontSize: 38,
                 fontWeight: 700,
-                color: "var(--status-danger)",
+                color: "var(--status-danger-text)",
                 letterSpacing: "-0.02em",
                 lineHeight: 1.1,
               }}
@@ -97,7 +97,7 @@ export function BalanceCard({
                 fontFamily: "var(--font-mono)",
                 fontSize: 38,
                 fontWeight: 700,
-                color: "var(--status-success)",
+                color: "var(--status-success-text)",
                 letterSpacing: "-0.02em",
                 lineHeight: 1.1,
               }}

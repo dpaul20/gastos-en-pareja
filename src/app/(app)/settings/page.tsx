@@ -155,7 +155,7 @@ export default function SettingsPage() {
           className="text-sm"
           style={{ color: "var(--fg-3)", fontFamily: "var(--font-sans)" }}
         >
-          Cargando...
+          Cargando…
         </span>
       </div>
     );
@@ -338,8 +338,8 @@ export default function SettingsPage() {
                               className="mt-1.5 text-xs"
                               style={{
                                 color: inviteMsg.includes("✓")
-                                  ? "var(--status-success)"
-                                  : "var(--status-danger)",
+                                  ? "var(--status-success-text)"
+                                  : "var(--status-danger-text)",
                                 fontFamily: "var(--font-sans)",
                               }}
                             >
@@ -439,7 +439,7 @@ export default function SettingsPage() {
                           style={{ fontFamily: "var(--font-sans)" }}
                         >
                           {isPending
-                            ? "Generando..."
+                            ? "Generando…"
                             : "Generar link de invitación"}
                         </Button>
                       )}
@@ -448,7 +448,7 @@ export default function SettingsPage() {
                           aria-live="polite"
                           className="mt-1.5 text-xs"
                           style={{
-                            color: "var(--status-danger)",
+                            color: "var(--status-danger-text)",
                             fontFamily: "var(--font-sans)",
                           }}
                         >
@@ -494,7 +494,7 @@ export default function SettingsPage() {
             >
               <div style={{ padding: "14px 16px" }}>
                 <div
-                  className="flex items-center overflow-hidden"
+                  className="flex items-center overflow-hidden focus-within:ring-2 focus-within:ring-(--accent)"
                   style={{
                     background: "var(--bg-sunken)",
                     borderRadius: 10,
@@ -554,7 +554,7 @@ export default function SettingsPage() {
                   className="w-full"
                   style={{ fontFamily: "var(--font-sans)" }}
                 >
-                  {isPending ? "Guardando..." : "Guardar ingreso"}
+                  {isPending ? "Guardando…" : "Guardar ingreso"}
                 </Button>
               </div>
             </div>
@@ -611,7 +611,7 @@ export default function SettingsPage() {
               className="w-full justify-start rounded-none text-sm font-medium"
               style={{
                 padding: "14px 16px",
-                color: "var(--status-danger)",
+                color: "var(--status-danger-text)",
                 fontFamily: "var(--font-sans)",
               }}
             >

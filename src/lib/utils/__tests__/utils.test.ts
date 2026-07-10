@@ -3,9 +3,30 @@ import {
   formatARS,
   getMonthDate,
   formatMonth,
+  formatDayMonth,
   getPreviousMonthDate,
 } from "@/lib/utils";
 import { getInitials } from "@/lib/utils/initials";
+
+describe("formatDayMonth", () => {
+  it("formatea 'YYYY-MM-DD' como 'D mmm' en español", () => {
+    expect(formatDayMonth("2026-04-22")).toBe("22 abr");
+    expect(formatDayMonth("2026-07-05")).toBe("5 jul");
+    expect(formatDayMonth("2026-01-01")).toBe("1 ene");
+    expect(formatDayMonth("2026-12-31")).toBe("31 dic");
+  });
+
+  it("no aplica desfase por zona horaria (transformación pura de string)", () => {
+    // new Date("2026-01-01") caería a "31 dic" en TZ negativas; el string puro no.
+    expect(formatDayMonth("2026-01-01")).toBe("1 ene");
+  });
+
+  it("devuelve la entrada sin cambios si el mes o el día son inválidos", () => {
+    expect(formatDayMonth("2026-13-01")).toBe("2026-13-01");
+    expect(formatDayMonth("2026-00-10")).toBe("2026-00-10");
+    expect(formatDayMonth("basura")).toBe("basura");
+  });
+});
 
 describe("formatARS", () => {
   it("formatea números enteros con separador de miles (ARS)", () => {

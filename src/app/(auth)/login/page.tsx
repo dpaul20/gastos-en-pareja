@@ -335,12 +335,18 @@ function LoginContent() {
               >
                 Dev — seed users
               </div>
+              <label htmlFor="dev-email" className="sr-only">
+                Email
+              </label>
               <input
+                id="dev-email"
                 type="email"
                 placeholder="persona_a@test.local"
                 value={devEmail}
                 onChange={(e) => setDevEmail(e.target.value)}
                 required
+                autoComplete="email"
+                spellCheck={false}
                 style={{
                   border: "1px solid var(--border-default)",
                   borderRadius: 10,
@@ -352,12 +358,17 @@ function LoginContent() {
                   outline: "none",
                 }}
               />
+              <label htmlFor="dev-password" className="sr-only">
+                Contraseña
+              </label>
               <input
+                id="dev-password"
                 type="password"
                 placeholder="password123"
                 value={devPassword}
                 onChange={(e) => setDevPassword(e.target.value)}
                 required
+                autoComplete="current-password"
                 style={{
                   border: "1px solid var(--border-default)",
                   borderRadius: 10,
@@ -374,7 +385,7 @@ function LoginContent() {
                   role="alert"
                   style={{
                     fontSize: 12,
-                    color: "var(--status-danger)",
+                    color: "var(--status-danger-text)",
                     fontFamily: "var(--font-sans)",
                   }}
                 >

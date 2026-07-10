@@ -159,8 +159,8 @@ export function MonthCard({
             fontWeight: 700,
             color:
               balance.debtAmount > 0
-                ? "var(--status-danger)"
-                : "var(--status-success)",
+                ? "var(--status-danger-text)"
+                : "var(--status-success-text)",
           }}
         >
           {formatARS(balance.totalExpenses)}

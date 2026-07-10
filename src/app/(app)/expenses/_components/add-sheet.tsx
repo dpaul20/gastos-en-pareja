@@ -14,6 +14,7 @@ import { PersonAvatar } from "@/components/shared/avatar";
 import { useCategories } from "@/lib/queries/use-monthly-data";
 import type { Tab } from "@/lib/queries/use-expense-save";
 import { TAB_LABEL } from "./segmented-control";
+import { DueDayPicker } from "./due-day-picker";
 import { computeMonthlyInstallment } from "@/lib/utils/installments";
 import { cn, formatARS, getInitials } from "@/lib/utils";
 import { parseAmount } from "@/lib/utils/amount";
@@ -77,7 +78,7 @@ const labelCss: React.CSSProperties = {
 
 const errorCss: React.CSSProperties = {
   fontSize: 12,
-  color: "var(--status-danger)",
+  color: "var(--status-danger-text)",
   marginTop: 4,
   fontFamily: "var(--font-sans)",
 };
@@ -86,6 +87,12 @@ const schemas: Record<Tab, z.ZodTypeAny> = {
   cuotas: cuotasSchema,
   fijos: fijosSchema,
   variables: variablesSchema,
+};
+
+const SAVE_LABEL: Record<Tab, string> = {
+  fijos: "Guardar servicio",
+  cuotas: "Guardar cuota",
+  variables: "Guardar compra",
 };
 
 // ── SUB-COMPONENTS ────────────────────────────────────────────────────────────
@@ -108,6 +115,7 @@ function MoneyField({
         {label}
       </label>
       <div
+        className="focus-within:ring-2 focus-within:ring-(--accent)"
         style={{
           display: "flex",
           alignItems: "center",
@@ -237,9 +245,17 @@ export function AddSheet({
   const {
     register,
     control,
+    setValue,
     handleSubmit,
     formState: { errors },
   } = useForm<Fields>({ resolver: zodResolver(schemas[tab]) });
+
+  // Selected due day (fijos tab) — drives the grid picker highlight
+  const dueDayRaw = useWatch({ control, name: "due_day" });
+  const dueDayValue = useMemo(() => {
+    const n = Number.parseInt(dueDayRaw ?? "", 10);
+    return Number.isFinite(n) && n >= 1 && n <= 31 ? n : null;
+  }, [dueDayRaw]);
 
   // Live monthly installment calculation (cuotas tab only)
   const totalAmountRaw = useWatch({ control, name: "total_amount" });
@@ -337,13 +353,35 @@ export function AddSheet({
         )}
 
         {tab === "fijos" && (
-          <InputField
-            label="Día de vencimiento (1-31)"
-            id="field-due-day"
-            registration={register("due_day")}
-            error={errors.due_day?.message}
-            mono
-          />
+          <div style={{ marginBottom: 14 }}>
+            <label htmlFor="field-due-day" style={labelCss}>
+              Día de vencimiento (1-31)
+            </label>
+            {/* Visually-hidden native input keeps the field addressable/fillable
+                for a11y + e2e while the grid is the visual control. */}
+            <input
+              id="field-due-day"
+              data-testid="field-due-day"
+              type="text"
+              inputMode="numeric"
+              className="sr-only"
+              {...register("due_day")}
+            />
+            <DueDayPicker
+              value={dueDayValue}
+              onChange={(day) =>
+                setValue("due_day", String(day), {
+                  shouldValidate: true,
+                  shouldDirty: true,
+                })
+              }
+            />
+            {errors.due_day?.message && (
+              <div role="alert" style={errorCss}>
+                {errors.due_day.message}
+              </div>
+            )}
+          </div>
         )}
 
         {tab === "fijos" && (
@@ -547,7 +585,7 @@ export function AddSheet({
               background:
                 "color-mix(in srgb, var(--status-danger) 10%, transparent)",
               borderRadius: 8,
-              border: "1px solid var(--status-danger)",
+              border: "1px solid var(--status-danger-text)",
             }}
           >
             {saveError}
@@ -555,7 +593,7 @@ export function AddSheet({
         )}
 
         <Button type="submit" style={{ width: "100%" }}>
-          Guardar
+          {SAVE_LABEL[tab]}
         </Button>
       </form>
     </ResponsiveModal>

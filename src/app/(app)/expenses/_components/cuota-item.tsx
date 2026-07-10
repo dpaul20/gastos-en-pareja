@@ -29,10 +29,17 @@ export function CuotaItem({
   return (
     <Card>
       <CardContent className="p-[14px_16px]">
-        <div className="mb-2 flex items-start justify-between">
-          <div>
+        <div className="mb-2 flex items-start justify-between gap-3">
+          <div className="min-w-0">
             <div
-              style={{ fontSize: 15, fontWeight: 500, color: "var(--fg-1)" }}
+              style={{
+                fontSize: 15,
+                fontWeight: 500,
+                color: "var(--fg-1)",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
             >
               {c.description}
             </div>
@@ -42,7 +49,7 @@ export function CuotaItem({
               {c.auto_renew ? <span aria-hidden="true"> 🔄</span> : ""}
             </div>
           </div>
-          <div className="flex flex-col items-end gap-1">
+          <div className="flex shrink-0 flex-col items-end gap-1">
             <div className="flex items-center gap-1.5">
               {c.paid_by_user_id && getPersonInitials && getPerson && (
                 <PersonAvatar
