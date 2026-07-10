@@ -664,6 +664,13 @@ const PARAM_TO_FILTER: Record<string, ExpenseFilter> = {
   compras: "variables",
 };
 
+function flowStepToAddTab(step: FlowState["step"]): Tab | null {
+  if (step === "cuota-form") return "cuotas";
+  if (step === "new-service") return "fijos";
+  if (step === "compra-form") return "variables";
+  return null;
+}
+
 function ExpensesView() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -695,14 +702,7 @@ function ExpensesView() {
   }, [filter, filterCategory]);
 
   // Map flow steps to AddSheet tab — must be computed before useExpenseSave
-  const addSheetTab: Tab | null =
-    flow.step === "cuota-form"
-      ? "cuotas"
-      : flow.step === "new-service"
-        ? "fijos"
-        : flow.step === "compra-form"
-          ? "variables"
-          : null;
+  const addSheetTab: Tab | null = flowStepToAddTab(flow.step);
 
   const { save, saveError } = useExpenseSave(
     addSheetTab ?? (filter === "todo" ? "cuotas" : filter),

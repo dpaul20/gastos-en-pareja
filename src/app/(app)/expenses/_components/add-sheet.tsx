@@ -89,6 +89,12 @@ const schemas: Record<Tab, z.ZodTypeAny> = {
   variables: variablesSchema,
 };
 
+const SAVE_LABEL: Record<Tab, string> = {
+  fijos: "Guardar servicio",
+  cuotas: "Guardar cuota",
+  variables: "Guardar compra",
+};
+
 // ── SUB-COMPONENTS ────────────────────────────────────────────────────────────
 
 // Monetary input: DS pattern — wrapper div + $ prefix + borderless inner input
@@ -587,11 +593,7 @@ export function AddSheet({
         )}
 
         <Button type="submit" style={{ width: "100%" }}>
-          {tab === "fijos"
-            ? "Guardar servicio"
-            : tab === "cuotas"
-              ? "Guardar cuota"
-              : "Guardar compra"}
+          {SAVE_LABEL[tab]}
         </Button>
       </form>
     </ResponsiveModal>
