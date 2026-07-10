@@ -1,6 +1,6 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { getMonthDate } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
 
@@ -46,7 +46,12 @@ export async function ensureIncomeCarriedForward(
 ): Promise<{ created: number }> {
   const { supabase } = await getCouple();
 
-  const { data: members } = await supabase
+  // The couple_members SELECT policy is `user_id = auth.uid()`, so the RLS
+  // client only ever sees the current user's own membership row. To carry the
+  // partner's income forward we need the full member list, so read it with the
+  // service client (same pattern as getCoupleMemberProfiles).
+  const service = await createServiceClient();
+  const { data: members } = await service
     .from("couple_members")
     .select("user_id")
     .eq("couple_id", coupleId);

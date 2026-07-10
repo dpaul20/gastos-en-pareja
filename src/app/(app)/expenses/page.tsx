@@ -960,6 +960,9 @@ function ExpensesView() {
                           isLast={i === fijos.length - 1}
                           getPersonInitials={getPersonInitials}
                           getPerson={getPerson}
+                          onEditDueDay={(id) =>
+                            setFlow({ step: "edit-service", instanceId: id })
+                          }
                         />
                       </li>
                     ))}

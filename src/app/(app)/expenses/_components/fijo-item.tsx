@@ -24,11 +24,13 @@ export function FijoItem({
   isLast,
   getPersonInitials,
   getPerson,
+  onEditDueDay,
 }: {
   readonly fi: FixedExpenseInstance;
   readonly isLast: boolean;
   readonly getPersonInitials?: (id: string) => string;
   readonly getPerson?: (id: string) => "a" | "b";
+  readonly onEditDueDay?: (instanceId: string) => void;
 }) {
   const [, startTransition] = useTransition();
   const queryClient = useQueryClient();
@@ -116,16 +118,42 @@ export function FijoItem({
         >
           {fi.fixed_expense_templates.description}
         </div>
-        <div
-          style={{
-            fontSize: 11,
-            color: "var(--fg-3)",
-            marginTop: 1,
-            fontFamily: "var(--font-sans)",
-          }}
-        >
-          Vence día {fi.due_day ?? fi.fixed_expense_templates.due_day}
-        </div>
+        {onEditDueDay ? (
+          <button
+            type="button"
+            onClick={() => onEditDueDay(fi.id)}
+            aria-label="Editar día de vencimiento"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 4,
+              marginTop: 1,
+              padding: 0,
+              border: "none",
+              background: "transparent",
+              cursor: "pointer",
+              fontSize: 11,
+              color: "var(--fg-3)",
+              fontFamily: "var(--font-sans)",
+            }}
+          >
+            Vence día {fi.due_day ?? fi.fixed_expense_templates.due_day}
+            <span aria-hidden="true" style={{ color: "var(--accent)" }}>
+              ✎
+            </span>
+          </button>
+        ) : (
+          <div
+            style={{
+              fontSize: 11,
+              color: "var(--fg-3)",
+              marginTop: 1,
+              fontFamily: "var(--font-sans)",
+            }}
+          >
+            Vence día {fi.due_day ?? fi.fixed_expense_templates.due_day}
+          </div>
+        )}
         {hasOverride && (
           <span
             style={{
