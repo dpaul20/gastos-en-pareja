@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.17.1](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.17.0...gastos-en-pareja-v1.17.1) (2026-07-11)
+
+
+### 🐛 Bug Fixes
+
+* carry partner income forward and make due-day editable from list ([#139](https://github.com/dpaul20/gastos-en-pareja/issues/139)) ([32ff6d5](https://github.com/dpaul20/gastos-en-pareja/commit/32ff6d587950acba34c95b297f59bb701695ac8a))
+
 ## [1.17.0](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.16.0...gastos-en-pareja-v1.17.0) (2026-07-10)
 
 
