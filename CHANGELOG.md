@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.18.0](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.17.1...gastos-en-pareja-v1.18.0) (2026-07-12)
+
+
+### ✨ Features
+
+* align expenses with the design system using shadcn ([#141](https://github.com/dpaul20/gastos-en-pareja/issues/141)) ([4502989](https://github.com/dpaul20/gastos-en-pareja/commit/4502989f32a8d44eff9ed5657dc866ae9e8f70b1))
+
 ## [1.17.1](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.17.0...gastos-en-pareja-v1.17.1) (2026-07-11)
 
 
