@@ -7,8 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { PersonAvatar } from "@/components/shared/avatar";
 import { formatARS } from "@/lib/utils";
-import { incrementPaidInstallments } from "@/lib/actions/expenses";
+import {
+  deleteInstallmentPurchase,
+  restoreInstallmentPurchase,
+  incrementPaidInstallments,
+} from "@/lib/actions/expenses";
 import { useMonthlyData } from "@/lib/queries/use-monthly-data";
+import { DeleteExpenseButton } from "./delete-expense-button";
 
 type MonthlyData = NonNullable<ReturnType<typeof useMonthlyData>["data"]>;
 type InstallmentPurchase = MonthlyData["installmentPurchases"][number];
@@ -111,6 +116,17 @@ export function CuotaItem({
               height: "100%",
               background: isPaid ? "var(--status-success)" : "var(--accent)",
               borderRadius: 99,
+            }}
+          />
+        </div>
+        <div className="mt-2 flex justify-end">
+          <DeleteExpenseButton
+            title="¿Eliminar cuota?"
+            description={`"${c.description}" se eliminará permanentemente. Esta acción no se puede deshacer.`}
+            successMessage="Cuota eliminada"
+            onConfirm={async () => {
+              const row = await deleteInstallmentPurchase(c.id);
+              return row ? () => restoreInstallmentPurchase(row) : undefined;
             }}
           />
         </div>

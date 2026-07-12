@@ -64,7 +64,7 @@
   --color-teal-400: #15be9e;
   --color-teal-500: #00b894;
   --color-teal-600: #009e7e;
-  --color-teal-700: #00836a;
+  --color-teal-700: #007560; /* corregido: 5.0:1 sobre bg-base ✅ WCAG AA (era #00836a, 4.40:1 como texto) */
   --color-teal-800: #006652;
   --color-teal-900: #004a3c;
 
@@ -94,7 +94,7 @@
   --color-neutral-50: #f7f7f8;
   --color-neutral-100: #efeff1;
   --color-neutral-200: #e2e2e6;
-  --color-neutral-300: #c8c8ce;
+  --color-neutral-300: #888891; /* corregido: 3.5:1 sobre blanco ✅ WCAG 1.4.11 (era #c8c8ce, 1.6:1) */
   --color-neutral-400: #6c6c78; /* corregido: 4.84:1 sobre bg-base ✅ WCAG AA */
   --color-neutral-450: #9a9aa6; /* valor original — solo para dark --fg-2 */
   --color-neutral-500: #6e6e7a;
@@ -243,6 +243,9 @@
   --status-success: var(--color-teal-400);
   --status-success-subtle: rgba(0, 184, 148, 0.12);
   --status-success-text: var(--color-teal-300);
+  --status-danger: var(
+    --color-coral-400
+  ); /* #eb7460 — faltaba en dark; heredaba coral-700 (3.19:1, fallaba como texto/ícono) */
   --status-danger-subtle: rgba(225, 112, 85, 0.12);
   --status-danger-text: var(--color-coral-400);
   --status-warning-subtle: rgba(253, 203, 110, 0.12);
@@ -251,7 +254,12 @@
 
   --border-subtle: rgba(255, 255, 255, 0.06);
   --border-default: rgba(255, 255, 255, 0.1);
-  --border-strong: rgba(255, 255, 255, 0.16);
+  --border-strong: rgba(
+    255,
+    255,
+    255,
+    0.36
+  ); /* corregido: 3.3:1 vs dark bg-base ✅ WCAG 1.4.11 (era 0.16, 1.6:1) */
 
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
   --shadow-md: 0 1px 3px rgba(0, 0, 0, 0.3), 0 4px 16px rgba(0, 0, 0, 0.25);

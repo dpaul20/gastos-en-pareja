@@ -1,7 +1,12 @@
 import { PersonAvatar } from "@/components/shared/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatARS, formatDayMonth } from "@/lib/utils";
+import {
+  deleteVariableExpense,
+  restoreVariableExpense,
+} from "@/lib/actions/expenses";
 import { useMonthlyData } from "@/lib/queries/use-monthly-data";
+import { DeleteExpenseButton } from "./delete-expense-button";
 
 type MonthlyData = NonNullable<ReturnType<typeof useMonthlyData>["data"]>;
 type VariableExpense = MonthlyData["variableExpenses"][number];
@@ -69,13 +74,31 @@ export function VariableItem({
         </div>
         <div
           style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 15,
-            fontWeight: 600,
-            color: "var(--fg-1)",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "flex-end",
+            gap: 2,
           }}
         >
-          {formatARS(v.amount)}
+          <div
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 15,
+              fontWeight: 600,
+              color: "var(--fg-1)",
+            }}
+          >
+            {formatARS(v.amount)}
+          </div>
+          <DeleteExpenseButton
+            title="¿Eliminar compra?"
+            description={`"${v.description}" se eliminará permanentemente. Esta acción no se puede deshacer.`}
+            successMessage="Compra eliminada"
+            onConfirm={async () => {
+              const row = await deleteVariableExpense(v.id);
+              return row ? () => restoreVariableExpense(row) : undefined;
+            }}
+          />
         </div>
       </CardContent>
     </Card>

@@ -11,10 +11,13 @@ import {
   toggleFixedExpenseInstance,
   updateFixedExpenseInstanceAmount,
   confirmFixedExpenseInstance,
+  deactivateFixedExpenseTemplate,
+  reactivateFixedExpenseTemplate,
 } from "@/lib/actions/expenses";
 import { effectiveFixedAmount } from "@/lib/utils/balance";
 import { useMonthlyData } from "@/lib/queries/use-monthly-data";
 import { parseAmount } from "@/lib/utils/amount";
+import { DeleteExpenseButton } from "./delete-expense-button";
 
 type MonthlyData = NonNullable<ReturnType<typeof useMonthlyData>["data"]>;
 type FixedExpenseInstance = MonthlyData["fixedExpenseInstances"][number];
@@ -101,6 +104,7 @@ export function FijoItem({
         alignItems: "center",
         gap: 12,
         borderBottom: isLast ? "none" : "1px solid var(--border-subtle)",
+        background: isPending ? "var(--status-warning-subtle)" : undefined,
       }}
     >
       {/* Left: description + meta */}
@@ -404,6 +408,19 @@ export function FijoItem({
           aria-label={fi.paid ? "Marcar como no pagado" : "Marcar como pagado"}
         />
       </div>
+
+      {!isPending && !editing && (
+        <DeleteExpenseButton
+          iconOnly
+          title="¿Eliminar servicio?"
+          description={`"${fi.fixed_expense_templates.description}" dejará de aparecer en los próximos meses. Se conserva el historial de los meses anteriores.`}
+          successMessage="Servicio eliminado"
+          onConfirm={async () => {
+            await deactivateFixedExpenseTemplate(fi.template_id);
+            return () => reactivateFixedExpenseTemplate(fi.template_id);
+          }}
+        />
+      )}
     </div>
   );
 }
