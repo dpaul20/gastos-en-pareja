@@ -33,6 +33,13 @@ export function DeleteExpenseButton({
   const [isPending, startTransition] = useTransition();
   const queryClient = useQueryClient();
 
+  function runUndo(undo: () => Promise<void>) {
+    startTransition(async () => {
+      await undo();
+      queryClient.invalidateQueries({ queryKey: ["monthly-data"] });
+    });
+  }
+
   function handleConfirm() {
     startTransition(async () => {
       const undo = await onConfirm();
@@ -40,18 +47,7 @@ export function DeleteExpenseButton({
       toast.success(
         successMessage,
         undo
-          ? {
-              action: {
-                label: "Deshacer",
-                onClick: () =>
-                  startTransition(async () => {
-                    await undo();
-                    queryClient.invalidateQueries({
-                      queryKey: ["monthly-data"],
-                    });
-                  }),
-              },
-            }
+          ? { action: { label: "Deshacer", onClick: () => runUndo(undo) } }
           : undefined,
       );
     });
