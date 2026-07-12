@@ -3,6 +3,11 @@
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { getMonthDate } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
+import type { Database } from "@/types/database";
+
+type InstallmentRow =
+  Database["public"]["Tables"]["installment_purchases"]["Row"];
+type VariableRow = Database["public"]["Tables"]["variable_expenses"]["Row"];
 
 async function getCouple() {
   const supabase = await createClient();
@@ -173,9 +178,26 @@ export async function incrementPaidInstallments(id: string) {
   revalidatePath("/dashboard");
 }
 
-export async function deleteInstallmentPurchase(id: string) {
+export async function deleteInstallmentPurchase(
+  id: string,
+): Promise<InstallmentRow | null> {
   const { supabase } = await getCouple();
+  const { data: row } = await supabase
+    .from("installment_purchases")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
   await supabase.from("installment_purchases").delete().eq("id", id);
+  revalidatePath("/expenses");
+  revalidatePath("/dashboard");
+  return row;
+}
+
+export async function restoreInstallmentPurchase(
+  row: InstallmentRow,
+): Promise<void> {
+  const { supabase } = await getCouple();
+  await supabase.from("installment_purchases").insert(row);
   revalidatePath("/expenses");
   revalidatePath("/dashboard");
 }
@@ -228,6 +250,71 @@ export async function updateFixedExpenseTemplate(
     .update(data)
     .eq("id", templateId);
   if (error) throw new Error("No se pudo actualizar el servicio");
+  revalidatePath("/expenses");
+  revalidatePath("/dashboard");
+}
+
+export async function deactivateFixedExpenseTemplate(
+  templateId: string,
+): Promise<void> {
+  const { supabase } = await getCouple();
+
+  const { error } = await supabase
+    .from("fixed_expense_templates")
+    .update({ active: false })
+    .eq("id", templateId);
+  if (error) throw new Error("No se pudo eliminar el servicio");
+
+  // Drop the current-month instance so the service leaves the active list.
+  // Past-month instances stay as history, and ensureFixedExpenseInstances will
+  // not regenerate it because the template is now inactive.
+  await supabase
+    .from("fixed_expense_instances")
+    .delete()
+    .eq("template_id", templateId)
+    .eq("month", getMonthDate());
+
+  revalidatePath("/expenses");
+  revalidatePath("/dashboard");
+}
+
+export async function reactivateFixedExpenseTemplate(
+  templateId: string,
+): Promise<void> {
+  const { supabase, coupleId } = await getCouple();
+
+  const { error } = await supabase
+    .from("fixed_expense_templates")
+    .update({ active: true })
+    .eq("id", templateId);
+  if (error) throw new Error("No se pudo restaurar el servicio");
+
+  // Recreate the current-month instance dropped on deactivate, if still missing.
+  const month = getMonthDate();
+  const { data: existing } = await supabase
+    .from("fixed_expense_instances")
+    .select("id")
+    .eq("template_id", templateId)
+    .eq("month", month)
+    .maybeSingle();
+
+  if (!existing) {
+    const { data: tmpl } = await supabase
+      .from("fixed_expense_templates")
+      .select("requires_monthly_review")
+      .eq("id", templateId)
+      .maybeSingle();
+    await supabase.from("fixed_expense_instances").insert({
+      template_id: templateId,
+      couple_id: coupleId,
+      month,
+      paid: false,
+      status: tmpl?.requires_monthly_review
+        ? "PENDING_CONFIRMATION"
+        : "CONFIRMED",
+    });
+  }
+
   revalidatePath("/expenses");
   revalidatePath("/dashboard");
 }
@@ -400,9 +487,24 @@ export async function createVariableExpense(data: {
   revalidatePath("/dashboard");
 }
 
-export async function deleteVariableExpense(id: string) {
+export async function deleteVariableExpense(
+  id: string,
+): Promise<VariableRow | null> {
   const { supabase } = await getCouple();
+  const { data: row } = await supabase
+    .from("variable_expenses")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
   await supabase.from("variable_expenses").delete().eq("id", id);
+  revalidatePath("/expenses");
+  revalidatePath("/dashboard");
+  return row;
+}
+
+export async function restoreVariableExpense(row: VariableRow): Promise<void> {
+  const { supabase } = await getCouple();
+  await supabase.from("variable_expenses").insert(row);
   revalidatePath("/expenses");
   revalidatePath("/dashboard");
 }

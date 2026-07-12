@@ -69,7 +69,7 @@ export function CategoryBreakdownCard({
   if (breakdown.length === 0) return null;
 
   const chartData = breakdown.map((g) => ({
-    name: g.category ? `${g.category.icon} ${g.category.name}` : "📦 Sin cat.",
+    name: g.category ? g.category.name : "Sin categoría",
     total: g.total,
     color: g.category?.color ?? "var(--fg-3)",
   }));

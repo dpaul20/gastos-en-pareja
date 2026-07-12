@@ -15,6 +15,9 @@ const eslintConfig = defineConfig([
     // Generated files — never lint these:
     "public/sw.js",
     "coverage/**",
+    // Vendored Claude Design prototype bundle (reference only, not app source;
+    // uses window-globals so it can't satisfy app lint rules).
+    "docs/**",
   ]),
   // Allow _ prefix to mark intentionally unused variables
   {

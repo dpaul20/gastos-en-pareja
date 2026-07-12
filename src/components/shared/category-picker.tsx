@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { getCategoryIcon } from "@/lib/category-icons";
 import type { Database } from "@/types/database";
 
 type Category = Database["public"]["Tables"]["expense_categories"]["Row"];
@@ -64,31 +65,34 @@ export function CategoryPicker({
       >
         Sin categoría
       </button>
-      {categories.map((cat) => (
-        <button
-          key={cat.id}
-          type="button"
-          onClick={() => onChange(cat.id)}
-          aria-pressed={value === cat.id}
-          style={{
-            padding: "5px 10px",
-            borderRadius: 99,
-            border: "none",
-            cursor: "pointer",
-            background: value === cat.id ? cat.color : "var(--bg-sunken)",
-            color: value === cat.id ? "white" : "var(--fg-2)",
-            fontSize: 12,
-            fontWeight: 500,
-            fontFamily: "var(--font-sans)",
-            minHeight: 32,
-            display: "flex",
-            alignItems: "center",
-            gap: 4,
-          }}
-        >
-          <span aria-hidden="true">{cat.icon}</span> {cat.name}
-        </button>
-      ))}
+      {categories.map((cat) => {
+        const Icon = getCategoryIcon(cat.name);
+        return (
+          <button
+            key={cat.id}
+            type="button"
+            onClick={() => onChange(cat.id)}
+            aria-pressed={value === cat.id}
+            style={{
+              padding: "5px 10px",
+              borderRadius: 99,
+              border: "none",
+              cursor: "pointer",
+              background: value === cat.id ? cat.color : "var(--bg-sunken)",
+              color: value === cat.id ? "white" : "var(--fg-2)",
+              fontSize: 12,
+              fontWeight: 500,
+              fontFamily: "var(--font-sans)",
+              minHeight: 32,
+              display: "flex",
+              alignItems: "center",
+              gap: 4,
+            }}
+          >
+            <Icon size={14} aria-hidden="true" /> {cat.name}
+          </button>
+        );
+      })}
     </fieldset>
   );
 }

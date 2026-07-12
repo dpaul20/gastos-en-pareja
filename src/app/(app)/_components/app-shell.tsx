@@ -1,12 +1,17 @@
 "use client";
 
 import * as React from "react";
-import { ToastProvider } from "@/components/shared/toast/toast-provider";
+import { Toaster } from "@/components/ui/sonner";
 
 interface AppShellProps {
   readonly children: React.ReactNode;
 }
 
 export function AppShell({ children }: AppShellProps) {
-  return <ToastProvider>{children}</ToastProvider>;
+  return (
+    <>
+      {children}
+      <Toaster position="bottom-center" />
+    </>
+  );
 }

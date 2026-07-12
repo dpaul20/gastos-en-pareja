@@ -1,5 +1,6 @@
 "use client";
 
+import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface FABProps {
@@ -23,11 +24,9 @@ export function FAB({ onClick, label = "Agregar" }: Readonly<FABProps>) {
         backgroundColor: "var(--accent)",
         boxShadow: "var(--shadow-accent)",
         zIndex: 90,
-        fontSize: 28,
-        fontWeight: 300,
       }}
     >
-      +
+      <Plus size={24} aria-hidden="true" />
     </Button>
   );
 }

@@ -6,7 +6,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { Home, CreditCard, ShoppingCart, type LucideIcon } from "lucide-react";
 import { FAB as Fab } from "@/components/shared/fab";
+import { getCategoryIcon } from "@/lib/category-icons";
 import { formatARS, getMonthDate, getInitials, cn } from "@/lib/utils";
 import { effectiveFixedAmount } from "@/lib/utils/balance";
 import { parseAmount } from "@/lib/utils/amount";
@@ -22,6 +24,8 @@ import {
   updateFixedExpenseInstanceDueDay,
   toggleFixedExpenseInstance,
   confirmAllFixedExpenseInstances,
+  deactivateFixedExpenseTemplate,
+  reactivateFixedExpenseTemplate,
 } from "@/lib/actions/expenses";
 import { CuotaItem } from "./_components/cuota-item";
 import { FijoItem } from "./_components/fijo-item";
@@ -32,7 +36,9 @@ import {
 } from "./_components/segmented-control";
 import { AddSheet } from "./_components/add-sheet";
 import { DueDayPicker } from "./_components/due-day-picker";
+import { toast } from "sonner";
 import { ResponsiveModal } from "@/components/shared/responsive-modal";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 
@@ -158,25 +164,30 @@ function CategoryFilterSheet({
         >
           Todos
         </button>
-        {categories.map((cat) => (
-          <button
-            key={cat.id}
-            onClick={() => onSelect(filterCategory === cat.id ? null : cat.id)}
-            className="cursor-pointer rounded-[20px] text-xs font-semibold"
-            style={{
-              padding: "6px 14px",
-              border: "1px solid var(--border-subtle)",
-              background:
-                filterCategory === cat.id
-                  ? "var(--accent)"
-                  : "var(--bg-sunken)",
-              color: filterCategory === cat.id ? "#fff" : "var(--fg-2)",
-              fontFamily: "var(--font-sans)",
-            }}
-          >
-            {cat.icon} {cat.name}
-          </button>
-        ))}
+        {categories.map((cat) => {
+          const Icon = getCategoryIcon(cat.name);
+          return (
+            <button
+              key={cat.id}
+              onClick={() =>
+                onSelect(filterCategory === cat.id ? null : cat.id)
+              }
+              className="inline-flex cursor-pointer items-center gap-1 rounded-[20px] text-xs font-semibold"
+              style={{
+                padding: "6px 14px",
+                border: "1px solid var(--border-subtle)",
+                background:
+                  filterCategory === cat.id
+                    ? "var(--accent)"
+                    : "var(--bg-sunken)",
+                color: filterCategory === cat.id ? "#fff" : "var(--fg-2)",
+                fontFamily: "var(--font-sans)",
+              }}
+            >
+              <Icon size={14} aria-hidden="true" /> {cat.name}
+            </button>
+          );
+        })}
       </div>
     </ResponsiveModal>
   );
@@ -200,28 +211,28 @@ function TypeSelectorSheet({
   const options: Array<{
     label: string;
     description: string;
-    icon: string;
+    icon: LucideIcon;
     testId: string;
     onSelect: () => void;
   }> = [
     {
       label: "Servicio",
       description: "Agua, luz, expensas y servicios que se repiten cada mes",
-      icon: "🏠",
+      icon: Home,
       testId: "type-option-servicio",
       onSelect: onSelectServicio,
     },
     {
       label: "Cuota",
       description: "Compra en cuotas, ¿en qué tarjeta?",
-      icon: "💳",
+      icon: CreditCard,
       testId: "type-option-cuota",
       onSelect: onSelectCuota,
     },
     {
       label: "Compra",
       description: "Super, verdulería, gastos puntuales",
-      icon: "🛒",
+      icon: ShoppingCart,
       testId: "type-option-compra",
       onSelect: onSelectCompra,
     },
@@ -246,8 +257,11 @@ function TypeSelectorSheet({
               border: "1.5px solid var(--border-subtle)",
             }}
           >
-            <span aria-hidden="true" style={{ fontSize: 28 }}>
-              {opt.icon}
+            <span
+              aria-hidden="true"
+              style={{ display: "inline-flex", color: "var(--fg-1)" }}
+            >
+              <opt.icon size={28} />
             </span>
             <div>
               <div
@@ -464,6 +478,26 @@ function EditServiceSheet({
     },
   });
 
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+
+  const deleteMutation = useMutation({
+    mutationFn: (templateId: string) =>
+      deactivateFixedExpenseTemplate(templateId),
+    onSuccess: (_data, templateId) => {
+      queryClient.invalidateQueries({ queryKey: ["monthly-data"] });
+      toast.success("Servicio eliminado", {
+        action: {
+          label: "Deshacer",
+          onClick: async () => {
+            await reactivateFixedExpenseTemplate(templateId);
+            queryClient.invalidateQueries({ queryKey: ["monthly-data"] });
+          },
+        },
+      });
+      onClose();
+    },
+  });
+
   function handleSave(values: DueDayFields) {
     const parsed = parseAmount(draft);
     if (!Number.isFinite(parsed) || parsed <= 0) {
@@ -493,7 +527,8 @@ function EditServiceSheet({
   const isPending =
     amountMutation.isPending ||
     toggleMutation.isPending ||
-    dueDayMutation.isPending;
+    dueDayMutation.isPending ||
+    deleteMutation.isPending;
   const name = instance.fixed_expense_templates.description;
 
   return (
@@ -644,7 +679,37 @@ function EditServiceSheet({
         >
           Guardar
         </Button>
+
+        <button
+          type="button"
+          onClick={() => setConfirmDeleteOpen(true)}
+          disabled={isPending}
+          className="mt-2.5 w-full"
+          style={{
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            padding: 4,
+            color: "var(--status-danger-text)",
+            fontSize: 13,
+            fontWeight: 600,
+            fontFamily: "var(--font-sans)",
+            opacity: isPending ? 0.5 : 1,
+          }}
+        >
+          Eliminar servicio
+        </button>
       </form>
+
+      <ConfirmDialog
+        open={confirmDeleteOpen}
+        onOpenChange={setConfirmDeleteOpen}
+        title="¿Eliminar servicio?"
+        description={`"${name}" dejará de aparecer en los próximos meses. Se conserva el historial de los meses anteriores.`}
+        confirmLabel="Sí, eliminar"
+        destructive
+        onConfirm={() => deleteMutation.mutate(instance.template_id)}
+      />
     </ResponsiveModal>
   );
 }
@@ -813,7 +878,7 @@ function ExpensesView() {
       >
         <div className="mx-auto w-full max-w-3xl">
           <h1
-            className="m-0 px-5 pb-[10px] text-lg font-bold"
+            className="m-0 px-5 pb-2.5 text-lg font-bold"
             style={{
               color: "var(--fg-1)",
               fontFamily: "var(--font-sans)",

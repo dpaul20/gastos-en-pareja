@@ -24,6 +24,7 @@ import { getMonthDate, getInitials, formatARS } from "@/lib/utils";
 import { parseAmount } from "@/lib/utils/amount";
 import { createClient } from "@/lib/supabase/client";
 import { NoCoupleCard } from "./_components/no-couple-card";
+import { ModeToggle } from "@/components/shared/mode-toggle";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -582,6 +583,21 @@ export default function SettingsPage() {
               boxShadow: "var(--shadow-sm)",
             }}
           >
+            <div
+              className="flex items-center justify-between"
+              style={{
+                padding: "14px 16px",
+                borderBottom: "1px solid var(--border-subtle)",
+              }}
+            >
+              <span
+                className="text-sm font-medium"
+                style={{ color: "var(--fg-1)", fontFamily: "var(--font-sans)" }}
+              >
+                Tema
+              </span>
+              <ModeToggle />
+            </div>
             <div
               className="flex justify-between"
               style={{
