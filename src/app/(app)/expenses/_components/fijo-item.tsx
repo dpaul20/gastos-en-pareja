@@ -157,6 +157,27 @@ export function FijoItem({
             Vence día {fi.due_day ?? fi.fixed_expense_templates.due_day}
           </div>
         )}
+        {!fi.fixed_expense_templates.is_shared && (
+          <span
+            style={{
+              display: "inline-block",
+              marginTop: 3,
+              marginRight: 4,
+              background: "var(--bg-sunken)",
+              color: "var(--fg-3)",
+              border: "1px solid var(--border-subtle)",
+              fontSize: 10,
+              fontWeight: 600,
+              borderRadius: 4,
+              padding: "1px 5px",
+              fontFamily: "var(--font-sans)",
+              textTransform: "uppercase",
+              letterSpacing: "0.05em",
+            }}
+          >
+            Personal
+          </span>
+        )}
         {hasOverride && (
           <span
             style={{

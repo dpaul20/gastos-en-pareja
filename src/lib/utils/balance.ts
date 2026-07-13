@@ -32,6 +32,8 @@ export interface MonthlyBalance {
   savingsCapacity: number;
   installmentTotal: number;
   fixedTotal: number;
+  fixedSharedTotal: number;
+  fixedIndividualTotal: number;
   variableTotal: number;
   variableSharedTotal: number;
   variableIndividualTotal: number;
@@ -59,6 +61,9 @@ export function calculateMonthlyBalance(params: {
   const isSharedExpense = (expense: VariableExpense): boolean =>
     expense.is_shared ?? true;
 
+  const isSharedFixed = (instance: FixedExpenseInstance): boolean =>
+    instance.fixed_expense_templates.is_shared ?? true;
+
   // Monthly installment cost = round(total_amount / installments) per purchase
   // Rounding per-purchase avoids accumulated floating point drift
   // auto_renew purchases are always active regardless of paid_installments
@@ -69,11 +74,19 @@ export function calculateMonthlyBalance(params: {
       0,
     );
 
-  // Fixed expenses: sum effective amounts (override ?? template) for this month
+  // Fixed expenses: sum effective amounts (override ?? template) for this month.
+  // Only shared fixed expenses enter the proportional split; personal ones
+  // belong to their owner and stay out of the settlement (like personal variables).
   const fixedTotal = fixedExpenseInstances.reduce(
     (sum, i) => sum + effectiveFixedAmount(i),
     0,
   );
+
+  const fixedSharedTotal = fixedExpenseInstances
+    .filter(isSharedFixed)
+    .reduce((sum, i) => sum + effectiveFixedAmount(i), 0);
+
+  const fixedIndividualTotal = fixedTotal - fixedSharedTotal;
 
   const variableTotal = variableExpenses.reduce(
     (sum, v) => sum + Number(v.amount),
@@ -88,7 +101,7 @@ export function calculateMonthlyBalance(params: {
 
   const totalExpenses = installmentTotal + fixedTotal + variableTotal;
   const sharedExpensesTotal =
-    installmentTotal + fixedTotal + variableSharedTotal;
+    installmentTotal + fixedSharedTotal + variableSharedTotal;
   const savingsCapacity = totalIncome - totalExpenses;
 
   const balances: PersonBalance[] = incomes.map((income) => {
@@ -100,7 +113,10 @@ export function calculateMonthlyBalance(params: {
       .reduce((sum, v) => sum + Number(v.amount), 0);
 
     const actualPaidFixed = fixedExpenseInstances
-      .filter((fi) => fi.paid && fi.paid_by_user_id === income.user_id)
+      .filter(
+        (fi) =>
+          fi.paid && fi.paid_by_user_id === income.user_id && isSharedFixed(fi),
+      )
       .reduce((sum, fi) => sum + effectiveFixedAmount(fi), 0);
 
     const actualPaidInstallments = installmentPurchases
@@ -114,7 +130,8 @@ export function calculateMonthlyBalance(params: {
         0,
       );
 
-    const actualPaid = actualPaidVariable + actualPaidFixed + actualPaidInstallments;
+    const actualPaid =
+      actualPaidVariable + actualPaidFixed + actualPaidInstallments;
     const netBalance = actualPaid - obligation;
 
     return {
@@ -139,6 +156,8 @@ export function calculateMonthlyBalance(params: {
     savingsCapacity,
     installmentTotal,
     fixedTotal,
+    fixedSharedTotal,
+    fixedIndividualTotal,
     variableTotal,
     variableSharedTotal,
     variableIndividualTotal,

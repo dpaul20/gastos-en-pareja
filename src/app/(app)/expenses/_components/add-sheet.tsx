@@ -277,7 +277,7 @@ export function AddSheet({
       autoRenew,
       requiresMonthlyReview,
       isShared,
-      tab === "cuotas" ? payerId : undefined,
+      tab === "cuotas" || (tab === "fijos" && !isShared) ? payerId : undefined,
     );
   }
 
@@ -423,7 +423,7 @@ export function AddSheet({
           />
         )}
 
-        {tab === "variables" && (
+        {(tab === "variables" || tab === "fijos") && (
           <div
             style={{
               marginBottom: 14,
@@ -477,64 +477,66 @@ export function AddSheet({
           </div>
         )}
 
-        {tab === "cuotas" && members && members.length >= 2 && (
-          <div style={{ marginBottom: 14 }}>
-            <div style={{ ...labelCss, marginBottom: 8 }}>¿Quién paga?</div>
-            <div
-              data-testid="payer-selector"
-              style={{ display: "flex", gap: 8 }}
-            >
-              {members.map((m, idx) => {
-                const person: "a" | "b" = idx === 0 ? "a" : "b";
-                const isSelected = payerId === m.user_id;
-                return (
-                  <button
-                    key={m.user_id}
-                    type="button"
-                    data-testid={`payer-option-${m.user_id}`}
-                    onClick={() => setPayerId(m.user_id)}
-                    aria-pressed={isSelected}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 8,
-                      flex: 1,
-                      padding: "8px 12px",
-                      borderRadius: 10,
-                      border: isSelected
-                        ? "2px solid var(--accent)"
-                        : "1.5px solid var(--border-default)",
-                      background: isSelected
-                        ? "color-mix(in srgb, var(--accent) 10%, transparent)"
-                        : "var(--bg-sunken)",
-                      cursor: "pointer",
-                      transition: "border 150ms, background 150ms",
-                    }}
-                  >
-                    <PersonAvatar
-                      initials={getInitials(m.full_name)}
-                      person={person}
-                      size="sm"
-                    />
-                    <span
+        {(tab === "cuotas" || (tab === "fijos" && !isShared)) &&
+          members &&
+          members.length >= 2 && (
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ ...labelCss, marginBottom: 8 }}>¿Quién paga?</div>
+              <div
+                data-testid="payer-selector"
+                style={{ display: "flex", gap: 8 }}
+              >
+                {members.map((m, idx) => {
+                  const person: "a" | "b" = idx === 0 ? "a" : "b";
+                  const isSelected = payerId === m.user_id;
+                  return (
+                    <button
+                      key={m.user_id}
+                      type="button"
+                      data-testid={`payer-option-${m.user_id}`}
+                      onClick={() => setPayerId(m.user_id)}
+                      aria-pressed={isSelected}
                       style={{
-                        fontSize: 13,
-                        fontWeight: isSelected ? 600 : 400,
-                        color: isSelected ? "var(--accent)" : "var(--fg-1)",
-                        fontFamily: "var(--font-sans)",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                        flex: 1,
+                        padding: "8px 12px",
+                        borderRadius: 10,
+                        border: isSelected
+                          ? "2px solid var(--accent)"
+                          : "1.5px solid var(--border-default)",
+                        background: isSelected
+                          ? "color-mix(in srgb, var(--accent) 10%, transparent)"
+                          : "var(--bg-sunken)",
+                        cursor: "pointer",
+                        transition: "border 150ms, background 150ms",
                       }}
                     >
-                      {m.full_name.split(" ")[0]}
-                    </span>
-                  </button>
-                );
-              })}
+                      <PersonAvatar
+                        initials={getInitials(m.full_name)}
+                        person={person}
+                        size="sm"
+                      />
+                      <span
+                        style={{
+                          fontSize: 13,
+                          fontWeight: isSelected ? 600 : 400,
+                          color: isSelected ? "var(--accent)" : "var(--fg-1)",
+                          fontFamily: "var(--font-sans)",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {m.full_name.split(" ")[0]}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
         {tab === "cuotas" && (
           <div
