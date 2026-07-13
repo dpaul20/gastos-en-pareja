@@ -59,6 +59,8 @@ export function useExpenseSave(tab: Tab) {
             due_day: parsePositiveInt(fields.due_day),
             category_id: categoryId ?? undefined,
             requires_monthly_review: requiresMonthlyReview || undefined,
+            is_shared: isShared,
+            owner_user_id: isShared ? null : payerId,
           });
         } else {
           await createVariableExpense({

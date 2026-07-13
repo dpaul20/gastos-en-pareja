@@ -210,11 +210,24 @@ export async function createFixedExpenseTemplate(data: {
   due_day: number;
   category_id?: string;
   requires_monthly_review?: boolean;
+  is_shared?: boolean;
+  owner_user_id?: string | null;
 }) {
   const { supabase, coupleId } = await getCouple();
+  // A shared template must not carry an owner; a personal one must name it.
+  const isShared = data.is_shared ?? true;
+  const ownerUserId = isShared ? null : (data.owner_user_id ?? null);
+  if (!isShared && !ownerUserId) {
+    throw new Error("Un gasto personal necesita un responsable");
+  }
   const { data: template, error } = await supabase
     .from("fixed_expense_templates")
-    .insert({ ...data, couple_id: coupleId })
+    .insert({
+      ...data,
+      couple_id: coupleId,
+      is_shared: isShared,
+      owner_user_id: ownerUserId,
+    })
     .select("id")
     .single();
   if (!error && template) {

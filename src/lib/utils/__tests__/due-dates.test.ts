@@ -25,6 +25,8 @@ function makeTemplate(
     active: true,
     category_id: null,
     requires_monthly_review: false,
+    is_shared: true,
+    owner_user_id: null,
     created_at: "2026-01-01T00:00:00Z",
     ...overrides,
   };
@@ -151,6 +153,18 @@ describe("getUpcomingDues", () => {
     expect(result.overdue[0].status).toBe("overdue");
     expect(result.today).toHaveLength(0);
     expect(result.upcoming).toHaveLength(0);
+  });
+
+  it("override de instancia gana sobre el due_day del template", () => {
+    // template vence día 10 (overdue), pero la instancia lo overridea a 15 (hoy)
+    const instance = makeInstance({
+      due_day: 15,
+      fixed_expense_templates: { due_day: 10 },
+    });
+    const result = getUpcomingDues([instance], TODAY);
+    expect(result.today).toHaveLength(1);
+    expect(result.today[0].dueDay).toBe(15);
+    expect(result.overdue).toHaveLength(0);
   });
 
   it("borde superior: due_day = today + 8 (fuera de ventana) → excluido", () => {

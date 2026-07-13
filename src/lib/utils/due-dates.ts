@@ -58,7 +58,8 @@ export function getUpcomingDues(
   for (const instance of instances) {
     if (instance.paid) continue;
 
-    const rawDueDay = instance.fixed_expense_templates.due_day;
+    const rawDueDay =
+      instance.due_day ?? instance.fixed_expense_templates.due_day;
     const dueDay = Math.min(rawDueDay, lastDay);
     const daysUntilDue = dueDay - todayDay;
 

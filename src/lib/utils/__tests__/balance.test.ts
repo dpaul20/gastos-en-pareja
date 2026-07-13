@@ -146,6 +146,8 @@ describe("calculateMonthlyBalance", () => {
             due_day: 9,
             active: true,
             requires_monthly_review: false,
+            is_shared: true,
+            owner_user_id: null,
             created_at: "",
           },
         },
@@ -169,6 +171,8 @@ describe("calculateMonthlyBalance", () => {
             due_day: 31,
             active: true,
             requires_monthly_review: false,
+            is_shared: true,
+            owner_user_id: null,
             created_at: "",
           },
         },
@@ -180,6 +184,58 @@ describe("calculateMonthlyBalance", () => {
         variableExpenses: [],
       });
       expect(result.fixedTotal).toBeCloseTo(568_740, 0);
+    });
+
+    it("excluye los gastos fijos personales del split proporcional", () => {
+      const makeFixed = (
+        id: string,
+        amount: number,
+        isShared: boolean,
+        owner: string | null,
+      ) => ({
+        id,
+        template_id: id,
+        couple_id: "c1",
+        month: "2026-04-01",
+        paid: false,
+        created_at: "",
+        status: "CONFIRMED" as string,
+        amount_override: null as number | null,
+        due_day: null as number | null,
+        paid_by_user_id: null as string | null,
+        fixed_expense_templates: {
+          id,
+          couple_id: "c1",
+          category_id: null,
+          description: id,
+          amount,
+          due_day: 10,
+          active: true,
+          requires_monthly_review: false,
+          is_shared: isShared,
+          owner_user_id: owner,
+          created_at: "",
+        },
+      });
+
+      const result = calculateMonthlyBalance({
+        incomes: baseIncomes,
+        installmentPurchases: [],
+        fixedExpenseInstances: [
+          makeFixed("shared", 100_000, true, null),
+          makeFixed("personal", 50_000, false, DEIVY_ID),
+        ],
+        variableExpenses: [],
+      });
+
+      // Total money out includes the personal expense…
+      expect(result.fixedTotal).toBeCloseTo(150_000, 0);
+      expect(result.fixedSharedTotal).toBeCloseTo(100_000, 0);
+      expect(result.fixedIndividualTotal).toBeCloseTo(50_000, 0);
+      // …but only the shared portion enters the proportional split.
+      expect(result.sharedExpensesTotal).toBeCloseTo(100_000, 0);
+      const deivy = result.balances.find((b) => b.userId === DEIVY_ID)!;
+      expect(deivy.obligation).toBeCloseTo(0.6459 * 100_000, -1);
     });
   });
 
@@ -387,6 +443,8 @@ describe("calculateMonthlyBalance", () => {
       due_day: 15,
       active: true,
       requires_monthly_review: false,
+      is_shared: true,
+      owner_user_id: null,
       created_at: "",
     };
     const baseInstance = {
@@ -562,6 +620,8 @@ describe("calculateMonthlyBalance — payer attribution (payer-attribution)", ()
     due_day: 15,
     active: true,
     requires_monthly_review: false,
+    is_shared: true,
+    owner_user_id: null,
     created_at: "",
   };
 
@@ -796,6 +856,8 @@ describe("effectiveFixedAmount", () => {
     due_day: 10,
     active: true,
     requires_monthly_review: false,
+    is_shared: true,
+    owner_user_id: null,
     created_at: "",
   };
   const baseInstance = {
@@ -844,6 +906,8 @@ describe("calculateMonthlyBalance — PENDING_CONFIRMATION status (RF-07)", () =
     due_day: 15,
     active: true,
     requires_monthly_review: true,
+    is_shared: true,
+    owner_user_id: null,
     created_at: "",
   };
 

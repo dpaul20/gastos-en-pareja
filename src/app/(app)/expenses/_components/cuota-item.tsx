@@ -2,6 +2,7 @@
 
 import { useTransition } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -51,7 +52,17 @@ export function CuotaItem({
             <div style={{ fontSize: 12, color: "var(--fg-3)", marginTop: 2 }}>
               {c.credit_card && <span>{c.credit_card} · </span>}
               Cuota {c.paid_installments} de {c.installments}
-              {c.auto_renew ? <span aria-hidden="true"> 🔄</span> : ""}
+              {c.auto_renew ? (
+                <RefreshCw
+                  aria-label="Se renueva automáticamente"
+                  size={12}
+                  style={{
+                    display: "inline",
+                    verticalAlign: "-2px",
+                    marginLeft: 4,
+                  }}
+                />
+              ) : null}
             </div>
           </div>
           <div className="flex shrink-0 flex-col items-end gap-1">
@@ -122,7 +133,7 @@ export function CuotaItem({
         <div className="mt-2 flex justify-end">
           <DeleteExpenseButton
             title="¿Eliminar cuota?"
-            description={`"${c.description}" se eliminará permanentemente. Esta acción no se puede deshacer.`}
+            description={`"${c.description}" se eliminará. Vas a poder deshacer la acción desde el aviso.`}
             successMessage="Cuota eliminada"
             onConfirm={async () => {
               const row = await deleteInstallmentPurchase(c.id);

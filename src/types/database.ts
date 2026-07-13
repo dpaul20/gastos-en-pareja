@@ -186,6 +186,8 @@ export type Database = {
           description: string;
           due_day: number;
           id: string;
+          is_shared: boolean;
+          owner_user_id: string | null;
           requires_monthly_review: boolean;
         };
         Insert: {
@@ -197,6 +199,8 @@ export type Database = {
           description: string;
           due_day: number;
           id?: string;
+          is_shared?: boolean;
+          owner_user_id?: string | null;
           requires_monthly_review?: boolean;
         };
         Update: {
@@ -208,6 +212,8 @@ export type Database = {
           description?: string;
           due_day?: number;
           id?: string;
+          is_shared?: boolean;
+          owner_user_id?: string | null;
           requires_monthly_review?: boolean;
         };
         Relationships: [
