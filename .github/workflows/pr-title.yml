@@ -1,0 +1,48 @@
+name: PR Title
+
+# PRs are squash-merged with the PR title as the commit subject
+# (squash_merge_commit_title = COMMIT_OR_PR_TITLE). That subject is what
+# release-please parses to decide the next version, so an invalid type
+# (e.g. "fix+feat: ...") silently skips the release. This check enforces a
+# single valid Conventional Commits type on the PR title, matching the repo's
+# commitlint config (@commitlint/config-conventional).
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  pull-requests: write
+
+concurrency:
+  group: pr-title-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate title
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          # Keep in sync with commitlint.config.js (@commitlint/config-conventional)
+          types: |
+            build
+            chore
+            ci
+            docs
+            feat
+            fix
+            perf
+            refactor
+            revert
+            style
+            test
+          requireScope: false
+          # commitlint disables subject-case; don't enforce it on the title either
+          subjectPattern: .+
+          # Comment on the PR when the title is invalid, and remove it once fixed
+          wip: false
