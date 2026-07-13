@@ -92,7 +92,7 @@ export function VariableItem({
           </div>
           <DeleteExpenseButton
             title="¿Eliminar compra?"
-            description={`"${v.description}" se eliminará permanentemente. Esta acción no se puede deshacer.`}
+            description={`"${v.description}" se eliminará. Vas a poder deshacer la acción desde el aviso.`}
             successMessage="Compra eliminada"
             onConfirm={async () => {
               const row = await deleteVariableExpense(v.id);

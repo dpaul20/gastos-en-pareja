@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
+import { Check, Pencil, RotateCcw, X } from "lucide-react";
 import { PersonAvatar } from "@/components/shared/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -142,9 +143,7 @@ export function FijoItem({
             }}
           >
             Vence día {fi.due_day ?? fi.fixed_expense_templates.due_day}
-            <span aria-hidden="true" style={{ color: "var(--accent)" }}>
-              ✎
-            </span>
+            <Pencil aria-hidden size={12} style={{ color: "var(--accent)" }} />
           </button>
         ) : (
           <div
@@ -244,7 +243,7 @@ export function FijoItem({
                   opacity: amountMutation.isPending ? 0.6 : 1,
                 }}
               >
-                <span aria-hidden="true">✓</span>
+                <Check aria-hidden size={16} />
               </Button>
               <Button
                 variant="ghost"
@@ -261,7 +260,7 @@ export function FijoItem({
                   flexShrink: 0,
                 }}
               >
-                <span aria-hidden="true">×</span>
+                <X aria-hidden size={16} />
               </Button>
             </div>
             {mutationError && (
@@ -310,7 +309,7 @@ export function FijoItem({
                     opacity: amountMutation.isPending ? 0.5 : 1,
                   }}
                 >
-                  <span aria-hidden="true">↻</span>
+                  <RotateCcw aria-hidden size={14} />
                 </Button>
               )}
               <Button
