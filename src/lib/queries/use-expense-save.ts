@@ -35,6 +35,7 @@ export function useExpenseSave(tab: Tab) {
     requiresMonthlyReview = false,
     isShared = true,
     payerId?: string | null,
+    cardId?: string | null,
   ) {
     setSaveError(null);
     startTransition(async () => {
@@ -49,7 +50,7 @@ export function useExpenseSave(tab: Tab) {
               new Date().toISOString().slice(0, 10),
             category_id: categoryId ?? undefined,
             auto_renew: autoRenew || undefined,
-            credit_card: fields.credit_card?.trim() || null,
+            card_id: cardId ?? null,
             paid_by_user_id: payerId ?? undefined,
           });
         } else if (tab === "fijos") {

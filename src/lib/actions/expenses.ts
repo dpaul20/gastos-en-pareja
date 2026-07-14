@@ -117,6 +117,7 @@ export async function createInstallmentPurchase(data: {
   category_id?: string;
   auto_renew?: boolean;
   credit_card?: string | null;
+  card_id?: string | null;
   paid_by_user_id?: string;
 }) {
   const { supabase, user, coupleId } = await getCouple();
@@ -199,6 +200,37 @@ export async function restoreInstallmentPurchase(
 ): Promise<void> {
   const { supabase } = await getCouple();
   await supabase.from("installment_purchases").insert(row);
+  revalidatePath("/expenses");
+  revalidatePath("/dashboard");
+}
+
+// R3-D/R3-E: manual correction of a card+payment_day cuota's DISPLAYED
+// installment number for one specific month. Always wins over the computed
+// value (see installmentNumberForMonth precedence) and persists across later
+// views of that same month.
+export async function upsertInstallmentMonthOverride(
+  purchaseId: string,
+  month: string,
+  installmentNumber: number,
+): Promise<void> {
+  if (!Number.isInteger(installmentNumber) || installmentNumber < 1) {
+    throw new Error("El número de cuota debe ser mayor a cero");
+  }
+
+  const { supabase, coupleId } = await getCouple();
+
+  const { error } = await supabase.from("installment_month_overrides").upsert(
+    {
+      purchase_id: purchaseId,
+      couple_id: coupleId,
+      month,
+      installment_number: installmentNumber,
+    },
+    { onConflict: "purchase_id,month" },
+  );
+
+  if (error) throw new Error("No se pudo corregir el número de cuota");
+
   revalidatePath("/expenses");
   revalidatePath("/dashboard");
 }

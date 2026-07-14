@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   computeMonthlyInstallment,
+  isCardComputedInstallment,
   isInstallmentActiveInMonth,
   installmentNumberForMonth,
   monthsBetween,
@@ -138,6 +139,31 @@ describe("isInstallmentActiveInMonth", () => {
     expect(isInstallmentActiveInMonth(futurePurchase, "2026-02-01")).toBe(
       false,
     );
+  });
+});
+
+describe("isCardComputedInstallment", () => {
+  it("true cuando la compra tiene card_id, hay card y la card tiene payment_day", () => {
+    const purchase = makePurchase({ card_id: "card1" });
+    const card = makeCard({ payment_day: 10 });
+    expect(isCardComputedInstallment(purchase, card)).toBe(true);
+  });
+
+  it("false sin card_id en la compra (aunque haya card)", () => {
+    const purchase = makePurchase({ card_id: null });
+    const card = makeCard({ payment_day: 10 });
+    expect(isCardComputedInstallment(purchase, card)).toBe(false);
+  });
+
+  it("false cuando card es null (card_id apunta a una tarjeta no cargada aún)", () => {
+    const purchase = makePurchase({ card_id: "card1" });
+    expect(isCardComputedInstallment(purchase, null)).toBe(false);
+  });
+
+  it("false cuando la card no tiene payment_day configurado — cae al contador manual", () => {
+    const purchase = makePurchase({ card_id: "card1" });
+    const card = makeCard({ payment_day: null });
+    expect(isCardComputedInstallment(purchase, card)).toBe(false);
   });
 });
 

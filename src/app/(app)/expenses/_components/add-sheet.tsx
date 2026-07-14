@@ -15,6 +15,7 @@ import { useCategories } from "@/lib/queries/use-monthly-data";
 import type { Tab } from "@/lib/queries/use-expense-save";
 import { TAB_LABEL } from "./segmented-control";
 import { DueDayPicker } from "./due-day-picker";
+import { CardPicker } from "./card-picker";
 import { computeMonthlyInstallment } from "@/lib/utils/installments";
 import { cn, formatARS, getInitials } from "@/lib/utils";
 import { parseAmount } from "@/lib/utils/amount";
@@ -46,7 +47,6 @@ const cuotasSchema = z.object({
   total_amount: positiveMoneyString("El monto total"),
   installments: positiveIntString(999),
   first_payment_date: z.string().optional(),
-  credit_card: z.string().trim().max(40).optional(),
 });
 
 const fijosSchema = z.object({
@@ -220,6 +220,7 @@ export function AddSheet({
   saveError,
   members,
   currentUserId,
+  coupleId,
 }: {
   readonly tab: Tab;
   readonly categories: ReturnType<typeof useCategories>["data"];
@@ -231,16 +232,19 @@ export function AddSheet({
     requiresMonthlyReview: boolean,
     isShared: boolean,
     payerId?: string | null,
+    cardId?: string | null,
   ) => void;
   readonly members?: { user_id: string; full_name: string }[];
   readonly currentUserId?: string;
   readonly saveError?: string | null;
+  readonly coupleId?: string | null;
 }) {
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [autoRenew, setAutoRenew] = useState(false);
   const [requiresMonthlyReview, setRequiresMonthlyReview] = useState(false);
   const [isShared, setIsShared] = useState(true);
   const [payerId, setPayerId] = useState<string | null>(currentUserId ?? null);
+  const [cardId, setCardId] = useState<string | null>(null);
 
   const {
     register,
@@ -278,6 +282,7 @@ export function AddSheet({
       requiresMonthlyReview,
       isShared,
       tab === "cuotas" || (tab === "fijos" && !isShared) ? payerId : undefined,
+      tab === "cuotas" ? cardId : undefined,
     );
   }
 
@@ -326,13 +331,16 @@ export function AddSheet({
                 ≈ {formatARS(monthlyAmount)} / mes
               </div>
             )}
-            <InputField
-              label="Tarjeta (opcional)"
-              id="field-credit-card"
-              registration={register("credit_card")}
-              error={errors.credit_card?.message}
-              placeholder="ej: Visa, Mastercard"
-            />
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ ...labelCss, marginBottom: 8 }}>
+                Tarjeta (opcional)
+              </div>
+              <CardPicker
+                coupleId={coupleId ?? null}
+                value={cardId}
+                onChange={setCardId}
+              />
+            </div>
             <InputField
               label="Fecha del primer pago"
               id="field-first-payment-date"

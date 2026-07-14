@@ -806,6 +806,7 @@ function ExpensesView() {
     requiresMonthlyReview: boolean,
     isShared: boolean,
     payerId?: string | null,
+    cardId?: string | null,
   ) {
     setFlow({ step: "idle" });
     save(
@@ -815,6 +816,7 @@ function ExpensesView() {
       requiresMonthlyReview,
       isShared,
       payerId,
+      cardId,
     );
   }
 
@@ -959,6 +961,9 @@ function ExpensesView() {
                   <li key={c.id}>
                     <CuotaItem
                       c={c}
+                      cards={data?.cards ?? []}
+                      overrides={data?.installmentMonthOverrides ?? []}
+                      month={month}
                       getPersonInitials={getPersonInitials}
                       getPerson={getPerson}
                     />
@@ -1159,6 +1164,7 @@ function ExpensesView() {
           saveError={saveError}
           members={profiles}
           currentUserId={member?.user_id ?? undefined}
+          coupleId={coupleId}
         />
       )}
     </div>

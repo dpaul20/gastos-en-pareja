@@ -64,6 +64,21 @@ export function isInstallmentActiveInMonth(
 }
 
 /**
+ * Gates whether a card+payment_day purchase's installment number is
+ * COMPUTED (auto-advanced from `first_payment_date`) versus falling back to
+ * the manual `paid_installments` counter (design R3-D/R3-E). This is the
+ * single source of truth for that decision — both `installmentNumberForMonth`
+ * and the UI (hide the +1 stepper, show "Corregir número") must derive the
+ * same boolean from this function rather than re-deriving the condition.
+ */
+export function isCardComputedInstallment(
+  purchase: Pick<InstallmentPurchaseRow, "card_id">,
+  card: Pick<CardRow, "payment_day"> | null,
+): card is Pick<CardRow, "payment_day"> & { payment_day: number } {
+  return !!purchase.card_id && !!card && card.payment_day != null;
+}
+
+/**
  * Resolves the DISPLAYED installment number for a card+payment_day purchase
  * in a given month (spec: "Automatic Advance With Manual Override";
  * design R3-B/R3-D/R3-F). Precedence:
@@ -78,6 +93,10 @@ export function isInstallmentActiveInMonth(
  *
  * `today` is intentionally irrelevant to every month except the real current
  * one (R3-B): it never changes which months a purchase is active in.
+ *
+ * This is the SINGLE SOURCE every cuota-item.tsx read (isPaid, label, badge,
+ * progressbar aria-valuenow/width) must call — never re-derive the number
+ * from `paid_installments` directly for a card+payment_day purchase (R3-E).
  */
 export function installmentNumberForMonth(
   purchase: Pick<
@@ -95,7 +114,7 @@ export function installmentNumberForMonth(
 ): number {
   if (override) return override.installment_number;
 
-  if (!purchase.card_id || !card || card.payment_day == null) {
+  if (!isCardComputedInstallment(purchase, card)) {
     return purchase.paid_installments;
   }
 
