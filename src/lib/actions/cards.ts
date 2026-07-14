@@ -41,22 +41,34 @@ export async function updateCard(
     closing_day?: number | null;
   },
 ): Promise<void> {
-  const { supabase } = await getCouple();
+  const { supabase, coupleId } = await getCouple();
 
-  const { error } = await supabase.from("cards").update(data).eq("id", id);
+  const { data: updated, error } = await supabase
+    .from("cards")
+    .update(data)
+    .eq("id", id)
+    .eq("couple_id", coupleId)
+    .select("id");
 
   if (error) throw new Error("No se pudo actualizar la tarjeta");
+  if (!updated?.length) throw new Error("Tarjeta no encontrada");
 
   revalidatePath("/expenses");
   revalidatePath("/dashboard");
 }
 
 export async function deleteCard(id: string): Promise<void> {
-  const { supabase } = await getCouple();
+  const { supabase, coupleId } = await getCouple();
 
-  const { error } = await supabase.from("cards").delete().eq("id", id);
+  const { data: deleted, error } = await supabase
+    .from("cards")
+    .delete()
+    .eq("id", id)
+    .eq("couple_id", coupleId)
+    .select("id");
 
   if (error) throw new Error("No se pudo eliminar la tarjeta");
+  if (!deleted?.length) throw new Error("Tarjeta no encontrada");
 
   revalidatePath("/expenses");
   revalidatePath("/dashboard");

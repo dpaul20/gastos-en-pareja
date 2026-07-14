@@ -10,6 +10,7 @@ import {
   updateVariableExpense,
 } from "@/lib/actions/expenses";
 import { parseAmount } from "@/lib/utils/amount";
+import { getTodayBADate } from "@/lib/utils";
 
 export type Tab = "cuotas" | "fijos" | "variables";
 
@@ -52,8 +53,12 @@ export function useExpenseSave(tab: Tab) {
               description: fields.description,
               total_amount: parsePositiveNumber(fields.total_amount),
               installments: parsePositiveInt(fields.installments),
-              category_id: categoryId ?? undefined,
-              auto_renew: autoRenew || undefined,
+              // Edit path: send explicit values so unchecking auto-renew or
+              // clearing the category actually persist (a `|| undefined` /
+              // `?? undefined` would silently drop the false/null and leave
+              // the old value in place).
+              category_id: categoryId ?? null,
+              auto_renew: autoRenew,
               card_id: cardId ?? null,
               paid_by_user_id: payerId ?? undefined,
             });
@@ -62,9 +67,7 @@ export function useExpenseSave(tab: Tab) {
               description: fields.description,
               total_amount: parsePositiveNumber(fields.total_amount),
               installments: parsePositiveInt(fields.installments),
-              first_payment_date:
-                fields.first_payment_date ||
-                new Date().toISOString().slice(0, 10),
+              first_payment_date: fields.first_payment_date || getTodayBADate(),
               category_id: categoryId ?? undefined,
               auto_renew: autoRenew || undefined,
               card_id: cardId ?? null,
@@ -94,7 +97,7 @@ export function useExpenseSave(tab: Tab) {
             await createVariableExpense({
               description: fields.description,
               amount: parsePositiveNumber(fields.amount),
-              date: fields.date || new Date().toISOString().slice(0, 10),
+              date: fields.date || getTodayBADate(),
               category_id: categoryId ?? undefined,
               is_shared: isShared,
             });

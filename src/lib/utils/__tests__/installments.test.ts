@@ -4,6 +4,7 @@ import {
   isCardComputedInstallment,
   isInstallmentActiveInMonth,
   isValidInstallmentsEdit,
+  isValidOverrideInstallmentNumber,
   installmentNumberForMonth,
   monthsBetween,
   startOfMonth,
@@ -316,5 +317,30 @@ describe("computeMonthlyInstallment", () => {
   it("redondea correctamente con fracción >= 0.5", () => {
     // 10 / 3 = 3.33... → 3 (but 7/2 = 3.5 → 4)
     expect(computeMonthlyInstallment(7, 2)).toBe(4);
+  });
+});
+
+// ── JD-003: OVERRIDE INSTALLMENT NUMBER RANGE ──────────────────────────────────
+
+describe("isValidOverrideInstallmentNumber", () => {
+  it("acepta un entero dentro de [1, installments]", () => {
+    expect(isValidOverrideInstallmentNumber(1, 12)).toBe(true);
+    expect(isValidOverrideInstallmentNumber(6, 12)).toBe(true);
+    expect(isValidOverrideInstallmentNumber(12, 12)).toBe(true);
+  });
+
+  it("rechaza un número menor a 1", () => {
+    expect(isValidOverrideInstallmentNumber(0, 12)).toBe(false);
+    expect(isValidOverrideInstallmentNumber(-3, 12)).toBe(false);
+  });
+
+  it("rechaza un número mayor a la cantidad de cuotas (cota superior)", () => {
+    expect(isValidOverrideInstallmentNumber(13, 12)).toBe(false);
+    expect(isValidOverrideInstallmentNumber(7, 6)).toBe(false);
+  });
+
+  it("rechaza valores no enteros", () => {
+    expect(isValidOverrideInstallmentNumber(2.5, 12)).toBe(false);
+    expect(isValidOverrideInstallmentNumber(Number.NaN, 12)).toBe(false);
   });
 });

@@ -97,6 +97,23 @@ export function isValidInstallmentsEdit(
 }
 
 /**
+ * JD-003: validates a manual `installment_month_overrides.installment_number`
+ * against the purchase it targets. The number must be a positive integer and
+ * cannot exceed the purchase's real `installments` count — otherwise the
+ * override would render an impossible "Cuota 12 de 6".
+ */
+export function isValidOverrideInstallmentNumber(
+  installmentNumber: number,
+  installments: number,
+): boolean {
+  return (
+    Number.isInteger(installmentNumber) &&
+    installmentNumber >= 1 &&
+    installmentNumber <= installments
+  );
+}
+
+/**
  * Resolves the DISPLAYED installment number for a card+payment_day purchase
  * in a given month (spec: "Automatic Advance With Manual Override";
  * design R3-B/R3-D/R3-F). Precedence:

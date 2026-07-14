@@ -1,9 +1,12 @@
 "use server";
 
 import { createClient, createServiceClient } from "@/lib/supabase/server";
-import { getMonthDate } from "@/lib/utils";
+import { getMonthDate, getTodayBADate } from "@/lib/utils";
 import { isTemplateActiveInMonth } from "@/lib/utils/month-gating";
-import { isValidInstallmentsEdit } from "@/lib/utils/installments";
+import {
+  isValidInstallmentsEdit,
+  isValidOverrideInstallmentNumber,
+} from "@/lib/utils/installments";
 import { revalidatePath } from "next/cache";
 import type { Database } from "@/types/database";
 
@@ -241,9 +244,12 @@ export async function incrementPaidInstallments(id: string) {
       total_amount: data.total_amount,
       installments: data.installments,
       paid_installments: 0,
-      first_payment_date: new Date().toISOString().slice(0, 10),
+      first_payment_date: getTodayBADate(),
       auto_renew: true,
       category_id: data.category_id,
+      // Keep the renewed cuota linked to the same card as the original.
+      card_id: data.card_id,
+      credit_card: data.credit_card,
       paid_by_user_id: data.paid_by_user_id,
     });
   }
@@ -290,6 +296,26 @@ export async function upsertInstallmentMonthOverride(
   }
 
   const { supabase, coupleId } = await getCouple();
+
+  // Never trust the client purchaseId: verify it belongs to this couple and
+  // read its installment count so the override can't point at someone else's
+  // cuota or exceed the real number of installments.
+  const { data: purchase } = await supabase
+    .from("installment_purchases")
+    .select("id, installments")
+    .eq("id", purchaseId)
+    .eq("couple_id", coupleId)
+    .maybeSingle();
+
+  if (!purchase) throw new Error("Cuota no encontrada");
+
+  if (
+    !isValidOverrideInstallmentNumber(installmentNumber, purchase.installments)
+  ) {
+    throw new Error(
+      `El número de cuota debe estar entre 1 y ${purchase.installments}`,
+    );
+  }
 
   const { error } = await supabase.from("installment_month_overrides").upsert(
     {

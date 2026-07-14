@@ -35,6 +35,29 @@ export function getMonthDate(date = new Date()): string {
   return `${year}-${month}-01`;
 }
 
+const fullDateFormatter = new Intl.DateTimeFormat("en-CA", {
+  timeZone: MONTH_ASSIGNMENT_TIMEZONE,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+/**
+ * Returns today's full calendar date as "YYYY-MM-DD", computed in a single
+ * fixed timezone (America/Argentina/Buenos_Aires) regardless of the runtime's
+ * own local timezone. Same rationale as `getMonthDate`: server actions run in
+ * UTC (Vercel) while the client runs in es-AR, so `new Date().toISOString()`
+ * would resolve to different days near a day boundary. Use this instead of
+ * `new Date().toISOString().slice(0, 10)` for user-facing default dates.
+ */
+export function getTodayBADate(date = new Date()): string {
+  const parts = fullDateFormatter.formatToParts(date);
+  const year = parts.find((p) => p.type === "year")?.value;
+  const month = parts.find((p) => p.type === "month")?.value;
+  const day = parts.find((p) => p.type === "day")?.value;
+  return `${year}-${month}-${day}`;
+}
+
 export function getPreviousMonthDate(reference = new Date()): string {
   const prev = new Date(
     Date.UTC(reference.getFullYear(), reference.getMonth() - 1, 1),
