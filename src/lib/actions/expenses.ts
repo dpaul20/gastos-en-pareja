@@ -10,7 +10,7 @@ type InstallmentRow =
   Database["public"]["Tables"]["installment_purchases"]["Row"];
 type VariableRow = Database["public"]["Tables"]["variable_expenses"]["Row"];
 
-async function getCouple() {
+export async function getCouple() {
   const supabase = await createClient();
   const {
     data: { user },
