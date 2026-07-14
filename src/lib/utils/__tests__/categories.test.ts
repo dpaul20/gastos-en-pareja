@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { groupByCategory } from "../categories";
+import { groupByCategory, categoryExpensesHref } from "../categories";
 import type { Database } from "@/types/database";
 
 type Category = Database["public"]["Tables"]["expense_categories"]["Row"];
@@ -68,5 +68,17 @@ describe("groupByCategory", () => {
 
   it("lista vacía de gastos retorna array vacío", () => {
     expect(groupByCategory([], categories)).toHaveLength(0);
+  });
+});
+
+// ── categoryExpensesHref (Commit 7 — category navigation) ──────────────────────
+
+describe("categoryExpensesHref", () => {
+  it("retorna la URL filtrada para un categoryId real", () => {
+    expect(categoryExpensesHref("cat-1")).toBe("/expenses?cat=cat-1");
+  });
+
+  it("retorna null para 'Sin categoría' (categoryId null) — no navega", () => {
+    expect(categoryExpensesHref(null)).toBeNull();
   });
 });

@@ -32,3 +32,13 @@ export function groupByCategory(
 
   return result.sort((a, b) => b.total - a.total);
 }
+
+/**
+ * Builds the `/expenses?cat={id}` href for a category breakdown row (Commit 7
+ * — category navigation). Returns `null` for "Sin categoría" (`categoryId ===
+ * null`), which per design MUST NOT navigate — callers use this to decide
+ * whether a row is clickable at all, not just where it points.
+ */
+export function categoryExpensesHref(categoryId: string | null): string | null {
+  return categoryId ? `/expenses?cat=${categoryId}` : null;
+}
