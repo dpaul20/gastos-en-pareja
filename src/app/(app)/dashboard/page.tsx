@@ -178,7 +178,7 @@ function DashboardView() {
       data
         ? calculateMonthlyBalance({
             incomes: data.incomes,
-            installmentPurchases: data.installmentPurchases,
+            installmentPurchases: data.activeInstallmentPurchases,
             fixedExpenseInstances: data.fixedExpenseInstances as Parameters<
               typeof calculateMonthlyBalance
             >[0]["fixedExpenseInstances"],

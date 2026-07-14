@@ -303,6 +303,48 @@ export type Database = {
           },
         ];
       };
+      installment_month_overrides: {
+        Row: {
+          couple_id: string;
+          created_at: string;
+          id: string;
+          installment_number: number;
+          month: string;
+          purchase_id: string;
+        };
+        Insert: {
+          couple_id: string;
+          created_at?: string;
+          id?: string;
+          installment_number: number;
+          month: string;
+          purchase_id: string;
+        };
+        Update: {
+          couple_id?: string;
+          created_at?: string;
+          id?: string;
+          installment_number?: number;
+          month?: string;
+          purchase_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "installment_month_overrides_couple_id_fkey";
+            columns: ["couple_id"];
+            isOneToOne: false;
+            referencedRelation: "couples";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "installment_month_overrides_purchase_id_fkey";
+            columns: ["purchase_id"];
+            isOneToOne: false;
+            referencedRelation: "installment_purchases";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       installment_purchases: {
         Row: {
           auto_renew: boolean;

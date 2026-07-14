@@ -19,7 +19,7 @@ export function MonthDetail({
   const balance = data
     ? calculateMonthlyBalance({
         incomes: data.incomes,
-        installmentPurchases: data.installmentPurchases,
+        installmentPurchases: data.activeInstallmentPurchases,
         fixedExpenseInstances: data.fixedExpenseInstances,
         variableExpenses: data.variableExpenses,
       })
