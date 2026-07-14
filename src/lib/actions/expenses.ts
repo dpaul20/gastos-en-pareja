@@ -2,6 +2,7 @@
 
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { getMonthDate } from "@/lib/utils";
+import { isTemplateActiveInMonth } from "@/lib/utils/month-gating";
 import { revalidatePath } from "next/cache";
 import type { Database } from "@/types/database";
 
@@ -450,7 +451,7 @@ export async function ensureFixedExpenseInstances(
 
   const { data: templates } = await supabase
     .from("fixed_expense_templates")
-    .select("id, requires_monthly_review")
+    .select("id, requires_monthly_review, created_at")
     .eq("couple_id", coupleId)
     .eq("active", true);
 
@@ -465,6 +466,10 @@ export async function ensureFixedExpenseInstances(
   const existingIds = new Set(existing?.map((e) => e.template_id));
   const toCreate = templates
     .filter((t) => !existingIds.has(t.id))
+    // Bug 1 Leak B: never materialize an instance for a month earlier than
+    // the template's own creation month — recurring items only count from
+    // their start month forward.
+    .filter((t) => isTemplateActiveInMonth(t.created_at, month))
     .map((t) => ({
       template_id: t.id,
       couple_id: coupleId,

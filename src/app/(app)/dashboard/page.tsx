@@ -156,16 +156,22 @@ function DashboardView() {
   });
 
   useEffect(() => {
+    // Bug 1: viewing a past/future month must never write rows — instance
+    // creation is limited to the real current calendar month.
+    if (!isCurrentMonth) return;
     if (coupleId) ensureInstances({ coupleId, month });
     // ensureInstances is stable (useMutation)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [coupleId, month]);
+  }, [coupleId, month, isCurrentMonth]);
 
   useEffect(() => {
+    // Same guard as above: carrying income forward is a current-month-only
+    // side effect, never triggered by browsing to another month.
+    if (!isCurrentMonth) return;
     if (coupleId) ensureIncomeCarry({ coupleId, month });
     // ensureIncomeCarry is stable (useMutation)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [coupleId, month]);
+  }, [coupleId, month, isCurrentMonth]);
 
   const balance = useMemo(
     () =>
