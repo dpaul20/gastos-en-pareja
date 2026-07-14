@@ -21,6 +21,7 @@ import {
   effectiveFixedAmount,
 } from "@/lib/utils/balance";
 import { groupByCategory } from "@/lib/utils/categories";
+import { buildMonthSummaryLines } from "@/lib/utils/summary-lines";
 import { MonthSummaryCard } from "@/components/shared/month-summary-card";
 import {
   ensureFixedExpenseInstances,
@@ -188,6 +189,21 @@ function DashboardView() {
     [data],
   );
 
+  const summaryLines = useMemo(
+    () =>
+      data
+        ? buildMonthSummaryLines({
+            incomes: data.incomes,
+            installmentPurchases: data.activeInstallmentPurchases,
+            fixedExpenseInstances: data.fixedExpenseInstances as Parameters<
+              typeof buildMonthSummaryLines
+            >[0]["fixedExpenseInstances"],
+            variableExpenses: data.variableExpenses,
+          })
+        : undefined,
+    [data],
+  );
+
   const categoryBreakdown = useMemo(() => {
     if (!data || !balance || balance.totalExpenses === 0) return [];
     return groupByCategory(
@@ -292,7 +308,9 @@ function DashboardView() {
 
             {/* Right column */}
             <div className="flex flex-col gap-3 lg:gap-4">
-              {balance && <MonthSummaryCard balance={balance} />}
+              {balance && (
+                <MonthSummaryCard balance={balance} lines={summaryLines} />
+              )}
               <CategoryBreakdownCard breakdown={categoryBreakdown} />
               <Link
                 href="/expenses"
