@@ -3,6 +3,7 @@
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { getMonthDate } from "@/lib/utils";
 import { isTemplateActiveInMonth } from "@/lib/utils/month-gating";
+import { isValidInstallmentsEdit } from "@/lib/utils/installments";
 import { revalidatePath } from "next/cache";
 import type { Database } from "@/types/database";
 
@@ -139,6 +140,77 @@ export async function createInstallmentPurchase(data: {
     .insert({ ...rest, couple_id: coupleId, paid_by_user_id: payerId });
 
   if (error) throw new Error("No se pudo guardar la cuota");
+
+  revalidatePath("/expenses");
+  revalidatePath("/dashboard");
+}
+
+// Commit 6 / R3-C — a cuota edit is an ERROR CORRECTION, not a forward-only
+// change: it mutates the row directly, so total_amount/installments edits
+// recalc ALL months (balance.ts computes round(total_amount/installments)
+// live per month — no amount_override path exists for cuotas, unlike fijos).
+export async function updateInstallmentPurchase(
+  id: string,
+  data: {
+    description?: string;
+    total_amount?: number;
+    installments?: number;
+    category_id?: string | null;
+    auto_renew?: boolean;
+    card_id?: string | null;
+    paid_by_user_id?: string | null;
+  },
+): Promise<void> {
+  const { supabase, coupleId } = await getCouple();
+
+  const { data: current } = await supabase
+    .from("installment_purchases")
+    .select("*")
+    .eq("id", id)
+    .eq("couple_id", coupleId)
+    .maybeSingle();
+
+  if (!current) throw new Error("Cuota no encontrada");
+
+  if (data.description !== undefined && data.description.trim().length === 0) {
+    throw new Error("La descripción es obligatoria");
+  }
+
+  if (
+    data.total_amount !== undefined &&
+    (!Number.isFinite(data.total_amount) || data.total_amount <= 0)
+  ) {
+    throw new Error("El monto total debe ser mayor a cero");
+  }
+
+  const nextInstallments = data.installments ?? current.installments;
+  if (!Number.isInteger(nextInstallments) || nextInstallments < 1) {
+    throw new Error("Las cuotas deben ser un número entero mayor a cero");
+  }
+  // R3-C clamp: an edit can never set fewer installments than already paid.
+  if (!isValidInstallmentsEdit(nextInstallments, current.paid_installments)) {
+    throw new Error(
+      `No podés poner ${nextInstallments} cuotas: ya se pagaron ${current.paid_installments}`,
+    );
+  }
+
+  if (data.paid_by_user_id) {
+    const { data: m } = await supabase
+      .from("couple_members")
+      .select("user_id")
+      .eq("couple_id", coupleId)
+      .eq("user_id", data.paid_by_user_id)
+      .maybeSingle();
+    if (!m) throw new Error("Pareja inválida para el pagador");
+  }
+
+  const { error } = await supabase
+    .from("installment_purchases")
+    .update(data)
+    .eq("id", id)
+    .eq("couple_id", coupleId);
+
+  if (error) throw new Error("No se pudo actualizar la cuota");
 
   revalidatePath("/expenses");
   revalidatePath("/dashboard");
@@ -532,6 +604,40 @@ export async function createVariableExpense(data: {
     couple_id: coupleId,
     user_id: user.id,
   });
+
+  revalidatePath("/expenses");
+  revalidatePath("/dashboard");
+}
+
+export async function updateVariableExpense(
+  id: string,
+  data: {
+    description?: string;
+    amount?: number;
+    date?: string;
+    category_id?: string | null;
+    is_shared?: boolean;
+  },
+): Promise<void> {
+  if (data.description !== undefined && data.description.trim().length === 0) {
+    throw new Error("La descripción es obligatoria");
+  }
+  if (
+    data.amount !== undefined &&
+    (!Number.isFinite(data.amount) || data.amount <= 0)
+  ) {
+    throw new Error("El monto debe ser mayor a cero");
+  }
+
+  const { supabase, coupleId } = await getCouple();
+
+  const { error } = await supabase
+    .from("variable_expenses")
+    .update(data)
+    .eq("id", id)
+    .eq("couple_id", coupleId);
+
+  if (error) throw new Error("No se pudo actualizar la compra");
 
   revalidatePath("/expenses");
   revalidatePath("/dashboard");

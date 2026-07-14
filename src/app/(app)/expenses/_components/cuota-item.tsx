@@ -154,6 +154,7 @@ export function CuotaItem({
   month,
   getPersonInitials,
   getPerson,
+  onEdit,
 }: {
   readonly c: InstallmentPurchase;
   readonly cards?: readonly Card_[];
@@ -161,6 +162,7 @@ export function CuotaItem({
   readonly month?: string;
   readonly getPersonInitials?: (id: string) => string;
   readonly getPerson?: (id: string) => "a" | "b";
+  readonly onEdit?: (id: string) => void;
 }) {
   const [, startTransition] = useTransition();
   const queryClient = useQueryClient();
@@ -179,6 +181,13 @@ export function CuotaItem({
     ? installmentNumberForMonth(c, card, month, override, today)
     : c.paid_installments;
   const isPaid = displayNumber >= c.installments;
+  // Commit 6: a non-auto_renew cuota that reached its last installment is
+  // DONE — distinct from "Pagado" (which auto_renew cuotas also briefly show
+  // right before wrapping to installment 1). Still visible + deletable
+  // (isInstallmentActiveInMonth already excludes it from totals once idx
+  // passes `installments`, see design R3-B) — no decorative emoji, teal
+  // "success" badge per the DS status tokens.
+  const isFinished = isPaid && !c.auto_renew;
   const cuota = Math.round(c.total_amount / c.installments);
   return (
     <Card>
@@ -248,8 +257,11 @@ export function CuotaItem({
               </div>
             </div>
             <div className="flex items-center gap-1.5">
-              <Badge variant={isPaid ? "success" : "warning"}>
-                {isPaid ? "Pagado" : "Pendiente"}
+              <Badge
+                variant={isPaid ? "success" : "warning"}
+                data-testid="cuota-status-badge"
+              >
+                {isFinished ? "Terminada" : isPaid ? "Pagado" : "Pendiente"}
               </Badge>
               {!isPaid && !isComputed && (
                 <Button
@@ -292,7 +304,30 @@ export function CuotaItem({
             }}
           />
         </div>
-        <div className="mt-2 flex justify-end">
+        <div className="mt-2 flex items-center justify-end gap-1">
+          {onEdit && (
+            <button
+              type="button"
+              onClick={() => onEdit(c.id)}
+              aria-label="Editar cuota"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                padding: "4px 8px",
+                color: "var(--fg-3)",
+                fontSize: 12,
+                fontFamily: "var(--font-sans)",
+                flexShrink: 0,
+              }}
+            >
+              <Pencil size={14} aria-hidden="true" />
+              Editar
+            </button>
+          )}
           <DeleteExpenseButton
             title="¿Eliminar cuota?"
             description={`"${c.description}" se eliminará. Vas a poder deshacer la acción desde el aviso.`}

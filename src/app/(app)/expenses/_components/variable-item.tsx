@@ -1,3 +1,4 @@
+import { Pencil } from "lucide-react";
 import { PersonAvatar } from "@/components/shared/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatARS, formatDayMonth } from "@/lib/utils";
@@ -15,10 +16,12 @@ export function VariableItem({
   v,
   getPersonInitials,
   getPerson,
+  onEdit,
 }: {
   readonly v: VariableExpense;
   readonly getPersonInitials: (userId: string) => string;
   readonly getPerson: (userId: string) => "a" | "b";
+  readonly onEdit?: (id: string) => void;
 }) {
   return (
     <Card>
@@ -90,15 +93,40 @@ export function VariableItem({
           >
             {formatARS(v.amount)}
           </div>
-          <DeleteExpenseButton
-            title="¿Eliminar compra?"
-            description={`"${v.description}" se eliminará. Vas a poder deshacer la acción desde el aviso.`}
-            successMessage="Compra eliminada"
-            onConfirm={async () => {
-              const row = await deleteVariableExpense(v.id);
-              return row ? () => restoreVariableExpense(row) : undefined;
-            }}
-          />
+          <div className="flex items-center gap-1">
+            {onEdit && (
+              <button
+                type="button"
+                onClick={() => onEdit(v.id)}
+                aria-label="Editar compra"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 4,
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  padding: "4px 8px",
+                  color: "var(--fg-3)",
+                  fontSize: 12,
+                  fontFamily: "var(--font-sans)",
+                  flexShrink: 0,
+                }}
+              >
+                <Pencil size={14} aria-hidden="true" />
+                Editar
+              </button>
+            )}
+            <DeleteExpenseButton
+              title="¿Eliminar compra?"
+              description={`"${v.description}" se eliminará. Vas a poder deshacer la acción desde el aviso.`}
+              successMessage="Compra eliminada"
+              onConfirm={async () => {
+                const row = await deleteVariableExpense(v.id);
+                return row ? () => restoreVariableExpense(row) : undefined;
+              }}
+            />
+          </div>
         </div>
       </CardContent>
     </Card>

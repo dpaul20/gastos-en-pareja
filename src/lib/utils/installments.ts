@@ -78,6 +78,24 @@ export function isCardComputedInstallment(
   return !!purchase.card_id && !!card && card.payment_day != null;
 }
 
+// ── COMMIT 6 — EDIT PARITY (R3-C) ───────────────────────────────────────────
+
+/**
+ * R3-C: a cuota edit is an ERROR CORRECTION — `updateInstallmentPurchase`
+ * mutates the row directly and recalculates ALL months (no forward-only
+ * override for cuotas, unlike fijos). This guard prevents the edit from
+ * setting `installments` below what has already been paid, which would
+ * produce "Cuota 10 de 6", a progressbar width over 100%, invalid
+ * `aria-valuenow > aria-valuemax`, and would silently drop the purchase out
+ * of `isInstallmentActiveInMonth`'s totals window.
+ */
+export function isValidInstallmentsEdit(
+  installments: number,
+  paidInstallments: number,
+): boolean {
+  return installments >= Math.max(1, paidInstallments);
+}
+
 /**
  * Resolves the DISPLAYED installment number for a card+payment_day purchase
  * in a given month (spec: "Automatic Advance With Manual Override";

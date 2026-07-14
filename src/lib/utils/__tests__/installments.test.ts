@@ -3,6 +3,7 @@ import {
   computeMonthlyInstallment,
   isCardComputedInstallment,
   isInstallmentActiveInMonth,
+  isValidInstallmentsEdit,
   installmentNumberForMonth,
   monthsBetween,
   startOfMonth,
@@ -263,6 +264,25 @@ describe("installmentNumberForMonth", () => {
     expect(
       installmentNumberForMonth(purchase, card, "2027-01-01", null, TODAY),
     ).toBe(1);
+  });
+});
+
+describe("isValidInstallmentsEdit", () => {
+  it("R3-C: rechaza un número de cuotas menor a las ya pagadas", () => {
+    expect(isValidInstallmentsEdit(5, 6)).toBe(false);
+  });
+
+  it("R3-C: acepta un número de cuotas igual a las ya pagadas", () => {
+    expect(isValidInstallmentsEdit(6, 6)).toBe(true);
+  });
+
+  it("R3-C: acepta un número de cuotas mayor a las ya pagadas", () => {
+    expect(isValidInstallmentsEdit(12, 6)).toBe(true);
+  });
+
+  it("R3-C: exige al menos 1 cuota aunque paid_installments sea 0", () => {
+    expect(isValidInstallmentsEdit(0, 0)).toBe(false);
+    expect(isValidInstallmentsEdit(1, 0)).toBe(true);
   });
 });
 

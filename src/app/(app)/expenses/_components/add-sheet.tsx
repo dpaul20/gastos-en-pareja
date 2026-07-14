@@ -67,6 +67,30 @@ type Fields = Partial<
     z.infer<typeof variablesSchema>
 >;
 
+// Commit 6 — edit parity: the add-sheet is reused in "edit mode" for cuotas
+// and variables (fijos keeps its own bespoke EditServiceSheet, which already
+// covers monto/due-day/paid/delete). These are plain field shapes, not the
+// full DB row, so add-sheet.tsx doesn't need to import MonthlyData types.
+export interface EditingCuota {
+  readonly id: string;
+  readonly description: string;
+  readonly total_amount: number;
+  readonly installments: number;
+  readonly category_id: string | null;
+  readonly auto_renew: boolean;
+  readonly card_id: string | null;
+  readonly paid_by_user_id: string | null;
+}
+
+export interface EditingVariable {
+  readonly id: string;
+  readonly description: string;
+  readonly amount: number;
+  readonly date: string;
+  readonly category_id: string | null;
+  readonly is_shared: boolean;
+}
+
 const labelCss: React.CSSProperties = {
   display: "block",
   fontSize: 13,
@@ -221,6 +245,8 @@ export function AddSheet({
   members,
   currentUserId,
   coupleId,
+  editingCuota = null,
+  editingVariable = null,
 }: {
   readonly tab: Tab;
   readonly categories: ReturnType<typeof useCategories>["data"];
@@ -238,13 +264,38 @@ export function AddSheet({
   readonly currentUserId?: string;
   readonly saveError?: string | null;
   readonly coupleId?: string | null;
+  /** Commit 6: when set, the sheet edits this cuota instead of creating one. */
+  readonly editingCuota?: EditingCuota | null;
+  /** Commit 6: when set, the sheet edits this variable instead of creating one. */
+  readonly editingVariable?: EditingVariable | null;
 }) {
-  const [categoryId, setCategoryId] = useState<string | null>(null);
-  const [autoRenew, setAutoRenew] = useState(false);
+  const isEditing = editingCuota !== null || editingVariable !== null;
+  const [categoryId, setCategoryId] = useState<string | null>(
+    editingCuota?.category_id ?? editingVariable?.category_id ?? null,
+  );
+  const [autoRenew, setAutoRenew] = useState(editingCuota?.auto_renew ?? false);
   const [requiresMonthlyReview, setRequiresMonthlyReview] = useState(false);
-  const [isShared, setIsShared] = useState(true);
-  const [payerId, setPayerId] = useState<string | null>(currentUserId ?? null);
-  const [cardId, setCardId] = useState<string | null>(null);
+  const [isShared, setIsShared] = useState(editingVariable?.is_shared ?? true);
+  const [payerId, setPayerId] = useState<string | null>(
+    editingCuota?.paid_by_user_id ?? currentUserId ?? null,
+  );
+  const [cardId, setCardId] = useState<string | null>(
+    editingCuota?.card_id ?? null,
+  );
+
+  const defaultValues: Fields = editingCuota
+    ? {
+        description: editingCuota.description,
+        total_amount: String(editingCuota.total_amount),
+        installments: String(editingCuota.installments),
+      }
+    : editingVariable
+      ? {
+          description: editingVariable.description,
+          amount: String(editingVariable.amount),
+          date: editingVariable.date,
+        }
+      : {};
 
   const {
     register,
@@ -252,7 +303,10 @@ export function AddSheet({
     setValue,
     handleSubmit,
     formState: { errors },
-  } = useForm<Fields>({ resolver: zodResolver(schemas[tab]) });
+  } = useForm<Fields>({
+    resolver: zodResolver(schemas[tab]),
+    defaultValues,
+  });
 
   // Selected due day (fijos tab) — drives the grid picker highlight
   const dueDayRaw = useWatch({ control, name: "due_day" });
@@ -290,7 +344,11 @@ export function AddSheet({
     <ResponsiveModal
       open
       onOpenChange={(open) => !open && onClose()}
-      title={`Nuevo gasto — ${TAB_LABEL[tab]}`}
+      title={
+        isEditing
+          ? `Editar — ${TAB_LABEL[tab]}`
+          : `Nuevo gasto — ${TAB_LABEL[tab]}`
+      }
       data-testid="add-sheet-dialog"
     >
       <form onSubmit={handleSubmit(onSubmit)}>
@@ -341,13 +399,19 @@ export function AddSheet({
                 onChange={setCardId}
               />
             </div>
-            <InputField
-              label="Fecha del primer pago"
-              id="field-first-payment-date"
-              registration={register("first_payment_date")}
-              error={errors.first_payment_date?.message}
-              type="date"
-            />
+            {/* Commit 6: editing never moves first_payment_date — changing it
+                would shift isInstallmentActiveInMonth's gating window, which
+                is out of scope for an "error correction" edit (R3-C/design
+                decision A only covers amount/installments recalc-all). */}
+            {!isEditing && (
+              <InputField
+                label="Fecha del primer pago"
+                id="field-first-payment-date"
+                registration={register("first_payment_date")}
+                error={errors.first_payment_date?.message}
+                type="date"
+              />
+            )}
           </>
         )}
 
@@ -603,7 +667,7 @@ export function AddSheet({
         )}
 
         <Button type="submit" style={{ width: "100%" }}>
-          {SAVE_LABEL[tab]}
+          {isEditing ? "Guardar cambios" : SAVE_LABEL[tab]}
         </Button>
       </form>
     </ResponsiveModal>
