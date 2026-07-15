@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.20.0](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.19.0...gastos-en-pareja-v1.20.0) (2026-07-15)
+
+
+### ✨ Features
+
+* cards, edit parity, and dashboard UX fixes ([#146](https://github.com/dpaul20/gastos-en-pareja/issues/146)) ([3347710](https://github.com/dpaul20/gastos-en-pareja/commit/3347710a1f969a5d54a42e53d49b7b92072afbf6))
+
 ## [1.19.0](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.18.0...gastos-en-pareja-v1.19.0) (2026-07-13)
 
 ### ✨ Features
