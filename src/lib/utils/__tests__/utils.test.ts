@@ -70,7 +70,11 @@ describe("getMonthDate", () => {
   });
 
   it("padea el mes con cero si es de un dígito", () => {
-    const date = new Date(2026, 0, 1); // enero = mes 0
+    // getMonthDate ahora resuelve el mes vía America/Argentina/Buenos_Aires
+    // (R3-A), así que el instante se construye lejos de una frontera de día
+    // (mediodía UTC) para que el resultado no dependa del TZ ambiente del
+    // proceso que corre el test (ver getMonthDate.test.ts para el caso límite).
+    const date = new Date(Date.UTC(2026, 0, 1, 12, 0)); // 1 ene 2026, mediodía UTC
     expect(getMonthDate(date)).toBe("2026-01-01");
   });
 });
@@ -122,7 +126,9 @@ describe("getPreviousMonthDate", () => {
   });
 
   it("es consistente con getMonthDate: el mes anterior al primer día de enero local es diciembre", () => {
-    const date = new Date(2026, 0, 1); // enero 2026 en local time
+    // Mediodía UTC por la misma razón que arriba: evita el desfase de TZ que
+    // introduce R3-A cerca de la medianoche.
+    const date = new Date(Date.UTC(2026, 0, 1, 12, 0)); // enero 2026
     expect(getMonthDate(date)).toBe("2026-01-01");
     expect(getPreviousMonthDate(date)).toBe("2025-12-01");
   });

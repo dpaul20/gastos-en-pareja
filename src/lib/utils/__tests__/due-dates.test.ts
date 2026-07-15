@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { getUpcomingDues } from "../due-dates";
+import { getUpcomingDues, clampDueDay } from "../due-dates";
 import type { Database } from "@/types/database";
 
 type FixedExpenseInstanceRow =
@@ -197,5 +197,27 @@ describe("getUpcomingDues", () => {
     const instance = makeInstance({ fixed_expense_templates: { due_day: 18 } });
     const result = getUpcomingDues([instance], TODAY, 2);
     expect(result.upcoming).toHaveLength(0);
+  });
+});
+
+describe("clampDueDay", () => {
+  it("día 31 en febrero (28 días) clampea a 28", () => {
+    const referenceDate = new Date(2026, 1, 15); // febrero 2026
+    expect(clampDueDay(31, referenceDate)).toBe(28);
+  });
+
+  it("día 31 en abril (30 días) clampea a 30", () => {
+    const referenceDate = new Date(2026, 3, 5); // abril 2026
+    expect(clampDueDay(31, referenceDate)).toBe(30);
+  });
+
+  it("día 31 en enero (31 días) permanece en 31", () => {
+    const referenceDate = new Date(2026, 0, 20); // enero 2026
+    expect(clampDueDay(31, referenceDate)).toBe(31);
+  });
+
+  it("un día que ya está dentro del mes no se modifica", () => {
+    const referenceDate = new Date(2026, 1, 10); // febrero 2026
+    expect(clampDueDay(10, referenceDate)).toBe(10);
   });
 });

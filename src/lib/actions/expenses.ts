@@ -1,7 +1,12 @@
 "use server";
 
 import { createClient, createServiceClient } from "@/lib/supabase/server";
-import { getMonthDate } from "@/lib/utils";
+import { getMonthDate, getTodayBADate } from "@/lib/utils";
+import { isTemplateActiveInMonth } from "@/lib/utils/month-gating";
+import {
+  isValidInstallmentsEdit,
+  isValidOverrideInstallmentNumber,
+} from "@/lib/utils/installments";
 import { revalidatePath } from "next/cache";
 import type { Database } from "@/types/database";
 
@@ -9,7 +14,7 @@ type InstallmentRow =
   Database["public"]["Tables"]["installment_purchases"]["Row"];
 type VariableRow = Database["public"]["Tables"]["variable_expenses"]["Row"];
 
-async function getCouple() {
+export async function getCouple() {
   const supabase = await createClient();
   const {
     data: { user },
@@ -116,6 +121,7 @@ export async function createInstallmentPurchase(data: {
   category_id?: string;
   auto_renew?: boolean;
   credit_card?: string | null;
+  card_id?: string | null;
   paid_by_user_id?: string;
 }) {
   const { supabase, user, coupleId } = await getCouple();
@@ -137,6 +143,77 @@ export async function createInstallmentPurchase(data: {
     .insert({ ...rest, couple_id: coupleId, paid_by_user_id: payerId });
 
   if (error) throw new Error("No se pudo guardar la cuota");
+
+  revalidatePath("/expenses");
+  revalidatePath("/dashboard");
+}
+
+// Commit 6 / R3-C — a cuota edit is an ERROR CORRECTION, not a forward-only
+// change: it mutates the row directly, so total_amount/installments edits
+// recalc ALL months (balance.ts computes round(total_amount/installments)
+// live per month — no amount_override path exists for cuotas, unlike fijos).
+export async function updateInstallmentPurchase(
+  id: string,
+  data: {
+    description?: string;
+    total_amount?: number;
+    installments?: number;
+    category_id?: string | null;
+    auto_renew?: boolean;
+    card_id?: string | null;
+    paid_by_user_id?: string | null;
+  },
+): Promise<void> {
+  const { supabase, coupleId } = await getCouple();
+
+  const { data: current } = await supabase
+    .from("installment_purchases")
+    .select("*")
+    .eq("id", id)
+    .eq("couple_id", coupleId)
+    .maybeSingle();
+
+  if (!current) throw new Error("Cuota no encontrada");
+
+  if (data.description !== undefined && data.description.trim().length === 0) {
+    throw new Error("La descripción es obligatoria");
+  }
+
+  if (
+    data.total_amount !== undefined &&
+    (!Number.isFinite(data.total_amount) || data.total_amount <= 0)
+  ) {
+    throw new Error("El monto total debe ser mayor a cero");
+  }
+
+  const nextInstallments = data.installments ?? current.installments;
+  if (!Number.isInteger(nextInstallments) || nextInstallments < 1) {
+    throw new Error("Las cuotas deben ser un número entero mayor a cero");
+  }
+  // R3-C clamp: an edit can never set fewer installments than already paid.
+  if (!isValidInstallmentsEdit(nextInstallments, current.paid_installments)) {
+    throw new Error(
+      `No podés poner ${nextInstallments} cuotas: ya se pagaron ${current.paid_installments}`,
+    );
+  }
+
+  if (data.paid_by_user_id) {
+    const { data: m } = await supabase
+      .from("couple_members")
+      .select("user_id")
+      .eq("couple_id", coupleId)
+      .eq("user_id", data.paid_by_user_id)
+      .maybeSingle();
+    if (!m) throw new Error("Pareja inválida para el pagador");
+  }
+
+  const { error } = await supabase
+    .from("installment_purchases")
+    .update(data)
+    .eq("id", id)
+    .eq("couple_id", coupleId);
+
+  if (error) throw new Error("No se pudo actualizar la cuota");
 
   revalidatePath("/expenses");
   revalidatePath("/dashboard");
@@ -167,9 +244,12 @@ export async function incrementPaidInstallments(id: string) {
       total_amount: data.total_amount,
       installments: data.installments,
       paid_installments: 0,
-      first_payment_date: new Date().toISOString().slice(0, 10),
+      first_payment_date: getTodayBADate(),
       auto_renew: true,
       category_id: data.category_id,
+      // Keep the renewed cuota linked to the same card as the original.
+      card_id: data.card_id,
+      credit_card: data.credit_card,
       paid_by_user_id: data.paid_by_user_id,
     });
   }
@@ -198,6 +278,57 @@ export async function restoreInstallmentPurchase(
 ): Promise<void> {
   const { supabase } = await getCouple();
   await supabase.from("installment_purchases").insert(row);
+  revalidatePath("/expenses");
+  revalidatePath("/dashboard");
+}
+
+// R3-D/R3-E: manual correction of a card+payment_day cuota's DISPLAYED
+// installment number for one specific month. Always wins over the computed
+// value (see installmentNumberForMonth precedence) and persists across later
+// views of that same month.
+export async function upsertInstallmentMonthOverride(
+  purchaseId: string,
+  month: string,
+  installmentNumber: number,
+): Promise<void> {
+  if (!Number.isInteger(installmentNumber) || installmentNumber < 1) {
+    throw new Error("El número de cuota debe ser mayor a cero");
+  }
+
+  const { supabase, coupleId } = await getCouple();
+
+  // Never trust the client purchaseId: verify it belongs to this couple and
+  // read its installment count so the override can't point at someone else's
+  // cuota or exceed the real number of installments.
+  const { data: purchase } = await supabase
+    .from("installment_purchases")
+    .select("id, installments")
+    .eq("id", purchaseId)
+    .eq("couple_id", coupleId)
+    .maybeSingle();
+
+  if (!purchase) throw new Error("Cuota no encontrada");
+
+  if (
+    !isValidOverrideInstallmentNumber(installmentNumber, purchase.installments)
+  ) {
+    throw new Error(
+      `El número de cuota debe estar entre 1 y ${purchase.installments}`,
+    );
+  }
+
+  const { error } = await supabase.from("installment_month_overrides").upsert(
+    {
+      purchase_id: purchaseId,
+      couple_id: coupleId,
+      month,
+      installment_number: installmentNumber,
+    },
+    { onConflict: "purchase_id,month" },
+  );
+
+  if (error) throw new Error("No se pudo corregir el número de cuota");
+
   revalidatePath("/expenses");
   revalidatePath("/dashboard");
 }
@@ -450,7 +581,7 @@ export async function ensureFixedExpenseInstances(
 
   const { data: templates } = await supabase
     .from("fixed_expense_templates")
-    .select("id, requires_monthly_review")
+    .select("id, requires_monthly_review, created_at")
     .eq("couple_id", coupleId)
     .eq("active", true);
 
@@ -465,6 +596,10 @@ export async function ensureFixedExpenseInstances(
   const existingIds = new Set(existing?.map((e) => e.template_id));
   const toCreate = templates
     .filter((t) => !existingIds.has(t.id))
+    // Bug 1 Leak B: never materialize an instance for a month earlier than
+    // the template's own creation month — recurring items only count from
+    // their start month forward.
+    .filter((t) => isTemplateActiveInMonth(t.created_at, month))
     .map((t) => ({
       template_id: t.id,
       couple_id: coupleId,
@@ -495,6 +630,40 @@ export async function createVariableExpense(data: {
     couple_id: coupleId,
     user_id: user.id,
   });
+
+  revalidatePath("/expenses");
+  revalidatePath("/dashboard");
+}
+
+export async function updateVariableExpense(
+  id: string,
+  data: {
+    description?: string;
+    amount?: number;
+    date?: string;
+    category_id?: string | null;
+    is_shared?: boolean;
+  },
+): Promise<void> {
+  if (data.description !== undefined && data.description.trim().length === 0) {
+    throw new Error("La descripción es obligatoria");
+  }
+  if (
+    data.amount !== undefined &&
+    (!Number.isFinite(data.amount) || data.amount <= 0)
+  ) {
+    throw new Error("El monto debe ser mayor a cero");
+  }
+
+  const { supabase, coupleId } = await getCouple();
+
+  const { error } = await supabase
+    .from("variable_expenses")
+    .update(data)
+    .eq("id", id)
+    .eq("couple_id", coupleId);
+
+  if (error) throw new Error("No se pudo actualizar la compra");
 
   revalidatePath("/expenses");
   revalidatePath("/dashboard");

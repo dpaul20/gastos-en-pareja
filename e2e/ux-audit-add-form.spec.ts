@@ -228,6 +228,11 @@ test.describe("UX audit — add expense form", () => {
   }) => {
     await openForm(page, "cuota");
 
+    // Tarjeta (opcional) is now the structured CardPicker (chips), not a
+    // free-text input — its "Nueva tarjeta" inline form is where the
+    // "ej: Visa Santander" hint lives, per design R3-D/R3-E.
+    await page.getByTestId("new-card-trigger").click();
+
     const placeholders = await page.evaluate(() => {
       const dialog = document.querySelector('[role="dialog"]');
       if (!dialog) return [];

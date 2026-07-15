@@ -18,6 +18,7 @@ import {
 import { effectiveFixedAmount } from "@/lib/utils/balance";
 import { useMonthlyData } from "@/lib/queries/use-monthly-data";
 import { parseAmount } from "@/lib/utils/amount";
+import { clampDueDay } from "@/lib/utils/due-dates";
 import { DeleteExpenseButton } from "./delete-expense-button";
 
 type MonthlyData = NonNullable<ReturnType<typeof useMonthlyData>["data"]>;
@@ -46,6 +47,12 @@ export function FijoItem({
   const templateAmount = fi.fixed_expense_templates.amount;
   const activeAmount = effectiveFixedAmount(fi);
   const isPending = fi.status === "PENDING_CONFIRMATION";
+  // Same clamp rule as the dashboard's getUpcomingDues, keyed on this
+  // instance's own month, so both surfaces render the identical due day.
+  const [instanceYear, instanceMonth] = fi.month.split("-").map(Number);
+  const monthReferenceDate = new Date(instanceYear, instanceMonth - 1, 1);
+  const rawDueDay = fi.due_day ?? fi.fixed_expense_templates.due_day;
+  const effectiveDueDay = clampDueDay(rawDueDay, monthReferenceDate);
 
   const confirmMutation = useMutation({
     mutationFn: (instanceId: string) => confirmFixedExpenseInstance(instanceId),
@@ -142,7 +149,7 @@ export function FijoItem({
               fontFamily: "var(--font-sans)",
             }}
           >
-            Vence día {fi.due_day ?? fi.fixed_expense_templates.due_day}
+            Vence día {effectiveDueDay}
             <Pencil aria-hidden size={12} style={{ color: "var(--accent)" }} />
           </button>
         ) : (
@@ -154,7 +161,7 @@ export function FijoItem({
               fontFamily: "var(--font-sans)",
             }}
           >
-            Vence día {fi.due_day ?? fi.fixed_expense_templates.due_day}
+            Vence día {effectiveDueDay}
           </div>
         )}
         {!fi.fixed_expense_templates.is_shared && (

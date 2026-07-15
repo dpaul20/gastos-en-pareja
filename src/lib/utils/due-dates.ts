@@ -32,6 +32,20 @@ function daysInMonth(year: number, month: number): number {
 }
 
 /**
+ * Clamps a raw due-day (e.g. template due_day = 31) to the last valid day of
+ * the month containing `referenceDate`. This is the single source of truth
+ * for "effective due day" so the dashboard and /expenses always render the
+ * same value for the same service and month.
+ */
+export function clampDueDay(rawDay: number, referenceDate: Date): number {
+  const lastDay = daysInMonth(
+    referenceDate.getFullYear(),
+    referenceDate.getMonth(),
+  );
+  return Math.min(rawDay, lastDay);
+}
+
+/**
  * Classifies fixed expense instances into today / upcoming / overdue buckets
  * based on their `due_day` relative to `today`.
  *
@@ -49,9 +63,6 @@ export function getUpcomingDues(
   windowDays = 7,
 ): UpcomingDuesResult {
   const todayDay = today.getDate();
-  const year = today.getFullYear();
-  const month = today.getMonth(); // 0-based
-  const lastDay = daysInMonth(year, month);
 
   const result: UpcomingDuesResult = { today: [], upcoming: [], overdue: [] };
 
@@ -60,7 +71,7 @@ export function getUpcomingDues(
 
     const rawDueDay =
       instance.due_day ?? instance.fixed_expense_templates.due_day;
-    const dueDay = Math.min(rawDueDay, lastDay);
+    const dueDay = clampDueDay(rawDueDay, today);
     const daysUntilDue = dueDay - todayDay;
 
     let status: UpcomingDue["status"];

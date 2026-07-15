@@ -6,8 +6,11 @@ import {
   createInstallmentPurchase,
   createFixedExpenseTemplate,
   createVariableExpense,
+  updateInstallmentPurchase,
+  updateVariableExpense,
 } from "@/lib/actions/expenses";
 import { parseAmount } from "@/lib/utils/amount";
+import { getTodayBADate } from "@/lib/utils";
 
 export type Tab = "cuotas" | "fijos" | "variables";
 
@@ -35,23 +38,42 @@ export function useExpenseSave(tab: Tab) {
     requiresMonthlyReview = false,
     isShared = true,
     payerId?: string | null,
+    cardId?: string | null,
+    editId?: string | null,
   ) {
     setSaveError(null);
     startTransition(async () => {
       try {
         if (tab === "cuotas") {
-          await createInstallmentPurchase({
-            description: fields.description,
-            total_amount: parsePositiveNumber(fields.total_amount),
-            installments: parsePositiveInt(fields.installments),
-            first_payment_date:
-              fields.first_payment_date ||
-              new Date().toISOString().slice(0, 10),
-            category_id: categoryId ?? undefined,
-            auto_renew: autoRenew || undefined,
-            credit_card: fields.credit_card?.trim() || null,
-            paid_by_user_id: payerId ?? undefined,
-          });
+          if (editId) {
+            // Commit 6 / R3-C: a cuota edit is an error correction — it
+            // mutates the row directly (recalc-all), never a forward-only
+            // amount_override like fijos.
+            await updateInstallmentPurchase(editId, {
+              description: fields.description,
+              total_amount: parsePositiveNumber(fields.total_amount),
+              installments: parsePositiveInt(fields.installments),
+              // Edit path: send explicit values so unchecking auto-renew or
+              // clearing the category actually persist (a `|| undefined` /
+              // `?? undefined` would silently drop the false/null and leave
+              // the old value in place).
+              category_id: categoryId ?? null,
+              auto_renew: autoRenew,
+              card_id: cardId ?? null,
+              paid_by_user_id: payerId ?? undefined,
+            });
+          } else {
+            await createInstallmentPurchase({
+              description: fields.description,
+              total_amount: parsePositiveNumber(fields.total_amount),
+              installments: parsePositiveInt(fields.installments),
+              first_payment_date: fields.first_payment_date || getTodayBADate(),
+              category_id: categoryId ?? undefined,
+              auto_renew: autoRenew || undefined,
+              card_id: cardId ?? null,
+              paid_by_user_id: payerId ?? undefined,
+            });
+          }
         } else if (tab === "fijos") {
           await createFixedExpenseTemplate({
             description: fields.description,
@@ -63,13 +85,23 @@ export function useExpenseSave(tab: Tab) {
             owner_user_id: isShared ? null : payerId,
           });
         } else {
-          await createVariableExpense({
-            description: fields.description,
-            amount: parsePositiveNumber(fields.amount),
-            date: fields.date || new Date().toISOString().slice(0, 10),
-            category_id: categoryId ?? undefined,
-            is_shared: isShared,
-          });
+          if (editId) {
+            await updateVariableExpense(editId, {
+              description: fields.description,
+              amount: parsePositiveNumber(fields.amount),
+              date: fields.date || undefined,
+              category_id: categoryId ?? undefined,
+              is_shared: isShared,
+            });
+          } else {
+            await createVariableExpense({
+              description: fields.description,
+              amount: parsePositiveNumber(fields.amount),
+              date: fields.date || getTodayBADate(),
+              category_id: categoryId ?? undefined,
+              is_shared: isShared,
+            });
+          }
         }
         queryClient.invalidateQueries({ queryKey: ["monthly-data"] });
       } catch (err) {

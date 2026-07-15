@@ -34,7 +34,11 @@ import {
   SegmentedControl,
   type ExpenseFilter,
 } from "./_components/segmented-control";
-import { AddSheet } from "./_components/add-sheet";
+import {
+  AddSheet,
+  type EditingCuota,
+  type EditingVariable,
+} from "./_components/add-sheet";
 import { DueDayPicker } from "./_components/due-day-picker";
 import { toast } from "sonner";
 import { ResponsiveModal } from "@/components/shared/responsive-modal";
@@ -71,7 +75,9 @@ type FlowState =
   | { step: "edit-service"; instanceId: string }
   | { step: "new-service" }
   | { step: "cuota-form" }
-  | { step: "compra-form" };
+  | { step: "edit-cuota"; purchaseId: string }
+  | { step: "compra-form" }
+  | { step: "edit-variable"; expenseId: string };
 
 // ── SUB-COMPONENTS ───────────────────────────────────────────────────────────
 
@@ -730,10 +736,19 @@ const PARAM_TO_FILTER: Record<string, ExpenseFilter> = {
 };
 
 function flowStepToAddTab(step: FlowState["step"]): Tab | null {
-  if (step === "cuota-form") return "cuotas";
+  if (step === "cuota-form" || step === "edit-cuota") return "cuotas";
   if (step === "new-service") return "fijos";
-  if (step === "compra-form") return "variables";
+  if (step === "compra-form" || step === "edit-variable") return "variables";
   return null;
+}
+
+/** Forces AddSheet to remount when the flow switches target (add vs a
+ * specific edit target) — otherwise react-hook-form's `defaultValues` (set
+ * once at mount) would keep showing stale data from a previous edit. */
+function flowKey(flow: FlowState): string {
+  if (flow.step === "edit-cuota") return `edit-cuota:${flow.purchaseId}`;
+  if (flow.step === "edit-variable") return `edit-variable:${flow.expenseId}`;
+  return flow.step;
 }
 
 function ExpensesView() {
@@ -806,7 +821,16 @@ function ExpensesView() {
     requiresMonthlyReview: boolean,
     isShared: boolean,
     payerId?: string | null,
+    cardId?: string | null,
   ) {
+    // Commit 6: resolve the edit target BEFORE resetting flow to "idle" —
+    // once reset, the step/id info needed to route create vs. update is gone.
+    const editId =
+      flow.step === "edit-cuota"
+        ? flow.purchaseId
+        : flow.step === "edit-variable"
+          ? flow.expenseId
+          : null;
     setFlow({ step: "idle" });
     save(
       fields,
@@ -815,6 +839,8 @@ function ExpensesView() {
       requiresMonthlyReview,
       isShared,
       payerId,
+      cardId,
+      editId,
     );
   }
 
@@ -859,6 +885,17 @@ function ExpensesView() {
   const activeInstance =
     flow.step === "edit-service"
       ? (allFijos.find((fi) => fi.id === flow.instanceId) ?? null)
+      : null;
+
+  // Commit 6: resolve the cuota/variable being edited — feeds AddSheet's
+  // editingCuota/editingVariable props (reused in "edit mode").
+  const editingCuota: EditingCuota | null =
+    flow.step === "edit-cuota"
+      ? (allCuotas.find((c) => c.id === flow.purchaseId) ?? null)
+      : null;
+  const editingVariable: EditingVariable | null =
+    flow.step === "edit-variable"
+      ? (allVariables.find((v) => v.id === flow.expenseId) ?? null)
       : null;
 
   return (
@@ -959,8 +996,14 @@ function ExpensesView() {
                   <li key={c.id}>
                     <CuotaItem
                       c={c}
+                      cards={data?.cards ?? []}
+                      overrides={data?.installmentMonthOverrides ?? []}
+                      month={month}
                       getPersonInitials={getPersonInitials}
                       getPerson={getPerson}
+                      onEdit={(id) =>
+                        setFlow({ step: "edit-cuota", purchaseId: id })
+                      }
                     />
                   </li>
                 ))}
@@ -1092,6 +1135,9 @@ function ExpensesView() {
                       v={v}
                       getPersonInitials={getPersonInitials}
                       getPerson={getPerson}
+                      onEdit={(id) =>
+                        setFlow({ step: "edit-variable", expenseId: id })
+                      }
                     />
                   </li>
                 ))}
@@ -1149,18 +1195,27 @@ function ExpensesView() {
         />
       )}
 
-      {/* CUOTA / NEW-SERVICE / COMPRA FORMS — reuse AddSheet with correct tab */}
-      {addSheetTab !== null && (
-        <AddSheet
-          tab={addSheetTab}
-          categories={categories}
-          onClose={() => setFlow({ step: "idle" })}
-          onSave={handleSave}
-          saveError={saveError}
-          members={profiles}
-          currentUserId={member?.user_id ?? undefined}
-        />
-      )}
+      {/* CUOTA / NEW-SERVICE / COMPRA FORMS — reuse AddSheet with correct tab.
+          For edit-cuota/edit-variable, wait until the target row resolves
+          from already-fetched monthly data (avoids flashing a blank "create"
+          form for one render while the list is still loading). */}
+      {addSheetTab !== null &&
+        (flow.step !== "edit-cuota" || editingCuota !== null) &&
+        (flow.step !== "edit-variable" || editingVariable !== null) && (
+          <AddSheet
+            key={flowKey(flow)}
+            tab={addSheetTab}
+            categories={categories}
+            onClose={() => setFlow({ step: "idle" })}
+            onSave={handleSave}
+            saveError={saveError}
+            members={profiles}
+            currentUserId={member?.user_id ?? undefined}
+            coupleId={coupleId}
+            editingCuota={editingCuota}
+            editingVariable={editingVariable}
+          />
+        )}
     </div>
   );
 }

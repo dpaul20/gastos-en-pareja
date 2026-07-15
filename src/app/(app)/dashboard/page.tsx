@@ -21,6 +21,7 @@ import {
   effectiveFixedAmount,
 } from "@/lib/utils/balance";
 import { groupByCategory } from "@/lib/utils/categories";
+import { buildMonthSummaryLines } from "@/lib/utils/summary-lines";
 import { MonthSummaryCard } from "@/components/shared/month-summary-card";
 import {
   ensureFixedExpenseInstances,
@@ -156,23 +157,29 @@ function DashboardView() {
   });
 
   useEffect(() => {
+    // Bug 1: viewing a past/future month must never write rows — instance
+    // creation is limited to the real current calendar month.
+    if (!isCurrentMonth) return;
     if (coupleId) ensureInstances({ coupleId, month });
     // ensureInstances is stable (useMutation)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [coupleId, month]);
+  }, [coupleId, month, isCurrentMonth]);
 
   useEffect(() => {
+    // Same guard as above: carrying income forward is a current-month-only
+    // side effect, never triggered by browsing to another month.
+    if (!isCurrentMonth) return;
     if (coupleId) ensureIncomeCarry({ coupleId, month });
     // ensureIncomeCarry is stable (useMutation)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [coupleId, month]);
+  }, [coupleId, month, isCurrentMonth]);
 
   const balance = useMemo(
     () =>
       data
         ? calculateMonthlyBalance({
             incomes: data.incomes,
-            installmentPurchases: data.installmentPurchases,
+            installmentPurchases: data.activeInstallmentPurchases,
             fixedExpenseInstances: data.fixedExpenseInstances as Parameters<
               typeof calculateMonthlyBalance
             >[0]["fixedExpenseInstances"],
@@ -182,16 +189,36 @@ function DashboardView() {
     [data],
   );
 
+  const summaryLines = useMemo(
+    () =>
+      data
+        ? buildMonthSummaryLines({
+            incomes: data.incomes,
+            installmentPurchases: data.activeInstallmentPurchases,
+            fixedExpenseInstances: data.fixedExpenseInstances as Parameters<
+              typeof buildMonthSummaryLines
+            >[0]["fixedExpenseInstances"],
+            variableExpenses: data.variableExpenses,
+          })
+        : undefined,
+    [data],
+  );
+
   const categoryBreakdown = useMemo(() => {
     if (!data || !balance || balance.totalExpenses === 0) return [];
     return groupByCategory(
       [
-        ...data.installmentPurchases.map((p) => ({
-          amount: Math.round(p.total_amount / p.installments),
-          category_id: p.category_id,
-        })),
+        // Mirror balance.ts's installmentTotal count gate so the breakdown
+        // reconciles exactly (a fully-paid non-renewing purchase still
+        // schedule-active in the month is excluded from both).
+        ...data.activeInstallmentPurchases
+          .filter((p) => p.auto_renew || p.paid_installments < p.installments)
+          .map((p) => ({
+            amount: Math.round(p.total_amount / p.installments),
+            category_id: p.category_id,
+          })),
         ...data.fixedExpenseInstances.map((fi) => ({
-          amount: fi.fixed_expense_templates.amount,
+          amount: effectiveFixedAmount(fi as FixedInstance),
           category_id: fi.fixed_expense_templates.category_id,
         })),
         ...data.variableExpenses.map((v) => ({
@@ -286,7 +313,9 @@ function DashboardView() {
 
             {/* Right column */}
             <div className="flex flex-col gap-3 lg:gap-4">
-              {balance && <MonthSummaryCard balance={balance} />}
+              {balance && (
+                <MonthSummaryCard balance={balance} lines={summaryLines} />
+              )}
               <CategoryBreakdownCard breakdown={categoryBreakdown} />
               <Link
                 href="/expenses"

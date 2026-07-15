@@ -48,12 +48,7 @@ test.describe("Segmented control", () => {
     const tabFieldMap: Record<string, string[]> = {
       Compras: ["Descripción", "Monto", "Fecha (AAAA-MM-DD)"],
       Servicios: ["Descripción", "Monto", "Día de vencimiento (1-31)"],
-      Cuotas: [
-        "Descripción",
-        "Monto total",
-        "Cuotas",
-        "Fecha del primer pago",
-      ],
+      Cuotas: ["Descripción", "Monto total", "Cuotas", "Fecha del primer pago"],
     };
 
     for (const [tabName, expectedFields] of Object.entries(tabFieldMap)) {
@@ -365,13 +360,18 @@ test.describe("Gasto fijo — total del footer refleja overrides", () => {
         DESC_A,
     );
 
-    expect(instanceA, "instance for DESC_A not found — join failed or template insert did not create instance").toBeDefined();
+    expect(
+      instanceA,
+      "instance for DESC_A not found — join failed or template insert did not create instance",
+    ).toBeDefined();
 
     // Record baseline total before override
     await expenses.goto();
     await expenses.selectTab("Servicios");
     await page.waitForLoadState("networkidle", { timeout: 10_000 });
-    await expect(page.getByText("Total servicios")).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText("Total servicios")).toBeVisible({
+      timeout: 10_000,
+    });
     const baselineText = await page.getByTestId("fijos-total").innerText();
     const baseline = Number(baselineText.replace(/[^0-9]/g, ""));
 
@@ -384,10 +384,15 @@ test.describe("Gasto fijo — total del footer refleja overrides", () => {
     await page.reload();
     await expenses.selectTab("Servicios");
     await page.waitForLoadState("networkidle", { timeout: 10_000 });
-    await expect(page.getByText("Total servicios")).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText("Total servicios")).toBeVisible({
+      timeout: 10_000,
+    });
     const afterText = await page.getByTestId("fijos-total").innerText();
     const after = Number(afterText.replace(/[^0-9]/g, ""));
-    expect(after, `footer debería haber aumentado en 20000 (baseline=${baseline})`).toBe(baseline + 20000);
+    expect(
+      after,
+      `footer debería haber aumentado en 20000 (baseline=${baseline})`,
+    ).toBe(baseline + 20000);
   });
 });
 
@@ -512,6 +517,71 @@ test.describe("Cuota auto_renew — permanece en lista aunque esté pagada", () 
     // Cuotas is the default tab
     await expect(page.getByText(DESCRIPCION).first()).toBeVisible({
       timeout: 15_000,
+    });
+  });
+});
+
+// ── Cuota terminada (Commit 6 / task 6.6) ─────────────────────────────────────
+// A non-auto_renew cuota whose paid_installments reached installments stays
+// visible + deletable but is no longer "Pagado" — it's "Terminada" (distinct
+// badge; excluded from totals via isInstallmentActiveInMonth, already unit
+// tested in installments.test.ts).
+
+test.describe("Cuota terminada — visible, editable y eliminable, badge distinto", () => {
+  const DESCRIPCION = `E2E-cuota-terminada-${Date.now()}`;
+
+  test.beforeEach(async ({ adminClient, coupleId }) => {
+    const today = new Date().toISOString().split("T")[0];
+    await adminClient.from("installment_purchases").insert({
+      couple_id: coupleId,
+      description: DESCRIPCION,
+      total_amount: 12000,
+      installments: 3,
+      paid_installments: 3,
+      auto_renew: false,
+      first_payment_date: today,
+    });
+  });
+
+  test.afterEach(async ({ adminClient, coupleId }) => {
+    await adminClient
+      .from("installment_purchases")
+      .delete()
+      .eq("couple_id", coupleId)
+      .like("description", "E2E-cuota-terminada-%");
+  });
+
+  test("muestra badge 'Terminada', permanece en la lista y se puede editar/eliminar", async ({
+    authenticatedPage: page,
+  }) => {
+    test.slow();
+    const expenses = new ExpensesPage(page);
+    await expenses.goto();
+
+    const item = page.locator("li", { hasText: DESCRIPCION }).first();
+    await expect(item).toBeVisible({ timeout: 15_000 });
+
+    // Distinct "Terminada" badge — not the generic "Pagado" of an
+    // auto_renew cuota that just wrapped.
+    await expect(item.getByTestId("cuota-status-badge")).toHaveText(
+      "Terminada",
+    );
+
+    // Still editable: opens the AddSheet in edit mode, prefilled.
+    await item.getByRole("button", { name: "Editar cuota" }).click();
+    await expect(expenses.dialog()).toBeVisible({ timeout: 5_000 });
+    await expect(expenses.dialogField("Descripción")).toHaveValue(DESCRIPCION);
+    await page.keyboard.press("Escape");
+    await expect(expenses.dialog()).not.toBeVisible({ timeout: 3_000 });
+
+    // Still deletable via the existing confirm-dialog + undo pattern.
+    await item.getByRole("button", { name: "¿Eliminar cuota?" }).click();
+    await expect(page.getByText("Sí, eliminar")).toBeVisible({
+      timeout: 3_000,
+    });
+    await page.getByText("Sí, eliminar").click();
+    await expect(page.getByText("Cuota eliminada")).toBeVisible({
+      timeout: 10_000,
     });
   });
 });

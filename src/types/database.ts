@@ -34,6 +34,41 @@ export type Database = {
   };
   public: {
     Tables: {
+      cards: {
+        Row: {
+          closing_day: number | null;
+          couple_id: string;
+          created_at: string;
+          id: string;
+          name: string;
+          payment_day: number | null;
+        };
+        Insert: {
+          closing_day?: number | null;
+          couple_id: string;
+          created_at?: string;
+          id?: string;
+          name: string;
+          payment_day?: number | null;
+        };
+        Update: {
+          closing_day?: number | null;
+          couple_id?: string;
+          created_at?: string;
+          id?: string;
+          name?: string;
+          payment_day?: number | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "cards_couple_id_fkey";
+            columns: ["couple_id"];
+            isOneToOne: false;
+            referencedRelation: "couples";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       couple_members: {
         Row: {
           couple_id: string;
@@ -268,9 +303,52 @@ export type Database = {
           },
         ];
       };
+      installment_month_overrides: {
+        Row: {
+          couple_id: string;
+          created_at: string;
+          id: string;
+          installment_number: number;
+          month: string;
+          purchase_id: string;
+        };
+        Insert: {
+          couple_id: string;
+          created_at?: string;
+          id?: string;
+          installment_number: number;
+          month: string;
+          purchase_id: string;
+        };
+        Update: {
+          couple_id?: string;
+          created_at?: string;
+          id?: string;
+          installment_number?: number;
+          month?: string;
+          purchase_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "installment_month_overrides_couple_id_fkey";
+            columns: ["couple_id"];
+            isOneToOne: false;
+            referencedRelation: "couples";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "installment_month_overrides_purchase_id_fkey";
+            columns: ["purchase_id"];
+            isOneToOne: false;
+            referencedRelation: "installment_purchases";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       installment_purchases: {
         Row: {
           auto_renew: boolean;
+          card_id: string | null;
           category_id: string | null;
           couple_id: string;
           created_at: string;
@@ -285,6 +363,7 @@ export type Database = {
         };
         Insert: {
           auto_renew?: boolean;
+          card_id?: string | null;
           category_id?: string | null;
           couple_id: string;
           created_at?: string;
@@ -299,6 +378,7 @@ export type Database = {
         };
         Update: {
           auto_renew?: boolean;
+          card_id?: string | null;
           category_id?: string | null;
           couple_id?: string;
           created_at?: string;
@@ -312,6 +392,13 @@ export type Database = {
           total_amount?: number;
         };
         Relationships: [
+          {
+            foreignKeyName: "installment_purchases_card_id_fkey";
+            columns: ["card_id"];
+            isOneToOne: false;
+            referencedRelation: "cards";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "installment_purchases_category_id_fkey";
             columns: ["category_id"];
