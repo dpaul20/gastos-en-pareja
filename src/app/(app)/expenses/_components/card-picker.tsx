@@ -43,16 +43,19 @@ const errorCss: React.CSSProperties = {
 
 function chipStyle(selected: boolean): React.CSSProperties {
   return {
-    padding: "5px 10px",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "5px 14px",
     borderRadius: 99,
     border: "none",
     cursor: "pointer",
     background: selected ? "var(--accent)" : "var(--bg-sunken)",
     color: selected ? "var(--accent-foreground)" : "var(--fg-2)",
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: 500,
     fontFamily: "var(--font-sans)",
-    minHeight: 32,
+    minHeight: 44,
     whiteSpace: "nowrap",
   };
 }
