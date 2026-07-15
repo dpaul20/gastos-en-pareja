@@ -9,7 +9,43 @@ import { SUPABASE_URL, SUPABASE_SERVICE_KEY, TEST_EMAIL } from "../config";
 type TestFixtures = {
   /** Authenticated browser page — reads storage state from e2e/auth.json */
   authenticatedPage: Page;
+  /**
+   * Auto fixture: wipes the test couple's expense/income/card data before
+   * every test so each starts from a pristine couple. The suite shares one
+   * persistent couple with no natural teardown, so without this, seeded rows
+   * accumulate across tests and runs and make balance/total assertions flaky
+   * (order-dependent). Runs during fixture setup, i.e. BEFORE each describe's
+   * own `beforeEach` seeding, so per-test seed data survives.
+   */
+  cleanSlate: void;
 };
+
+/**
+ * Deletes all couple-scoped financial rows for the given couple. Reference
+ * data (expense_categories) and membership (couple_members) are left intact.
+ * Children are removed before parents to stay clear of FK constraints.
+ */
+async function resetCoupleFinancialData(
+  admin: SupabaseClient<Database>,
+  coupleId: string,
+): Promise<void> {
+  await admin
+    .from("installment_month_overrides")
+    .delete()
+    .eq("couple_id", coupleId);
+  await admin.from("installment_purchases").delete().eq("couple_id", coupleId);
+  await admin.from("variable_expenses").delete().eq("couple_id", coupleId);
+  await admin
+    .from("fixed_expense_instances")
+    .delete()
+    .eq("couple_id", coupleId);
+  await admin
+    .from("fixed_expense_templates")
+    .delete()
+    .eq("couple_id", coupleId);
+  await admin.from("incomes").delete().eq("couple_id", coupleId);
+  await admin.from("cards").delete().eq("couple_id", coupleId);
+}
 
 /** Worker-scoped fixtures (one instance per worker, shared across tests) */
 type WorkerFixtures = {
@@ -38,6 +74,20 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
     await use(page);
     await context.close();
   },
+
+  /**
+   * Auto fixture — resets the shared couple's financial data before each test.
+   * Set up before `beforeEach` hooks, so a test's own seeding runs afterwards
+   * and is preserved. Scoped to the main test couple only, so invitation-flow
+   * tests that operate on other couples are unaffected.
+   */
+  cleanSlate: [
+    async ({ adminClient, coupleId }, use) => {
+      await resetCoupleFinancialData(adminClient, coupleId);
+      await use();
+    },
+    { auto: true },
+  ],
 
   /**
    * Service-role Supabase client — worker-scoped so it is created once per
