@@ -93,7 +93,18 @@ Next.js 16 (App Router) · React 19 · TypeScript · Supabase · TanStack Query 
 - NEVER bypass RLS by using the service role key in client-facing code.
 - NEVER create a `route.ts` in the same folder as a `page.tsx` — they conflict. API routes go under `src/app/api/`.
 
-## 11. Next.js framework rules
+## 11. Database migrations
+
+- `.github/workflows/release-please.yml` runs `supabase db push` against **production** automatically whenever a release is created. A migration merged to `master` reaches prod unattended — there is no window to intervene and nobody is prompted.
+- Therefore a header comment like "take a snapshot before applying this" is **not** a safeguard. It is documentation, and it cannot stop the pipeline. Never rely on one.
+- Any migration that DELETEs or DROPs data MUST be recoverable **by construction**: copy every affected row into a backup table inside the same transaction, and document the restore statement in the migration header.
+- Backup tables go in a `backup` schema. `supabase/config.toml` exposes only `public` and `graphql_public`, so a `backup` schema stays off the PostgREST API; also `revoke all ... from anon, authenticated` as defense-in-depth.
+- Write restore statements with **explicit column names on both sides** of the INSERT. Physical column order is not the logical order — `fixed_expense_instances` is `id, template_id, couple_id, month, paid, created_at, amount_override, status, paid_by_user_id, due_day` — so a positional INSERT fails or, worse, silently writes to the wrong columns. (`create table backup.x (like public.y)` does preserve source order, so `insert into backup.x select y.*, now()` is safe.)
+- Verify a destructive migration against a local database **before** merging: seed rows that MUST be deleted alongside rows that MUST survive, run the migration SQL, assert both sets, exercise the restore round-trip, then `ROLLBACK`.
+- NEVER edit a migration that has already been applied — Supabase records it by version and will not re-run it, so the file silently diverges from the real schema history. Fix it forward with a new migration.
+- Use `supabase migration up` to apply locally — NEVER `supabase db reset` (destroys local data).
+
+## 12. Next.js framework rules
 
 Before writing any Next.js code, load the `next-best-practices` skill. It covers:
 
