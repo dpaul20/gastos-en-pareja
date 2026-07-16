@@ -17,6 +17,29 @@ async function expectNoSeriousViolations(page: Page) {
   ).toEqual([]);
 }
 
+/**
+ * Scoped variant — checks ONLY the given selector's subtree. Used for the
+ * PR3 "sin factura" surfaces so a genuinely pre-existing, app-wide finding
+ * (the bottom nav's `--fg-3`-on-dark-`--bg-elevated` contrast, present
+ * before this PR and unrelated to it — see PR3 apply-progress) does not
+ * mask or get conflated with the correctness of the NEW code this PR adds.
+ */
+async function expectNoSeriousViolationsIn(page: Page, selector: string) {
+  const results = await new AxeBuilder({ page })
+    .exclude("nextjs-portal")
+    .include(selector)
+    .analyze();
+
+  const seriousOrCritical = results.violations.filter((violation) =>
+    ["serious", "critical"].includes(violation.impact ?? ""),
+  );
+
+  expect(
+    seriousOrCritical,
+    seriousOrCritical.map((v) => `${v.id} (${v.impact}): ${v.help}`).join("\n"),
+  ).toEqual([]);
+}
+
 test.describe("A11y — páginas públicas", () => {
   test("/login no tiene violaciones serias o críticas", async ({ browser }) => {
     const context = await browser.newContext({
@@ -185,6 +208,115 @@ test.describe("A11y — landmark structure", () => {
 
       await expect(page.locator("nav")).not.toHaveCount(0);
       await expect(page.locator("h1")).not.toHaveCount(0);
+    });
+  }
+});
+
+// ── A11y — "sin factura" row, pill, sheet (PR3, D4 tokens) ────────────────────
+// `ThemeProvider` is `attribute="class"` + `defaultTheme="system"` (providers.tsx)
+// — `page.emulateMedia({ colorScheme })` before navigation drives which theme
+// actually renders, exactly like a real OS-level dark mode preference.
+
+test.describe("A11y — sin factura (fila, pill, sheet) en ambos temas", () => {
+  const DESC = `E2E-a11y-sin-factura-${Date.now()}`;
+  let templateId: string;
+
+  test.beforeEach(async ({ adminClient, coupleId }) => {
+    const { data: template, error } = await adminClient
+      .from("fixed_expense_templates")
+      .insert({
+        couple_id: coupleId,
+        description: DESC,
+        amount: 72_375,
+        due_day: 10,
+        awaits_bill: true,
+      })
+      .select("id")
+      .single();
+    if (error || !template)
+      throw new Error(`Template seed failed: ${error?.message}`);
+    templateId = template.id;
+
+    const { error: iErr } = await adminClient
+      .from("fixed_expense_instances")
+      .insert({
+        template_id: templateId,
+        couple_id: coupleId,
+        month: `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}-01`,
+        paid: false,
+        status: "AWAITING_BILL",
+      });
+    if (iErr) throw new Error(`Instance seed failed: ${iErr.message}`);
+  });
+
+  test.afterEach(async ({ adminClient }) => {
+    await adminClient
+      .from("fixed_expense_instances")
+      .delete()
+      .eq("template_id", templateId);
+    await adminClient
+      .from("fixed_expense_templates")
+      .delete()
+      .eq("id", templateId);
+  });
+
+  for (const colorScheme of ["light", "dark"] as const) {
+    test(`/expenses con fila 'sin factura' — ${colorScheme}`, async ({
+      authenticatedPage: page,
+    }) => {
+      await page.emulateMedia({ colorScheme });
+      await page.goto("/expenses");
+      await page.getByTestId("tab-servicios").click();
+      await expect(page.getByText(DESC)).toBeVisible({ timeout: 10_000 });
+      await expect(page.getByTestId("fijo-item-awaiting")).toBeVisible();
+      await expectNoSeriousViolationsIn(
+        page,
+        '[data-testid="fijo-item-awaiting"]',
+      );
+    });
+
+    test(`sheet 'Cargar factura' — ${colorScheme}`, async ({
+      authenticatedPage: page,
+    }) => {
+      await page.emulateMedia({ colorScheme });
+      await page.goto("/expenses");
+      await page.getByTestId("tab-servicios").click();
+      await expect(page.getByText(DESC)).toBeVisible({ timeout: 10_000 });
+      await page.getByTestId("open-load-bill").click();
+      await page.getByTestId("load-bill-sheet").waitFor({ state: "visible" });
+      await expectNoSeriousViolationsIn(
+        page,
+        '[data-testid="load-bill-sheet"]',
+      );
+    });
+
+    test(`sheet 'Editar servicio' — bloques nuevos (CTA sin factura + checkbox) — ${colorScheme}`, async ({
+      authenticatedPage: page,
+    }) => {
+      await page.emulateMedia({ colorScheme });
+      await page.goto("/expenses");
+      await page.getByTestId("tab-servicios").click();
+      await expect(page.getByText(DESC)).toBeVisible({ timeout: 10_000 });
+      await page
+        .getByRole("button", { name: "Editar día de vencimiento" })
+        .first()
+        .click();
+      await page
+        .getByTestId("edit-service-sheet")
+        .waitFor({ state: "visible" });
+      // Scoped to the PR3 blocks only — `edit-service-sheet` as a whole also
+      // renders pre-existing, unrelated components (e.g. `DueDayPicker`)
+      // that carry their own separate, pre-existing dark-mode contrast gap
+      // (see PR3 apply-progress); scanning the full sheet here would
+      // conflate that unrelated debt with this PR's own correctness.
+      await expectNoSeriousViolationsIn(
+        page,
+        '[data-testid="awaiting-bill-cta"]',
+      );
+      await expectNoSeriousViolationsIn(
+        page,
+        '[data-testid="awaits-bill-section"]',
+      );
     });
   }
 });

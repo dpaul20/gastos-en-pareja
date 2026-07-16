@@ -125,3 +125,275 @@ test.describe("PR2: awaits_bill precedence in ensureFixedExpenseInstances", () =
     expect(instance?.status).toBe("AWAITING_BILL");
   });
 });
+
+/**
+ * PR3 (Phase 2b) — closes PR2's coverage gap: the two actions above (plus
+ * the checkbox that flips a template's `awaits_bill`) now have real UI
+ * triggers (row, EditServiceSheet, LoadBillSheet), so this exercises them
+ * end-to-end for the first time, including the PR2 fix-batch hardening
+ * (state-machine guard, stale-field clearing on revert).
+ */
+
+test.describe("PR3: checkbox 'Hay que esperar la factura' persiste awaits_bill", () => {
+  const DESC = `E2E-awaits-checkbox-${Date.now()}`;
+  let templateId: string;
+
+  test.beforeEach(async ({ adminClient, coupleId }) => {
+    templateId = await seedTemplate(adminClient, coupleId, DESC, {
+      awaits_bill: false,
+    });
+  });
+
+  test.afterEach(async ({ adminClient }) => {
+    await adminClient
+      .from("fixed_expense_instances")
+      .delete()
+      .eq("template_id", templateId);
+    await adminClient
+      .from("fixed_expense_templates")
+      .delete()
+      .eq("id", templateId);
+  });
+
+  test("activar el toggle en EditServiceSheet persiste awaits_bill=true en el template", async ({
+    authenticatedPage: page,
+    adminClient,
+  }) => {
+    test.slow();
+    await page.goto("/dashboard");
+    await expect(page.getByText(/gasto.*fijo.*generado/i)).toBeVisible({
+      timeout: 12_000,
+    });
+
+    await page.goto("/expenses");
+    await page.getByTestId("tab-servicios").click();
+    await expect(page.getByText(DESC)).toBeVisible({ timeout: 10_000 });
+
+    await page
+      .getByRole("button", { name: "Editar día de vencimiento" })
+      .first()
+      .click();
+    await page.getByTestId("edit-service-sheet").waitFor({ state: "visible" });
+
+    const toggle = page.getByTestId("toggle-awaits-bill");
+    await toggle.click();
+    await expect(toggle).toHaveAttribute("aria-checked", "true");
+
+    await expect
+      .poll(
+        async () => {
+          const { data } = await adminClient
+            .from("fixed_expense_templates")
+            .select("awaits_bill")
+            .eq("id", templateId)
+            .single();
+          return data?.awaits_bill;
+        },
+        { timeout: 8_000 },
+      )
+      .toBe(true);
+  });
+});
+
+test.describe("PR3: 'Marcar sin factura este mes' (per-instance override, state-machine guard)", () => {
+  const DESC = `E2E-mark-awaiting-${Date.now()}`;
+  let templateId: string;
+
+  test.beforeEach(async ({ adminClient, coupleId }) => {
+    templateId = await seedTemplate(adminClient, coupleId, DESC, {
+      awaits_bill: false,
+    });
+  });
+
+  test.afterEach(async ({ adminClient }) => {
+    await adminClient
+      .from("fixed_expense_instances")
+      .delete()
+      .eq("template_id", templateId);
+    await adminClient
+      .from("fixed_expense_templates")
+      .delete()
+      .eq("id", templateId);
+  });
+
+  test("el botón transiciona la instancia y desaparece una vez AWAITING_BILL (guard estructural)", async ({
+    authenticatedPage: page,
+  }) => {
+    test.slow();
+    await page.goto("/dashboard");
+    await expect(page.getByText(/gasto.*fijo.*generado/i)).toBeVisible({
+      timeout: 12_000,
+    });
+
+    await page.goto("/expenses");
+    await page.getByTestId("tab-servicios").click();
+    await expect(page.getByText(DESC)).toBeVisible({ timeout: 10_000 });
+
+    await page
+      .getByRole("button", { name: "Editar día de vencimiento" })
+      .first()
+      .click();
+    await page.getByTestId("edit-service-sheet").waitFor({ state: "visible" });
+    await page.getByTestId("mark-awaiting-bill").click();
+    await page.getByTestId("edit-service-sheet").waitFor({ state: "hidden" });
+
+    await expect(page.getByText("sin monto")).toBeVisible({ timeout: 8_000 });
+    await expect(
+      page.getByTestId("fijo-item-awaiting").getByText("sin factura"),
+    ).toBeVisible();
+
+    // Reopen — the row is now AWAITING_BILL, so its own due-day link routes
+    // back into the same sheet; the "mark awaiting" button must be GONE
+    // (canMarkAwaitingBill's guard, enforced structurally in the UI too —
+    // there is nothing left to revert).
+    await page
+      .getByRole("button", { name: "Editar día de vencimiento" })
+      .first()
+      .click();
+    await page.getByTestId("edit-service-sheet").waitFor({ state: "visible" });
+    await expect(page.getByTestId("mark-awaiting-bill")).toHaveCount(0);
+    // The AWAITING_BILL CTA replaces the amount field.
+    await expect(page.getByText("Cargar factura")).toBeVisible();
+  });
+});
+
+test.describe("PR3: 'Cargar factura' sheet (loadFixedExpenseBill UI trigger)", () => {
+  const DESC = `E2E-load-bill-${Date.now()}`;
+  let templateId: string;
+
+  test.beforeEach(async ({ adminClient, coupleId }) => {
+    templateId = await seedTemplate(adminClient, coupleId, DESC, {
+      awaits_bill: true,
+    });
+  });
+
+  test.afterEach(async ({ adminClient }) => {
+    await adminClient
+      .from("fixed_expense_instances")
+      .delete()
+      .eq("template_id", templateId);
+    await adminClient
+      .from("fixed_expense_templates")
+      .delete()
+      .eq("id", templateId);
+  });
+
+  test("cargar un monto válido pasa la fila a contada, con el pill 'nuevo'; un monto sobre el techo se rechaza", async ({
+    authenticatedPage: page,
+    testUserId,
+  }) => {
+    test.slow();
+    await page.goto("/dashboard");
+    await expect(page.getByText(/gasto.*fijo.*generado/i)).toBeVisible({
+      timeout: 12_000,
+    });
+
+    await page.goto("/expenses");
+    await page.getByTestId("tab-servicios").click();
+    await expect(page.getByText(DESC)).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText("sin monto")).toBeVisible();
+
+    await page.getByTestId("open-load-bill").click();
+    await page.getByTestId("load-bill-sheet").waitFor({ state: "visible" });
+
+    // Ceiling guard (isValidBillAmount / MAX_BILL_AMOUNT) — rejected
+    // client-side, the action is never called.
+    await page.getByTestId("load-bill-amount").fill("50000000");
+    await page.getByTestId("load-bill-submit").click();
+    await expect(page.getByRole("alert")).toBeVisible();
+    await expect(page.getByTestId("load-bill-sheet")).toBeVisible();
+
+    await page.getByTestId("load-bill-amount").fill("72375");
+    const payerSelector = page.getByTestId("load-bill-payer-selector");
+    if (await payerSelector.isVisible()) {
+      await page.getByTestId(`load-bill-payer-${testUserId}`).click();
+    }
+    await page.getByTestId("load-bill-submit").click();
+    await page.getByTestId("load-bill-sheet").waitFor({ state: "hidden" });
+
+    await expect(
+      page.getByRole("button", { name: "Editar monto" }),
+    ).toContainText("$72.375", { timeout: 8_000 });
+    await expect(page.getByText("nuevo")).toBeVisible();
+    await expect(page.getByTestId("fijo-item-awaiting")).toHaveCount(0);
+  });
+});
+
+test.describe("PR3: revertir a sin factura limpia campos obsoletos (PR2 fix-batch hardening)", () => {
+  const DESC = `E2E-revert-clears-${Date.now()}`;
+  let templateId: string;
+  let instanceId: string;
+
+  test.beforeEach(async ({ adminClient, coupleId, testUserId }) => {
+    templateId = await seedTemplate(adminClient, coupleId, DESC, {
+      awaits_bill: false,
+    });
+    // Seed an already-billed, paid, recently-billed instance directly —
+    // simulates the state a real "Cargar factura" would have left, so the
+    // revert path has real stale fields to clear.
+    const { data: instance, error } = await adminClient
+      .from("fixed_expense_instances")
+      .insert({
+        template_id: templateId,
+        couple_id: coupleId,
+        month: currentMonth(),
+        paid: true,
+        paid_by_user_id: testUserId,
+        amount_override: 72_375,
+        status: "CONFIRMED",
+        billed_at: new Date().toISOString(),
+      })
+      .select("id")
+      .single();
+    if (error || !instance)
+      throw new Error(`Instance seed failed: ${error?.message}`);
+    instanceId = instance.id;
+  });
+
+  test.afterEach(async ({ adminClient }) => {
+    await adminClient
+      .from("fixed_expense_instances")
+      .delete()
+      .eq("template_id", templateId);
+    await adminClient
+      .from("fixed_expense_templates")
+      .delete()
+      .eq("id", templateId);
+  });
+
+  test("la fila muestra 'nuevo' antes de revertir, y tras 'Marcar sin factura' limpia amount_override/paid/paid_by_user_id/billed_at", async ({
+    authenticatedPage: page,
+    adminClient,
+  }) => {
+    test.slow();
+    await page.goto("/expenses");
+    await page.getByTestId("tab-servicios").click();
+    await expect(page.getByText(DESC)).toBeVisible({ timeout: 10_000 });
+    // Real (not unit-mocked) confirmation of shouldShowNuevoPill's status +
+    // window gate against a genuinely seeded row.
+    await expect(page.getByText("nuevo")).toBeVisible();
+
+    await page
+      .getByRole("button", { name: "Editar día de vencimiento" })
+      .first()
+      .click();
+    await page.getByTestId("edit-service-sheet").waitFor({ state: "visible" });
+    await page.getByTestId("mark-awaiting-bill").click();
+    await page.getByTestId("edit-service-sheet").waitFor({ state: "hidden" });
+
+    await expect(page.getByText("sin monto")).toBeVisible({ timeout: 8_000 });
+    await expect(page.getByText("nuevo")).toHaveCount(0);
+
+    const { data: reverted } = await adminClient
+      .from("fixed_expense_instances")
+      .select("status, amount_override, paid, paid_by_user_id, billed_at")
+      .eq("id", instanceId)
+      .single();
+
+    expect(reverted?.status).toBe("AWAITING_BILL");
+    expect(reverted?.amount_override).toBeNull();
+    expect(reverted?.paid).toBe(false);
+    expect(reverted?.paid_by_user_id).toBeNull();
+    expect(reverted?.billed_at).toBeNull();
+  });
+});

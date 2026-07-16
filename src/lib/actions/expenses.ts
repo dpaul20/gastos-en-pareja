@@ -617,14 +617,21 @@ export async function markFixedExpenseInstanceAwaitingBill(
 }
 
 // "Cargar factura" — atomically prices an AWAITING_BILL instance and flips
-// it back to counted. Sets amount_override, paid_by_user_id (whoever loaded
-// it), status='CONFIRMED', and billed_at=now() (source of truth for the
-// "nuevo" pill, PR3). Scoped to AWAITING_BILL so it can't silently reprice
-// an already-billed instance through this path — use
+// it back to counted. Sets amount_override, paid_by_user_id, status=
+// 'CONFIRMED', and billed_at=now() (source of truth for the "nuevo" pill,
+// PR3). Scoped to AWAITING_BILL so it can't silently reprice an
+// already-billed instance through this path — use
 // updateFixedExpenseInstanceAmount for that.
+//
+// PR3: the approved "Cargar factura" sheet lets the user pick WHO paid
+// (mirrors createInstallmentPurchase's payerId resolution) — PR2 hardcoded
+// `paid_by_user_id` to the caller. `payerId` is optional and validated
+// against couple_members; an invalid/foreign id silently falls back to the
+// caller rather than throwing, same as createInstallmentPurchase.
 export async function loadFixedExpenseBill(
   instanceId: string,
   amount: number,
+  payerId?: string,
 ): Promise<void> {
   if (!isValidBillAmount(amount)) {
     throw new Error(
@@ -634,11 +641,22 @@ export async function loadFixedExpenseBill(
 
   const { supabase, user, coupleId } = await getCouple();
 
+  let resolvedPayerId = payerId ?? user.id;
+  if (payerId && payerId !== user.id) {
+    const { data: m } = await supabase
+      .from("couple_members")
+      .select("user_id")
+      .eq("couple_id", coupleId)
+      .eq("user_id", payerId)
+      .maybeSingle();
+    if (!m) resolvedPayerId = user.id;
+  }
+
   const { data, error } = await supabase
     .from("fixed_expense_instances")
     .update({
       amount_override: amount,
-      paid_by_user_id: user.id,
+      paid_by_user_id: resolvedPayerId,
       status: "CONFIRMED",
       billed_at: new Date().toISOString(),
     })
