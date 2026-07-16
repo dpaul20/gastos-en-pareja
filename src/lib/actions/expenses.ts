@@ -1,12 +1,17 @@
 "use server";
 
 import { createClient, createServiceClient } from "@/lib/supabase/server";
-import { getMonthDate, getTodayBADate } from "@/lib/utils";
+import { formatARS, getMonthDate, getTodayBADate } from "@/lib/utils";
 import { isTemplateActiveInMonth } from "@/lib/utils/month-gating";
 import {
   isValidInstallmentsEdit,
   isValidOverrideInstallmentNumber,
 } from "@/lib/utils/installments";
+import {
+  canMarkAwaitingBill,
+  resolveInitialInstanceStatus,
+} from "@/lib/utils/fixed-instance-transitions";
+import { isValidBillAmount, MAX_BILL_AMOUNT } from "@/lib/utils/bill-amount";
 import { revalidatePath } from "next/cache";
 import type { Database } from "@/types/database";
 
@@ -341,6 +346,7 @@ export async function createFixedExpenseTemplate(data: {
   due_day: number;
   category_id?: string;
   requires_monthly_review?: boolean;
+  awaits_bill?: boolean;
   is_shared?: boolean;
   owner_user_id?: string | null;
 }) {
@@ -351,28 +357,52 @@ export async function createFixedExpenseTemplate(data: {
   if (!isShared && !ownerUserId) {
     throw new Error("Un gasto personal necesita un responsable");
   }
-  const { data: template, error } = await supabase
+  // Fix 5 (judgment-day review): coerce at the action boundary — TS can't
+  // stop a raw POST from sending a truthy non-boolean ("false" as a
+  // string), so only a real `=== true` takes the AWAITING_BILL branch or
+  // gets persisted onto the template's own column.
+  const awaitsBill = data.awaits_bill === true;
+  const { data: template, error: templateError } = await supabase
     .from("fixed_expense_templates")
     .insert({
       ...data,
+      awaits_bill: awaitsBill,
       couple_id: coupleId,
       is_shared: isShared,
       owner_user_id: ownerUserId,
     })
     .select("id")
     .single();
-  if (!error && template) {
-    // Create an instance for the current month so it appears in the list immediately
-    const month = getMonthDate();
-    await supabase.from("fixed_expense_instances").insert({
+  // Fix 7 (judgment-day review): this used to discard `error` entirely and
+  // return as if the template existed. Surface it instead of a silent
+  // false-positive success.
+  if (templateError || !template) {
+    throw new Error("No se pudo crear el servicio");
+  }
+  // Create an instance for the current month so it appears in the list
+  // immediately. awaits_bill takes precedence over requires_monthly_review
+  // — a template that hasn't got its bill yet starts AWAITING_BILL
+  // regardless of the (legacy, dead) review flag.
+  const month = getMonthDate();
+  const { error: instanceError } = await supabase
+    .from("fixed_expense_instances")
+    .insert({
       template_id: template.id,
       couple_id: coupleId,
       month,
       paid: false,
-      status: data.requires_monthly_review
-        ? "PENDING_CONFIRMATION"
-        : "CONFIRMED",
+      status: resolveInitialInstanceStatus({
+        awaits_bill: awaitsBill,
+        requires_monthly_review: data.requires_monthly_review,
+      }),
     });
+  // Fix 7: same — this insert's result was previously discarded entirely,
+  // so a flagged template could silently end up with no first-month
+  // instance at all.
+  if (instanceError) {
+    throw new Error(
+      "El servicio se creó pero no se pudo generar su primera instancia",
+    );
   }
   revalidatePath("/expenses");
   revalidatePath("/dashboard");
@@ -382,17 +412,33 @@ export async function updateFixedExpenseTemplate(
   templateId: string,
   data: {
     requires_monthly_review?: boolean;
+    awaits_bill?: boolean;
     description?: string;
     amount?: number;
     due_day?: number;
     category_id?: string | null;
   },
 ): Promise<void> {
-  const { supabase } = await getCouple();
+  const { supabase, coupleId } = await getCouple();
+  // Fix 5 (judgment-day review): same boundary coercion as
+  // createFixedExpenseTemplate — only touch the field if the caller sent
+  // it, and only ever persist a real boolean.
+  const payload = {
+    ...data,
+    ...(data.awaits_bill !== undefined && {
+      awaits_bill: data.awaits_bill === true,
+    }),
+  };
   const { error } = await supabase
     .from("fixed_expense_templates")
-    .update(data)
-    .eq("id", templateId);
+    .update(payload)
+    .eq("id", templateId)
+    // Fix 4 (judgment-day review): every other template/instance write in
+    // this file scopes by coupleId as defense-in-depth; this one relied on
+    // RLS alone. This repo has shipped one broken RLS policy before
+    // (20260503000001_fix_rls_row_security.sql) — don't leave a write path
+    // resting solely on it.
+    .eq("couple_id", coupleId);
   if (error) throw new Error("No se pudo actualizar el servicio");
   revalidatePath("/expenses");
   revalidatePath("/dashboard");
@@ -445,18 +491,29 @@ export async function reactivateFixedExpenseTemplate(
   if (!existing) {
     const { data: tmpl } = await supabase
       .from("fixed_expense_templates")
-      .select("requires_monthly_review")
+      .select("requires_monthly_review, awaits_bill")
       .eq("id", templateId)
       .maybeSingle();
-    await supabase.from("fixed_expense_instances").insert({
-      template_id: templateId,
-      couple_id: coupleId,
-      month,
-      paid: false,
-      status: tmpl?.requires_monthly_review
-        ? "PENDING_CONFIRMATION"
-        : "CONFIRMED",
-    });
+    const { error: instanceError } = await supabase
+      .from("fixed_expense_instances")
+      .insert({
+        template_id: templateId,
+        couple_id: coupleId,
+        month,
+        paid: false,
+        status: resolveInitialInstanceStatus({
+          awaits_bill: tmpl?.awaits_bill,
+          requires_monthly_review: tmpl?.requires_monthly_review,
+        }),
+      });
+    // Fix 7 (judgment-day review): previously discarded entirely — a
+    // reactivated template could silently end up with no current-month
+    // instance.
+    if (instanceError) {
+      throw new Error(
+        "El servicio se reactivó pero no se pudo generar la instancia del mes",
+      );
+    }
   }
 
   revalidatePath("/expenses");
@@ -490,6 +547,115 @@ export async function confirmAllFixedExpenseInstances(
     .eq("month", month)
     .eq("status", "PENDING_CONFIRMATION");
   if (error) throw new Error("No se pudieron confirmar los servicios");
+  revalidatePath("/expenses");
+  revalidatePath("/dashboard");
+}
+
+// ── SIN FACTURA (pending-bills) ────────────────────────────────
+
+// Per-instance override, independent of the template's `awaits_bill` flag:
+// "un mes Expensas no llegó" — this month only, the template stays untouched.
+// Also serves as the reverse-override path when an AWAITING_BILL instance
+// with a stale amount_override needs to go back to unpriced (clearing the
+// override so it can't resurface once the real bill is loaded later).
+export async function markFixedExpenseInstanceAwaitingBill(
+  instanceId: string,
+): Promise<void> {
+  const { supabase, coupleId } = await getCouple();
+
+  const { data: current } = await supabase
+    .from("fixed_expense_instances")
+    .select("status")
+    .eq("id", instanceId)
+    .eq("couple_id", coupleId)
+    .maybeSingle();
+
+  if (!current) throw new Error("Servicio no encontrado");
+  // Fix 1 (judgment-day review): a pure precondition, not a JS truthiness
+  // check inline — see the docstring on canMarkAwaitingBill for the
+  // "paid=true is still revertible" decision.
+  if (!canMarkAwaitingBill(current.status)) {
+    throw new Error("El servicio ya está sin factura");
+  }
+
+  // Fix 1: re-check the same rule inside the UPDATE's WHERE clause (`.neq`)
+  // so a concurrent loadFixedExpenseBill racing between the read above and
+  // this write can't be silently clobbered — this is the atomic guard, the
+  // read above is only for a clearer error message. Also clears `paid`,
+  // `paid_by_user_id`, and `billed_at` alongside `amount_override`: leaving
+  // any of those stale on a reverted row is its own bug (a "paid, unpriced"
+  // instance; a stale `billed_at` that could wrongly light PR3's 48h
+  // "nuevo" pill).
+  const { data: updated, error } = await supabase
+    .from("fixed_expense_instances")
+    .update({
+      status: "AWAITING_BILL",
+      amount_override: null,
+      paid: false,
+      paid_by_user_id: null,
+      billed_at: null,
+    })
+    .eq("id", instanceId)
+    .eq("couple_id", coupleId)
+    .neq("status", "AWAITING_BILL")
+    .select("id");
+
+  if (error) {
+    throw new Error("No se pudo marcar el servicio como sin factura");
+  }
+  // Fix 1: 0 affected rows means the state changed underneath us between
+  // the read and the write (e.g. a concurrent loadFixedExpenseBill just
+  // ran) — surface that instead of returning silent success.
+  if (!updated || updated.length === 0) {
+    throw new Error(
+      "No se pudo marcar sin factura: el servicio cambió de estado, volvé a intentar",
+    );
+  }
+
+  revalidatePath("/expenses");
+  revalidatePath("/dashboard");
+}
+
+// "Cargar factura" — atomically prices an AWAITING_BILL instance and flips
+// it back to counted. Sets amount_override, paid_by_user_id (whoever loaded
+// it), status='CONFIRMED', and billed_at=now() (source of truth for the
+// "nuevo" pill, PR3). Scoped to AWAITING_BILL so it can't silently reprice
+// an already-billed instance through this path — use
+// updateFixedExpenseInstanceAmount for that.
+export async function loadFixedExpenseBill(
+  instanceId: string,
+  amount: number,
+): Promise<void> {
+  if (!isValidBillAmount(amount)) {
+    throw new Error(
+      `El monto debe ser mayor a cero y menor a ${formatARS(MAX_BILL_AMOUNT)}`,
+    );
+  }
+
+  const { supabase, user, coupleId } = await getCouple();
+
+  const { data, error } = await supabase
+    .from("fixed_expense_instances")
+    .update({
+      amount_override: amount,
+      paid_by_user_id: user.id,
+      status: "CONFIRMED",
+      billed_at: new Date().toISOString(),
+    })
+    .eq("id", instanceId)
+    .eq("couple_id", coupleId)
+    .eq("status", "AWAITING_BILL")
+    .select("id");
+
+  if (error) throw new Error("No se pudo cargar la factura");
+  // Fix 2 (judgment-day review): the `.eq("status","AWAITING_BILL")` scope
+  // means a double-tap (or a concurrent mark-awaiting) matches 0 rows with
+  // `error` staying null — previously that returned as if it succeeded.
+  // Surface it so the caller can tell "landed" from "silently ignored".
+  if (!data || data.length === 0) {
+    throw new Error("Esta factura ya fue cargada");
+  }
+
   revalidatePath("/expenses");
   revalidatePath("/dashboard");
 }
@@ -581,7 +747,7 @@ export async function ensureFixedExpenseInstances(
 
   const { data: templates } = await supabase
     .from("fixed_expense_templates")
-    .select("id, requires_monthly_review, created_at")
+    .select("id, requires_monthly_review, awaits_bill, created_at")
     .eq("couple_id", coupleId)
     .eq("active", true);
 
@@ -605,11 +771,22 @@ export async function ensureFixedExpenseInstances(
       couple_id: coupleId,
       month,
       paid: false,
-      status: t.requires_monthly_review ? "PENDING_CONFIRMATION" : "CONFIRMED",
+      status: resolveInitialInstanceStatus({
+        awaits_bill: t.awaits_bill,
+        requires_monthly_review: t.requires_monthly_review,
+      }),
     }));
 
   if (toCreate.length) {
-    await supabase.from("fixed_expense_instances").insert(toCreate);
+    const { error } = await supabase
+      .from("fixed_expense_instances")
+      .insert(toCreate);
+    // Fix 7 (judgment-day review): previously discarded entirely — a batch
+    // failure would report `created: toCreate.length` as if every instance
+    // (including any AWAITING_BILL one) had actually been materialized.
+    if (error) {
+      throw new Error("No se pudieron generar los gastos fijos del mes");
+    }
   }
   return { created: toCreate.length };
 }
