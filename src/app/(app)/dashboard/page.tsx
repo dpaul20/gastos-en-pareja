@@ -30,7 +30,6 @@ import {
 } from "@/lib/actions/expenses";
 import { NoCoupleState } from "./_components/no-couple-state";
 import { NewInstancesBanner } from "./_components/new-instances-banner";
-import { PendingReviewBanner } from "./_components/pending-review-banner";
 import { BalanceCard } from "./_components/balance-card";
 import { CategoryBreakdownCard } from "./_components/category-breakdown-card";
 import { UpcomingDuesWidget } from "./_components/upcoming-dues-widget";
@@ -236,11 +235,6 @@ function DashboardView() {
     ).slice(0, 5);
   }, [data, balance, categories]);
 
-  const pendingCount =
-    data?.fixedExpenseInstances.filter(
-      (fi) => fi.status === "PENDING_CONFIRMATION",
-    ).length ?? 0;
-
   const currentUserId = member?.user_id;
   const myProfile = profiles.find((p) => p.user_id === currentUserId);
   const partnerProfile = profiles.find((p) => p.user_id !== currentUserId);
@@ -280,7 +274,6 @@ function DashboardView() {
             count={newInstancesBanner}
             onDismiss={() => setNewInstancesBanner(0)}
           />
-          <PendingReviewBanner count={pendingCount} />
 
           {/* Desktop: 2-col grid | Mobile: single column */}
           <div className="flex flex-col gap-3 lg:grid lg:grid-cols-2 lg:items-start lg:gap-5">

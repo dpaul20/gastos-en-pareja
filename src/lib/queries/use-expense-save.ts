@@ -35,7 +35,6 @@ export function useExpenseSave(tab: Tab) {
     fields: Record<string, string>,
     categoryId: string | null,
     autoRenew: boolean,
-    requiresMonthlyReview = false,
     isShared = true,
     payerId?: string | null,
     cardId?: string | null,
@@ -80,7 +79,6 @@ export function useExpenseSave(tab: Tab) {
             amount: parsePositiveNumber(fields.amount),
             due_day: parsePositiveInt(fields.due_day),
             category_id: categoryId ?? undefined,
-            requires_monthly_review: requiresMonthlyReview || undefined,
             is_shared: isShared,
             owner_user_id: isShared ? null : payerId,
           });

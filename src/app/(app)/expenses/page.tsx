@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { FAB as Fab } from "@/components/shared/fab";
 import { getCategoryIcon } from "@/lib/category-icons";
-import { formatARS, getMonthDate, getInitials, cn } from "@/lib/utils";
+import { formatARS, getMonthDate, getInitials } from "@/lib/utils";
 import { isBilled, billedFixedAmount } from "@/lib/utils/balance";
 import { parseAmount } from "@/lib/utils/amount";
 import {
@@ -30,7 +30,6 @@ import {
   updateFixedExpenseInstanceAmount,
   updateFixedExpenseInstanceDueDay,
   toggleFixedExpenseInstance,
-  confirmAllFixedExpenseInstances,
   deactivateFixedExpenseTemplate,
   reactivateFixedExpenseTemplate,
   updateFixedExpenseTemplate,
@@ -1004,7 +1003,6 @@ function ExpensesView() {
     fields: Record<string, string>,
     categoryId: string | null,
     autoRenew: boolean,
-    requiresMonthlyReview: boolean,
     isShared: boolean,
     payerId?: string | null,
     cardId?: string | null,
@@ -1018,34 +1016,12 @@ function ExpensesView() {
           ? flow.expenseId
           : null;
     setFlow({ step: "idle" });
-    save(
-      fields,
-      categoryId,
-      autoRenew,
-      requiresMonthlyReview,
-      isShared,
-      payerId,
-      cardId,
-      editId,
-    );
+    save(fields, categoryId, autoRenew, isShared, payerId, cardId, editId);
   }
-
-  const queryClient = useQueryClient();
-
-  const confirmAllMutation = useMutation({
-    mutationFn: () => confirmAllFixedExpenseInstances(coupleId!, month),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["monthly-data"] });
-    },
-  });
 
   const allCuotas = data?.installmentPurchases ?? [];
   const allFijos = data?.fixedExpenseInstances ?? [];
   const allVariables = data?.variableExpenses ?? [];
-
-  const pendingFijosCount = allFijos.filter(
-    (fi) => fi.status === "PENDING_CONFIRMATION",
-  ).length;
 
   const cuotas = filterCategory
     ? allCuotas.filter((c) => c.category_id === filterCategory)
@@ -1233,29 +1209,6 @@ function ExpensesView() {
               )}
               {fijos.length > 0 && (
                 <>
-                  {pendingFijosCount > 0 && coupleId && (
-                    <div className="mb-2 flex justify-end">
-                      <Button
-                        data-testid="confirm-all-fijos"
-                        onClick={() => confirmAllMutation.mutate()}
-                        disabled={confirmAllMutation.isPending}
-                        variant="outline"
-                        size="sm"
-                        className={cn(
-                          "text-[13px] font-semibold",
-                          confirmAllMutation.isPending && "opacity-50",
-                        )}
-                        style={{
-                          border: `1.5px solid var(--status-danger-text)`,
-                          background:
-                            "color-mix(in srgb, var(--status-danger) 10%, transparent)",
-                          color: "var(--status-danger-text)",
-                        }}
-                      >
-                        Confirmar todos
-                      </Button>
-                    </div>
-                  )}
                   <ul
                     className="m-0 flex list-none flex-col overflow-hidden rounded-2xl p-0"
                     style={{

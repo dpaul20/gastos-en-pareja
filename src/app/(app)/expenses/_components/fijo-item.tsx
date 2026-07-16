@@ -12,7 +12,6 @@ import { cn, formatARS } from "@/lib/utils";
 import {
   toggleFixedExpenseInstance,
   updateFixedExpenseInstanceAmount,
-  confirmFixedExpenseInstance,
   deactivateFixedExpenseTemplate,
   reactivateFixedExpenseTemplate,
 } from "@/lib/actions/expenses";
@@ -58,7 +57,6 @@ export function FijoItem({
   const hasOverride = fi.amount_override != null;
   const templateAmount = fi.fixed_expense_templates.amount;
   const activeAmount = isBilled(fi) ? billedFixedAmount(fi) : 0;
-  const isPending = fi.status === "PENDING_CONFIRMATION";
   // "sin factura" — no known amount yet, excluded from every total (D2).
   // Renders as its own row treatment below, not the normal amount/switch
   // layout: nothing here is safe to edit inline until a bill is loaded.
@@ -72,13 +70,6 @@ export function FijoItem({
   const monthReferenceDate = new Date(instanceYear, instanceMonth - 1, 1);
   const rawDueDay = fi.due_day ?? fi.fixed_expense_templates.due_day;
   const effectiveDueDay = clampDueDay(rawDueDay, monthReferenceDate);
-
-  const confirmMutation = useMutation({
-    mutationFn: (instanceId: string) => confirmFixedExpenseInstance(instanceId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["monthly-data"] });
-    },
-  });
 
   const amountMutation = useMutation({
     mutationFn: ({
@@ -302,7 +293,6 @@ export function FijoItem({
         alignItems: "center",
         gap: 12,
         borderBottom: isLast ? "none" : "1px solid var(--border-subtle)",
-        background: isPending ? "var(--status-warning-subtle)" : undefined,
       }}
     >
       {/* Left: description + meta */}
@@ -357,23 +347,6 @@ export function FijoItem({
             }}
           >
             editado
-          </span>
-        )}
-        {isPending && (
-          <span
-            style={{
-              display: "inline-block",
-              marginTop: 3,
-              background: "var(--status-danger-subtle)",
-              color: "var(--status-danger-text)",
-              fontSize: 10,
-              fontWeight: 600,
-              borderRadius: 4,
-              padding: "1px 5px",
-              fontFamily: "var(--font-sans)",
-            }}
-          >
-            Sin confirmar
           </span>
         )}
         {showNuevoPill && (
@@ -544,30 +517,6 @@ export function FijoItem({
         )}
       </div>
 
-      {/* Confirm CTA — only shown when PENDING_CONFIRMATION */}
-      {isPending && (
-        <Button
-          variant="ghost"
-          onClick={() => confirmMutation.mutate(fi.id)}
-          disabled={confirmMutation.isPending}
-          style={{
-            height: 28,
-            paddingInline: 10,
-            borderRadius: 8,
-            border: `1.5px solid var(--status-danger-text)`,
-            background: "var(--status-danger-subtle)",
-            color: "var(--status-danger-text)",
-            fontSize: 11,
-            fontWeight: 600,
-            fontFamily: "var(--font-sans)",
-            flexShrink: 0,
-            opacity: confirmMutation.isPending ? 0.5 : 1,
-          }}
-        >
-          Confirmar
-        </Button>
-      )}
-
       {/* Right: paid toggle with visible status label */}
       <div
         style={{
@@ -601,7 +550,7 @@ export function FijoItem({
         />
       </div>
 
-      {!isPending && !editing && (
+      {!editing && (
         <DeleteExpenseButton
           iconOnly
           title="¿Eliminar servicio?"

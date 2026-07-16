@@ -520,37 +520,6 @@ export async function reactivateFixedExpenseTemplate(
   revalidatePath("/dashboard");
 }
 
-export async function confirmFixedExpenseInstance(
-  instanceId: string,
-): Promise<void> {
-  const { supabase } = await getCouple();
-  const { error } = await supabase
-    .from("fixed_expense_instances")
-    .update({ status: "CONFIRMED" })
-    .eq("id", instanceId)
-    .eq("status", "PENDING_CONFIRMATION"); // idempotent; no-op if already confirmed
-  if (error) throw new Error("No se pudo confirmar el servicio");
-  revalidatePath("/expenses");
-  revalidatePath("/dashboard");
-}
-
-export async function confirmAllFixedExpenseInstances(
-  coupleId: string,
-  month: string,
-): Promise<void> {
-  const { supabase, coupleId: myCoupleId } = await getCouple();
-  if (coupleId !== myCoupleId) throw new Error("Pareja inválida");
-  const { error } = await supabase
-    .from("fixed_expense_instances")
-    .update({ status: "CONFIRMED" })
-    .eq("couple_id", coupleId)
-    .eq("month", month)
-    .eq("status", "PENDING_CONFIRMATION");
-  if (error) throw new Error("No se pudieron confirmar los servicios");
-  revalidatePath("/expenses");
-  revalidatePath("/dashboard");
-}
-
 // ── SIN FACTURA (pending-bills) ────────────────────────────────
 
 // Per-instance override, independent of the template's `awaits_bill` flag:
