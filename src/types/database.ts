@@ -160,6 +160,7 @@ export type Database = {
       fixed_expense_instances: {
         Row: {
           amount_override: number | null;
+          billed_at: string | null;
           couple_id: string;
           created_at: string;
           due_day: number | null;
@@ -172,6 +173,7 @@ export type Database = {
         };
         Insert: {
           amount_override?: number | null;
+          billed_at?: string | null;
           couple_id: string;
           created_at?: string;
           due_day?: number | null;
@@ -184,6 +186,7 @@ export type Database = {
         };
         Update: {
           amount_override?: number | null;
+          billed_at?: string | null;
           couple_id?: string;
           created_at?: string;
           due_day?: number | null;
@@ -215,6 +218,7 @@ export type Database = {
         Row: {
           active: boolean;
           amount: number;
+          awaits_bill: boolean;
           category_id: string | null;
           couple_id: string;
           created_at: string;
@@ -228,6 +232,7 @@ export type Database = {
         Insert: {
           active?: boolean;
           amount: number;
+          awaits_bill?: boolean;
           category_id?: string | null;
           couple_id: string;
           created_at?: string;
@@ -241,6 +246,7 @@ export type Database = {
         Update: {
           active?: boolean;
           amount?: number;
+          awaits_bill?: boolean;
           category_id?: string | null;
           couple_id?: string;
           created_at?: string;

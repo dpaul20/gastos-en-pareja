@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { calculateMonthlyBalance, effectiveFixedAmount } from "../balance";
+import {
+  calculateMonthlyBalance,
+  billedFixedAmount,
+  isBilled,
+} from "../balance";
 
 const DEIVY_ID = "user-deivy";
 const ANNIE_ID = "user-annie";
@@ -138,6 +142,7 @@ describe("calculateMonthlyBalance", () => {
           created_at: "",
           status: "CONFIRMED" as string,
           amount_override: null as number | null,
+          billed_at: null as string | null,
           due_day: null as number | null,
           paid_by_user_id: null as string | null,
           fixed_expense_templates: {
@@ -149,6 +154,7 @@ describe("calculateMonthlyBalance", () => {
             due_day: 9,
             active: true,
             requires_monthly_review: false,
+            awaits_bill: false,
             is_shared: true,
             owner_user_id: null,
             created_at: "",
@@ -163,6 +169,7 @@ describe("calculateMonthlyBalance", () => {
           created_at: "",
           status: "CONFIRMED" as string,
           amount_override: null as number | null,
+          billed_at: null as string | null,
           due_day: null as number | null,
           paid_by_user_id: null as string | null,
           fixed_expense_templates: {
@@ -174,6 +181,7 @@ describe("calculateMonthlyBalance", () => {
             due_day: 31,
             active: true,
             requires_monthly_review: false,
+            awaits_bill: false,
             is_shared: true,
             owner_user_id: null,
             created_at: "",
@@ -204,6 +212,7 @@ describe("calculateMonthlyBalance", () => {
         created_at: "",
         status: "CONFIRMED" as string,
         amount_override: null as number | null,
+        billed_at: null as string | null,
         due_day: null as number | null,
         paid_by_user_id: null as string | null,
         fixed_expense_templates: {
@@ -215,6 +224,7 @@ describe("calculateMonthlyBalance", () => {
           due_day: 10,
           active: true,
           requires_monthly_review: false,
+          awaits_bill: false,
           is_shared: isShared,
           owner_user_id: owner,
           created_at: "",
@@ -447,6 +457,7 @@ describe("calculateMonthlyBalance", () => {
       due_day: 15,
       active: true,
       requires_monthly_review: false,
+      awaits_bill: false,
       is_shared: true,
       owner_user_id: null,
       created_at: "",
@@ -460,6 +471,7 @@ describe("calculateMonthlyBalance", () => {
       created_at: "",
       status: "CONFIRMED" as string,
       amount_override: null as number | null,
+      billed_at: null as string | null,
       due_day: null as number | null,
       paid_by_user_id: null as string | null,
       fixed_expense_templates: baseTemplate,
@@ -626,6 +638,7 @@ describe("calculateMonthlyBalance — payer attribution (payer-attribution)", ()
     due_day: 15,
     active: true,
     requires_monthly_review: false,
+    awaits_bill: false,
     is_shared: true,
     owner_user_id: null,
     created_at: "",
@@ -647,6 +660,7 @@ describe("calculateMonthlyBalance — payer attribution (payer-attribution)", ()
       created_at: "",
       status: "CONFIRMED" as string,
       amount_override: null as number | null,
+      billed_at: null as string | null,
       due_day: null as number | null,
       fixed_expense_templates: { ...template, amount },
     };
@@ -853,7 +867,7 @@ describe("calculateMonthlyBalance — payer attribution (payer-attribution)", ()
   });
 });
 
-describe("effectiveFixedAmount", () => {
+describe("billedFixedAmount", () => {
   const baseTemplate = {
     id: "t1",
     couple_id: "c1",
@@ -863,6 +877,7 @@ describe("effectiveFixedAmount", () => {
     due_day: 10,
     active: true,
     requires_monthly_review: false,
+    awaits_bill: false,
     is_shared: true,
     owner_user_id: null,
     created_at: "",
@@ -874,8 +889,9 @@ describe("effectiveFixedAmount", () => {
     month: "2026-04-01",
     paid: false,
     created_at: "",
-    status: "CONFIRMED" as string,
+    status: "CONFIRMED" as const,
     amount_override: null as number | null,
+    billed_at: null as string | null,
     due_day: null as number | null,
     paid_by_user_id: null as string | null,
     fixed_expense_templates: baseTemplate,
@@ -883,12 +899,12 @@ describe("effectiveFixedAmount", () => {
 
   it("devuelve template.amount cuando amount_override es null (guardia de regresión)", () => {
     const instance = { ...baseInstance, amount_override: null };
-    expect(effectiveFixedAmount(instance)).toBe(12_000);
+    expect(billedFixedAmount(instance)).toBe(12_000);
   });
 
   it("devuelve amount_override cuando está presente (número)", () => {
     const instance = { ...baseInstance, amount_override: 12345.67 };
-    expect(effectiveFixedAmount(instance)).toBe(12345.67);
+    expect(billedFixedAmount(instance)).toBe(12345.67);
   });
 
   it("castea correctamente string numérico de Supabase JSON a número", () => {
@@ -897,13 +913,21 @@ describe("effectiveFixedAmount", () => {
       ...baseInstance,
       amount_override: "9999.99" as unknown as number | null,
     };
-    expect(effectiveFixedAmount(instance)).toBe(9999.99);
+    expect(billedFixedAmount(instance)).toBe(9999.99);
+  });
+
+  it("isBilled es un predicado NEGATIVO: solo AWAITING_BILL queda excluido (D2)", () => {
+    expect(isBilled({ ...baseInstance, status: "AWAITING_BILL" })).toBe(false);
+    expect(isBilled({ ...baseInstance, status: "CONFIRMED" })).toBe(true);
+    expect(isBilled({ ...baseInstance, status: "PENDING_CONFIRMATION" })).toBe(
+      true,
+    );
   });
 });
 
 // ── SCEN-01 / SCEN-02: status field does not affect balance math ──────────────
 
-describe("calculateMonthlyBalance — PENDING_CONFIRMATION status (RF-07)", () => {
+describe("calculateMonthlyBalance — legacy PENDING_CONFIRMATION still counts at full weight (RF-07)", () => {
   const template = {
     id: "t1",
     couple_id: "c1",
@@ -913,6 +937,7 @@ describe("calculateMonthlyBalance — PENDING_CONFIRMATION status (RF-07)", () =
     due_day: 15,
     active: true,
     requires_monthly_review: true,
+    awaits_bill: false,
     is_shared: true,
     owner_user_id: null,
     created_at: "",
@@ -927,6 +952,7 @@ describe("calculateMonthlyBalance — PENDING_CONFIRMATION status (RF-07)", () =
     created_at: "",
     status: "PENDING_CONFIRMATION" as string,
     amount_override: null as number | null,
+    billed_at: null as string | null,
     due_day: null as number | null,
     paid_by_user_id: null as string | null,
     fixed_expense_templates: template,
@@ -975,5 +1001,154 @@ describe("calculateMonthlyBalance — PENDING_CONFIRMATION status (RF-07)", () =
     });
     expect(pendingResult.fixedTotal).toBe(confirmedResult.fixedTotal);
     expect(pendingResult.totalExpenses).toBe(confirmedResult.totalExpenses);
+  });
+});
+
+// ── SCEN-03: AWAITING_BILL is the only excluded status (trap 1 regression) ────
+
+describe("calculateMonthlyBalance — AWAITING_BILL exclusion (SCEN-03, trap 1 regression)", () => {
+  // Real Epec fixture from the August timeline (decision 391): template
+  // amount $72.375, sin factura this month. A null-amount model
+  // (`amount_override ?? template.amount`) would silently fall back to the
+  // template amount and count this at full weight — THAT is the exact bug
+  // this guards against. Exclusion keys off status, never off amount.
+  const epecTemplate = {
+    id: "t-epec",
+    couple_id: "c1",
+    category_id: null,
+    description: "Epec",
+    amount: 72_375,
+    due_day: 31,
+    active: true,
+    requires_monthly_review: false,
+    awaits_bill: true,
+    is_shared: true,
+    owner_user_id: null,
+    created_at: "",
+  };
+
+  const awaitingInstance = {
+    id: "fi-epec",
+    template_id: "t-epec",
+    couple_id: "c1",
+    month: "2026-08-01",
+    paid: false,
+    created_at: "",
+    status: "AWAITING_BILL" as string,
+    amount_override: null as number | null,
+    billed_at: null as string | null,
+    due_day: null as number | null,
+    paid_by_user_id: null as string | null,
+    fixed_expense_templates: epecTemplate,
+  };
+
+  const expensasTemplate = {
+    id: "t-expensas",
+    couple_id: "c1",
+    category_id: null,
+    description: "Expensas",
+    amount: 26_292,
+    due_day: 5,
+    active: true,
+    requires_monthly_review: false,
+    awaits_bill: false,
+    is_shared: true,
+    owner_user_id: null,
+    created_at: "",
+  };
+
+  const confirmedInstance = {
+    id: "fi-expensas",
+    template_id: "t-expensas",
+    couple_id: "c1",
+    month: "2026-08-01",
+    paid: true,
+    paid_by_user_id: "user-a",
+    created_at: "",
+    status: "CONFIRMED" as string,
+    amount_override: null as number | null,
+    billed_at: null as string | null,
+    due_day: null as number | null,
+    fixed_expense_templates: expensasTemplate,
+  };
+
+  const incomes = [
+    {
+      id: "1",
+      couple_id: "c1",
+      user_id: "user-a",
+      amount: 1_000_000,
+      month: "2026-08-01",
+      created_at: "",
+    },
+  ];
+
+  it("SCEN-03: monto null de una instancia AWAITING_BILL NO cae al monto del template (trap 1)", () => {
+    const result = calculateMonthlyBalance({
+      incomes,
+      installmentPurchases: [],
+      fixedExpenseInstances: [awaitingInstance, confirmedInstance],
+      variableExpenses: [],
+    });
+    // Epec ($72.375) contributes $0 — only Expensas ($26.292) counts.
+    expect(result.fixedTotal).toBe(26_292);
+    expect(result.fixedSharedTotal).toBe(26_292);
+    expect(result.totalExpenses).toBe(26_292);
+    expect(result.sharedExpensesTotal).toBe(26_292);
+    expect(result.balances[0]!.obligation).toBe(26_292);
+  });
+
+  it("SCEN-03b: instancia AWAITING_BILL pagada y atribuida NO se acredita en actualPaid", () => {
+    const paidAwaiting = {
+      ...awaitingInstance,
+      paid: true,
+      paid_by_user_id: "user-a",
+    };
+    const result = calculateMonthlyBalance({
+      incomes,
+      installmentPurchases: [],
+      fixedExpenseInstances: [paidAwaiting],
+      variableExpenses: [],
+    });
+    expect(result.balances[0]!.actualPaid).toBe(0);
+  });
+
+  it("expone fixedAwaitingBillCount con la cantidad de instancias AWAITING_BILL", () => {
+    const result = calculateMonthlyBalance({
+      incomes,
+      installmentPurchases: [],
+      fixedExpenseInstances: [awaitingInstance, confirmedInstance],
+      variableExpenses: [],
+    });
+    expect(result.fixedAwaitingBillCount).toBe(1);
+  });
+
+  it("SCEN-03c: instancia AWAITING_BILL personal (is_shared: false) se excluye de fixedTotal Y fixedIndividualTotal", () => {
+    // Every other SCEN-03 fixture uses is_shared: true, so
+    // fixedIndividualTotal's exclusion (a derived value, fixedTotal -
+    // fixedSharedTotal) was previously unasserted — this closes that gap.
+    const personalAwaitingTemplate = {
+      ...epecTemplate,
+      id: "t-epec-personal",
+      is_shared: false,
+      owner_user_id: "user-a",
+    };
+    const personalAwaitingInstance = {
+      ...awaitingInstance,
+      id: "fi-epec-personal",
+      template_id: "t-epec-personal",
+      fixed_expense_templates: personalAwaitingTemplate,
+    };
+    const result = calculateMonthlyBalance({
+      incomes,
+      installmentPurchases: [],
+      fixedExpenseInstances: [personalAwaitingInstance, confirmedInstance],
+      variableExpenses: [],
+    });
+    // Only Expensas ($26.292, shared) counts — the personal Epec ($72.375,
+    // AWAITING_BILL) contributes $0 to every total, shared or individual.
+    expect(result.fixedTotal).toBe(26_292);
+    expect(result.fixedIndividualTotal).toBe(0);
+    expect(result.fixedSharedTotal).toBe(26_292);
   });
 });

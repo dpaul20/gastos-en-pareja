@@ -15,7 +15,7 @@ import {
   deactivateFixedExpenseTemplate,
   reactivateFixedExpenseTemplate,
 } from "@/lib/actions/expenses";
-import { effectiveFixedAmount } from "@/lib/utils/balance";
+import { isBilled, billedFixedAmount } from "@/lib/utils/balance";
 import { useMonthlyData } from "@/lib/queries/use-monthly-data";
 import { parseAmount } from "@/lib/utils/amount";
 import { clampDueDay } from "@/lib/utils/due-dates";
@@ -45,7 +45,10 @@ export function FijoItem({
 
   const hasOverride = fi.amount_override != null;
   const templateAmount = fi.fixed_expense_templates.amount;
-  const activeAmount = effectiveFixedAmount(fi);
+  // AWAITING_BILL ("sin factura") has no known amount yet — the reference
+  // line / dashed row treatment lands in PR2/PR3; this keeps PR1 compiling
+  // and behavior-neutral (no template is flagged awaits_bill yet).
+  const activeAmount = isBilled(fi) ? billedFixedAmount(fi) : 0;
   const isPending = fi.status === "PENDING_CONFIRMATION";
   // Same clamp rule as the dashboard's getUpcomingDues, keyed on this
   // instance's own month, so both surfaces render the identical due day.

@@ -1,5 +1,5 @@
 import type { Database } from "@/types/database";
-import { effectiveFixedAmount } from "./balance";
+import { billedFixedAmount, partitionByBill } from "./balance";
 
 type Income = Database["public"]["Tables"]["incomes"]["Row"];
 type InstallmentPurchase =
@@ -49,6 +49,13 @@ export function buildMonthSummaryLines(params: {
     variableExpenses,
   } = params;
 
+  // Same partition balance.ts's fixedTotal uses — AWAITING_BILL instances
+  // are excluded (not rendered at $0), so `Σ fijos === calculateMonthlyBalance().fixedTotal`
+  // holds by construction, not by convention.
+  const { billed: billedFixedInstances } = partitionByBill(
+    fixedExpenseInstances,
+  );
+
   return {
     ingresos: incomes.map((income, i) => ({
       id: income.id,
@@ -64,10 +71,10 @@ export function buildMonthSummaryLines(params: {
         label: p.description,
         amount: Math.round(Number(p.total_amount) / p.installments),
       })),
-    fijos: fixedExpenseInstances.map((fi) => ({
+    fijos: billedFixedInstances.map((fi) => ({
       id: fi.id,
       label: fi.fixed_expense_templates.description,
-      amount: effectiveFixedAmount(fi),
+      amount: billedFixedAmount(fi),
     })),
     variables: variableExpenses.map((v) => ({
       id: v.id,

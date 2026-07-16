@@ -18,7 +18,8 @@ import {
 import { useMyPendingInvitations } from "@/lib/queries/settings";
 import {
   calculateMonthlyBalance,
-  effectiveFixedAmount,
+  isBilled,
+  billedFixedAmount,
 } from "@/lib/utils/balance";
 import { groupByCategory } from "@/lib/utils/categories";
 import { buildMonthSummaryLines } from "@/lib/utils/summary-lines";
@@ -36,7 +37,7 @@ import { UpcomingDuesWidget } from "./_components/upcoming-dues-widget";
 
 // ── SUB-COMPONENTS ───────────────────────────────────────────────────────────
 
-type FixedInstance = Parameters<typeof effectiveFixedAmount>[0];
+type FixedInstance = Parameters<typeof isBilled>[0];
 
 function MonthlyFixedSummary({
   instances,
@@ -45,12 +46,14 @@ function MonthlyFixedSummary({
 }) {
   const total = instances.length;
   const paid = instances.filter((i) => i.paid).length;
+  // AWAITING_BILL ("sin factura") instances have no known amount yet — they
+  // contribute $0 here until PR2/PR3 wire the dedicated "sin factura" UI.
   const paidAmount = instances
     .filter((i) => i.paid)
-    .reduce((sum, i) => sum + effectiveFixedAmount(i), 0);
+    .reduce((sum, i) => (isBilled(i) ? sum + billedFixedAmount(i) : sum), 0);
   const pendingAmount = instances
     .filter((i) => !i.paid)
-    .reduce((sum, i) => sum + effectiveFixedAmount(i), 0);
+    .reduce((sum, i) => (isBilled(i) ? sum + billedFixedAmount(i) : sum), 0);
 
   return (
     <Card>
@@ -217,10 +220,13 @@ function DashboardView() {
             amount: Math.round(p.total_amount / p.installments),
             category_id: p.category_id,
           })),
-        ...data.fixedExpenseInstances.map((fi) => ({
-          amount: effectiveFixedAmount(fi as FixedInstance),
-          category_id: fi.fixed_expense_templates.category_id,
-        })),
+        ...data.fixedExpenseInstances.map((fi) => {
+          const instance = fi as FixedInstance;
+          return {
+            amount: isBilled(instance) ? billedFixedAmount(instance) : 0,
+            category_id: fi.fixed_expense_templates.category_id,
+          };
+        }),
         ...data.variableExpenses.map((v) => ({
           amount: v.amount,
           category_id: v.category_id,
@@ -304,7 +310,7 @@ function DashboardView() {
                   <MonthlyFixedSummary
                     instances={
                       data.fixedExpenseInstances as Parameters<
-                        typeof effectiveFixedAmount
+                        typeof isBilled
                       >[0][]
                     }
                   />

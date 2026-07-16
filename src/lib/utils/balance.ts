@@ -1,6 +1,18 @@
 import type { Database } from "@/types/database";
 
-export type FixedInstanceStatus = "PENDING_CONFIRMATION" | "CONFIRMED";
+// ⚠️ Adding a status: this union is documentation, not enforcement.
+// `fixed_expense_instances.status` is typed as plain `string` in
+// database.ts (Supabase codegen doesn't emit a literal union for a `text`
+// column backed by a CHECK constraint), so nothing here is exhaustiveness
+// checked. If you add a new NON-BILLABLE status — to both this union and
+// the DB's `fixed_instance_status_check` — you MUST also add it to
+// `isBilled`'s exclusion below, by hand. Forgetting to do so will NOT
+// produce a compile error; it will silently bill the new status at full
+// weight.
+export type FixedInstanceStatus =
+  | "PENDING_CONFIRMATION"
+  | "CONFIRMED"
+  | "AWAITING_BILL";
 
 type Income = Database["public"]["Tables"]["incomes"]["Row"];
 type InstallmentPurchase =
@@ -11,7 +23,67 @@ type FixedExpenseInstance =
   };
 type VariableExpense = Database["public"]["Tables"]["variable_expenses"]["Row"];
 
-export function effectiveFixedAmount(instance: FixedExpenseInstance): number {
+/**
+ * A fixed expense instance whose bill has arrived — the only shape an
+ * amount may safely be read from. Obtainable only through `isBilled` /
+ * `partitionByBill`, never by construction.
+ */
+export type BilledInstance = FixedExpenseInstance & {
+  status: Exclude<FixedInstanceStatus, "AWAITING_BILL">;
+};
+
+/**
+ * Counts every status EXCEPT `"AWAITING_BILL"` — a negative predicate BY
+ * DESIGN (D2), so a legacy `"PENDING_CONFIRMATION"` row (the zombie-row
+ * guarantee — see `balance.test.ts` "legacy PENDING_CONFIRMATION still
+ * counts at full weight") keeps counting at full weight forever.
+ * `=== "CONFIRMED"` would silently drop every live `PENDING_CONFIRMATION`
+ * row out of the totals instead — never use the positive form here.
+ *
+ * Honesty note (do not remove): this predicate is NOT type-checked for
+ * exhaustiveness. `status` is plain `string` (see `FixedInstanceStatus`
+ * above), so if a future migration adds another non-billable status to the
+ * CHECK constraint but not to this `!==` check, TypeScript will not flag
+ * the omission — the new status gets billed at full weight, silently.
+ */
+export function isBilled(
+  instance: FixedExpenseInstance,
+): instance is BilledInstance {
+  return instance.status !== "AWAITING_BILL";
+}
+
+/**
+ * Splits fixed expense instances into billed (safe to read an amount from)
+ * and awaiting (excluded from every money total). `calculateMonthlyBalance`
+ * and `buildMonthSummaryLines` both partition through this single function
+ * so their fijos totals agree by construction.
+ */
+export function partitionByBill(instances: FixedExpenseInstance[]): {
+  billed: BilledInstance[];
+  awaiting: FixedExpenseInstance[];
+} {
+  const billed: BilledInstance[] = [];
+  const awaiting: FixedExpenseInstance[] = [];
+  for (const instance of instances) {
+    if (isBilled(instance)) {
+      billed.push(instance);
+    } else {
+      awaiting.push(instance);
+    }
+  }
+  return { billed, awaiting };
+}
+
+/**
+ * Amount for an instance `isBilled`/`partitionByBill` has already accepted
+ * as billed. You cannot call this on a raw `FixedExpenseInstance` — only on
+ * a `BilledInstance`, so a null `amount_override` can never silently fall
+ * back to `template.amount` on a row `isBilled` correctly rejected (the
+ * original bug's exact mechanism). That guarantee is only as strong as
+ * `isBilled`'s own predicate, though — see the honesty note there. This
+ * function does not re-check `status` itself.
+ */
+export function billedFixedAmount(instance: BilledInstance): number {
   return Number(
     instance.amount_override ?? instance.fixed_expense_templates.amount,
   );
@@ -34,6 +106,7 @@ export interface MonthlyBalance {
   fixedTotal: number;
   fixedSharedTotal: number;
   fixedIndividualTotal: number;
+  fixedAwaitingBillCount: number;
   variableTotal: number;
   variableSharedTotal: number;
   variableIndividualTotal: number;
@@ -74,17 +147,25 @@ export function calculateMonthlyBalance(params: {
       0,
     );
 
+  // AWAITING_BILL instances ("sin factura") are excluded from every money
+  // total below — their amount is unknown, not zero. Both partitions come
+  // from the same `partitionByBill` call `buildMonthSummaryLines` also uses,
+  // so the two totals agree by construction (see summary-lines.ts).
+  const { billed: billedFixedInstances, awaiting: awaitingFixedInstances } =
+    partitionByBill(fixedExpenseInstances);
+  const fixedAwaitingBillCount = awaitingFixedInstances.length;
+
   // Fixed expenses: sum effective amounts (override ?? template) for this month.
   // Only shared fixed expenses enter the proportional split; personal ones
   // belong to their owner and stay out of the settlement (like personal variables).
-  const fixedTotal = fixedExpenseInstances.reduce(
-    (sum, i) => sum + effectiveFixedAmount(i),
+  const fixedTotal = billedFixedInstances.reduce(
+    (sum, i) => sum + billedFixedAmount(i),
     0,
   );
 
-  const fixedSharedTotal = fixedExpenseInstances
+  const fixedSharedTotal = billedFixedInstances
     .filter(isSharedFixed)
-    .reduce((sum, i) => sum + effectiveFixedAmount(i), 0);
+    .reduce((sum, i) => sum + billedFixedAmount(i), 0);
 
   const fixedIndividualTotal = fixedTotal - fixedSharedTotal;
 
@@ -112,12 +193,12 @@ export function calculateMonthlyBalance(params: {
       .filter((v) => v.user_id === income.user_id && isSharedExpense(v))
       .reduce((sum, v) => sum + Number(v.amount), 0);
 
-    const actualPaidFixed = fixedExpenseInstances
+    const actualPaidFixed = billedFixedInstances
       .filter(
         (fi) =>
           fi.paid && fi.paid_by_user_id === income.user_id && isSharedFixed(fi),
       )
-      .reduce((sum, fi) => sum + effectiveFixedAmount(fi), 0);
+      .reduce((sum, fi) => sum + billedFixedAmount(fi), 0);
 
     const actualPaidInstallments = installmentPurchases
       .filter(
@@ -158,6 +239,7 @@ export function calculateMonthlyBalance(params: {
     fixedTotal,
     fixedSharedTotal,
     fixedIndividualTotal,
+    fixedAwaitingBillCount,
     variableTotal,
     variableSharedTotal,
     variableIndividualTotal,

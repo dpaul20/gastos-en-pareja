@@ -5,7 +5,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toggleFixedExpenseInstance } from "@/lib/actions/expenses";
 import { getUpcomingDues } from "@/lib/utils/due-dates";
 import type { FixedExpenseInstance, UpcomingDue } from "@/lib/utils/due-dates";
-import { effectiveFixedAmount } from "@/lib/utils/balance";
+import { isBilled, billedFixedAmount } from "@/lib/utils/balance";
 import { formatARS } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -20,7 +20,10 @@ interface DueItemProps {
 
 function DueItem({ due, showPayButton, onPay, isPaying }: DueItemProps) {
   const { instance } = due;
-  const amount = effectiveFixedAmount(instance);
+  // AWAITING_BILL instances have no known amount yet (sin factura) — the
+  // dashboard's upcoming-dues list only reflects billed amounts; PR2/PR3
+  // wire the "sin factura" row treatment for this widget.
+  const amount = isBilled(instance) ? billedFixedAmount(instance) : 0;
   const name = instance.fixed_expense_templates.description;
   const dueLabel = `Día ${due.dueDay}`;
 

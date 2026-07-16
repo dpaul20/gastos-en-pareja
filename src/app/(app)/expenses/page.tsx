@@ -10,7 +10,7 @@ import { Home, CreditCard, ShoppingCart, type LucideIcon } from "lucide-react";
 import { FAB as Fab } from "@/components/shared/fab";
 import { getCategoryIcon } from "@/lib/category-icons";
 import { formatARS, getMonthDate, getInitials, cn } from "@/lib/utils";
-import { effectiveFixedAmount } from "@/lib/utils/balance";
+import { isBilled, billedFixedAmount } from "@/lib/utils/balance";
 import { parseAmount } from "@/lib/utils/amount";
 import {
   useCoupleMember,
@@ -344,7 +344,9 @@ function ServiceListSheet({
           </div>
         )}
         {instances.map((fi) => {
-          const amount = effectiveFixedAmount(fi);
+          // AWAITING_BILL ("sin factura") has no known amount yet — the
+          // dashed "sin factura" row treatment lands in PR2/PR3.
+          const amount = isBilled(fi) ? billedFixedAmount(fi) : 0;
           return (
             <button
               key={fi.id}
@@ -431,7 +433,7 @@ function EditServiceSheet({
   onClose,
 }: EditServiceSheetProps) {
   const queryClient = useQueryClient();
-  const currentAmount = effectiveFixedAmount(instance);
+  const currentAmount = isBilled(instance) ? billedFixedAmount(instance) : 0;
   const currentDueDay =
     instance.due_day ?? instance.fixed_expense_templates.due_day;
   const [draft, setDraft] = useState(String(currentAmount));
@@ -1101,7 +1103,8 @@ function ExpensesView() {
                     >
                       {formatARS(
                         fijos.reduce(
-                          (s, fi) => s + effectiveFixedAmount(fi),
+                          (s, fi) =>
+                            isBilled(fi) ? s + billedFixedAmount(fi) : s,
                           0,
                         ),
                       )}
