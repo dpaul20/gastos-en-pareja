@@ -1385,7 +1385,7 @@ function ExpensesView() {
       )}
 
       {/* CARGAR FACTURA */}
-      {flow.step === "load-bill" && loadBillInstance && coupleId && (
+      {flow.step === "load-bill" && loadBillInstance && coupleId && data && (
         <LoadBillSheet
           instance={loadBillInstance}
           coupleId={coupleId}
@@ -1395,6 +1395,7 @@ function ExpensesView() {
           }
           members={profiles}
           currentUserId={member?.user_id}
+          monthlyData={data}
           onClose={() => setFlow({ step: "idle" })}
         />
       )}

@@ -151,9 +151,7 @@ test.describe("Expenses — tabs del segmented control", () => {
 
     await expect(expenses.dialogField("Monto total")).toBeVisible();
     await expect(expenses.dialogField("Cuotas")).toBeVisible();
-    await expect(
-      expenses.dialogField("Fecha del primer pago"),
-    ).toBeVisible();
+    await expect(expenses.dialogField("Fecha del primer pago")).toBeVisible();
   });
 
   test("el dialog de Servicios tiene el campo de vencimiento", async ({
@@ -378,6 +376,126 @@ test.describe("Dashboard — balance proporcional", () => {
     // partner's obligation minus their paid = 0-10000 = -10000, abs = 10000)
     // formatARS(10000) = "$10.000"
     expect(text).toContain("$10.000");
+  });
+
+  // PR5 (settlements-and-pending-bills, Phase 4a): closes the boundary
+  // PR3's load-bill-sheet.tsx left open — previewBillImpact's reopen
+  // warning, wired here for the first time. Reuses this describe's
+  // partner/income seeding (same TC-007 shape: Deivy 100k, partner 50k) so
+  // the 30k shared expense creates the same 10k debt, which is then settled
+  // in full BEFORE the bill loads — the exact "saldado, then a bill
+  // arrives" scenario the warning exists for.
+  test("PR5: 'Cargar factura' avisa cuando reabre un mes ya saldado", async ({
+    adminClient,
+    coupleId,
+    authenticatedPage: page,
+  }) => {
+    test.slow();
+    const BILL_DESC = `E2E-reopen-warning-${Date.now()}`;
+    let billTemplateId: string | null = null;
+
+    await adminClient.from("incomes").upsert(
+      [
+        {
+          couple_id: coupleId,
+          user_id: testUserId,
+          amount: 100_000,
+          month: currentMonth,
+        },
+        {
+          couple_id: coupleId,
+          user_id: partnerUserId,
+          amount: 50_000,
+          month: currentMonth,
+        },
+      ],
+      { onConflict: "couple_id,user_id,month" },
+    );
+
+    const today = new Date().toISOString().split("T")[0];
+    await adminClient.from("variable_expenses").insert({
+      couple_id: coupleId,
+      user_id: testUserId,
+      description: `${BILL_DESC}-expense`,
+      amount: 30_000,
+      date: today,
+      is_shared: true,
+    });
+
+    // Settle the 10k debt in full — the month is now "saldado"
+    // (remainingDebt = 0) BEFORE the bill below is loaded.
+    await adminClient.from("settlements").insert({
+      couple_id: coupleId,
+      month: currentMonth,
+      from_user_id: partnerUserId,
+      to_user_id: testUserId,
+      amount: 10_000,
+      paid_on: today,
+      created_by: testUserId,
+    });
+
+    const { data: template, error: templateError } = await adminClient
+      .from("fixed_expense_templates")
+      .insert({
+        couple_id: coupleId,
+        description: BILL_DESC,
+        amount: 6_000,
+        due_day: 10,
+        awaits_bill: true,
+        is_shared: true,
+      })
+      .select("id")
+      .single();
+    if (templateError || !template) {
+      throw new Error(`Template seed failed: ${templateError?.message}`);
+    }
+    billTemplateId = template.id;
+
+    await adminClient.from("fixed_expense_instances").insert({
+      template_id: template.id,
+      couple_id: coupleId,
+      month: currentMonth,
+      paid: false,
+      status: "AWAITING_BILL",
+    });
+
+    try {
+      await page.goto("/expenses");
+      await page.getByTestId("tab-servicios").click();
+      await expect(page.getByText(BILL_DESC)).toBeVisible({ timeout: 10_000 });
+
+      await page.getByTestId("open-load-bill").click();
+      await page.getByTestId("load-bill-sheet").waitFor({ state: "visible" });
+
+      // A $6.000 bill on a shared, fully-unpaid instance shifts the
+      // proportional split enough to flip the debtor and reopen a 2.000
+      // difference — see the matching Vitest fixture in settlement.test.ts
+      // for the worked math.
+      await page.getByTestId("load-bill-amount").fill("6000");
+
+      const warning = page.getByTestId("load-bill-impact-warning");
+      await expect(warning).toBeVisible({ timeout: 5_000 });
+      await expect(warning).toContainText("$2.000");
+    } finally {
+      await adminClient
+        .from("fixed_expense_instances")
+        .delete()
+        .eq("template_id", billTemplateId);
+      await adminClient
+        .from("fixed_expense_templates")
+        .delete()
+        .eq("id", billTemplateId);
+      await adminClient
+        .from("settlements")
+        .delete()
+        .eq("couple_id", coupleId)
+        .eq("month", currentMonth);
+      await adminClient
+        .from("variable_expenses")
+        .delete()
+        .eq("couple_id", coupleId)
+        .eq("description", `${BILL_DESC}-expense`);
+    }
   });
 });
 

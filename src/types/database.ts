@@ -462,6 +462,53 @@ export type Database = {
           },
         ];
       };
+      settlements: {
+        Row: {
+          amount: number;
+          couple_id: string;
+          created_at: string;
+          created_by: string;
+          from_user_id: string;
+          id: string;
+          month: string;
+          note: string | null;
+          paid_on: string;
+          to_user_id: string;
+        };
+        Insert: {
+          amount: number;
+          couple_id: string;
+          created_at?: string;
+          created_by: string;
+          from_user_id: string;
+          id?: string;
+          month: string;
+          note?: string | null;
+          paid_on: string;
+          to_user_id: string;
+        };
+        Update: {
+          amount?: number;
+          couple_id?: string;
+          created_at?: string;
+          created_by?: string;
+          from_user_id?: string;
+          id?: string;
+          month?: string;
+          note?: string | null;
+          paid_on?: string;
+          to_user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "settlements_couple_id_fkey";
+            columns: ["couple_id"];
+            isOneToOne: false;
+            referencedRelation: "couples";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       variable_expenses: {
         Row: {
           amount: number;

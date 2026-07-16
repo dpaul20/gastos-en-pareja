@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { PersonAvatar } from "@/components/shared/avatar";
@@ -8,6 +8,7 @@ import { ResponsiveModal } from "@/components/shared/responsive-modal";
 import { formatARS, getInitials } from "@/lib/utils";
 import { parseAmount } from "@/lib/utils/amount";
 import { isValidBillAmount, MAX_BILL_AMOUNT } from "@/lib/utils/bill-amount";
+import { previewBillImpact } from "@/lib/utils/settlement";
 import { loadFixedExpenseBill } from "@/lib/actions/expenses";
 import { useMonthlyData } from "@/lib/queries/use-monthly-data";
 
@@ -30,6 +31,10 @@ interface LoadBillSheetProps {
   readonly referenceAmount: number | null;
   readonly members: readonly CoupleMemberProfile[];
   readonly currentUserId?: string | null;
+  /** The full month dataset (PR5) — feeds `previewBillImpact`'s reopen
+   * warning. The parent only renders this sheet once its own
+   * `useMonthlyData` call has resolved, so this is always populated here. */
+  readonly monthlyData: MonthlyData;
   readonly onClose: () => void;
 }
 
@@ -39,14 +44,10 @@ interface LoadBillSheetProps {
  * mockup hand-rolled its own sheet chrome only because the local DS bundle
  * copy it was built against was stale; there is no new sheet primitive.
  *
- * PR5 BOUNDARY: the approved mockup shows a warning ("Agosto ya estaba
- * saldado... deja una diferencia de $X") when loading a bill reopens a
- * settled month. That warning is `previewBillImpact()`, a settlement-aware
- * function that does not exist until PR5 — `remainingDebt` itself is not a
- * concept this app has yet (settlements don't exist). Rendering an
- * approximate warning off today's data would be guessing at a number PR5
- * will compute for real, so this sheet deliberately shows NONE — this
- * comment marks exactly where PR5 wires `previewBillImpact` in.
+ * PR5: the approved mockup's reopen warning ("Agosto ya estaba saldado...
+ * deja una diferencia de $X") is wired here via `previewBillImpact` — a
+ * live preview recomputed on every keystroke, shown only when it would
+ * actually reopen an already-settled month.
  */
 export function LoadBillSheet({
   instance,
@@ -55,6 +56,7 @@ export function LoadBillSheet({
   referenceAmount,
   members,
   currentUserId,
+  monthlyData,
   onClose,
 }: LoadBillSheetProps) {
   const queryClient = useQueryClient();
@@ -67,6 +69,24 @@ export function LoadBillSheet({
   const [fieldError, setFieldError] = useState<string | null>(null);
 
   const name = instance.fixed_expense_templates.description;
+
+  // Live reopen-warning preview (PR5) — recomputed on every keystroke, null
+  // unless the typed amount is a validly-shaped number AND actually reopens
+  // an already-settled month. previewBillImpact is pure/cheap, so no
+  // debounce is needed for a single-instance recompute.
+  const parsedDraft = parseAmount(draft);
+  const impactPreview = useMemo(() => {
+    if (!Number.isFinite(parsedDraft) || parsedDraft <= 0) return null;
+    return previewBillImpact({
+      incomes: monthlyData.incomes,
+      installmentPurchases: monthlyData.activeInstallmentPurchases,
+      fixedExpenseInstances: monthlyData.fixedExpenseInstances,
+      variableExpenses: monthlyData.variableExpenses,
+      settlements: monthlyData.settlements,
+      instanceId: instance.id,
+      amount: parsedDraft,
+    });
+  }, [monthlyData, instance.id, parsedDraft]);
 
   const mutation = useMutation({
     mutationFn: ({ amount, payer }: { amount: number; payer: string | null }) =>
@@ -169,6 +189,20 @@ export function LoadBillSheet({
               style={{ color: "var(--fg-2)", fontFamily: "var(--font-sans)" }}
             >
               El mes pasado pagaste {formatARS(referenceAmount)}
+            </div>
+          )}
+          {impactPreview && (
+            <div
+              data-testid="load-bill-impact-warning"
+              role="status"
+              className="mt-1.5 text-xs"
+              style={{
+                color: "var(--status-warning-fg)",
+                fontFamily: "var(--font-sans)",
+              }}
+            >
+              Este mes ya estaba saldado — cargar esta factura deja una
+              diferencia de {formatARS(Math.abs(impactPreview.difference))}
             </div>
           )}
           {fieldError && (
