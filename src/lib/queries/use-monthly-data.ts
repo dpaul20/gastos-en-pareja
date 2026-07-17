@@ -18,43 +18,61 @@ export function monthlyDataQueryOptions(
 
       const supabase = createClient();
 
-      const [incomes, purchases, instances, variables, cards, overrides] =
-        await Promise.all([
-          supabase
-            .from("incomes")
-            .select("*")
-            .eq("couple_id", coupleId)
-            .eq("month", month)
-            .order("created_at", { ascending: true }),
+      const [
+        incomes,
+        purchases,
+        instances,
+        variables,
+        cards,
+        overrides,
+        settlements,
+      ] = await Promise.all([
+        supabase
+          .from("incomes")
+          .select("*")
+          .eq("couple_id", coupleId)
+          .eq("month", month)
+          .order("created_at", { ascending: true }),
 
-          supabase
-            .from("installment_purchases")
-            .select("*")
-            .eq("couple_id", coupleId)
-            .order("created_at", { ascending: false }),
+        supabase
+          .from("installment_purchases")
+          .select("*")
+          .eq("couple_id", coupleId)
+          .order("created_at", { ascending: false }),
 
-          supabase
-            .from("fixed_expense_instances")
-            .select("*, fixed_expense_templates(*)")
-            .eq("couple_id", coupleId)
-            .eq("month", month),
+        supabase
+          .from("fixed_expense_instances")
+          .select("*, fixed_expense_templates(*)")
+          .eq("couple_id", coupleId)
+          .eq("month", month),
 
-          supabase
-            .from("variable_expenses")
-            .select("*")
-            .eq("couple_id", coupleId)
-            .gte("date", month)
-            .lt("date", getNextMonth(month))
-            .order("date", { ascending: false }),
+        supabase
+          .from("variable_expenses")
+          .select("*")
+          .eq("couple_id", coupleId)
+          .gte("date", month)
+          .lt("date", getNextMonth(month))
+          .order("date", { ascending: false }),
 
-          supabase.from("cards").select("*").eq("couple_id", coupleId),
+        supabase.from("cards").select("*").eq("couple_id", coupleId),
 
-          supabase
-            .from("installment_month_overrides")
-            .select("*")
-            .eq("couple_id", coupleId)
-            .eq("month", month),
-        ]);
+        supabase
+          .from("installment_month_overrides")
+          .select("*")
+          .eq("couple_id", coupleId)
+          .eq("month", month),
+
+        // 7th parallel query (design D3/Data Flow): settlements ride this
+        // options object rather than a dedicated hook, so History's
+        // useQueries over the same monthlyDataQueryOptions gets them for
+        // free too — a separate hook would cost the same extra roundtrip.
+        supabase
+          .from("settlements")
+          .select("*")
+          .eq("couple_id", coupleId)
+          .eq("month", month)
+          .order("paid_on", { ascending: true }),
+      ]);
 
       const installmentPurchases = purchases.data ?? [];
 
@@ -74,6 +92,7 @@ export function monthlyDataQueryOptions(
         variableExpenses: variables.data ?? [],
         cards: cards.data ?? [],
         installmentMonthOverrides: overrides.data ?? [],
+        settlements: settlements.data ?? [],
       };
     },
   };

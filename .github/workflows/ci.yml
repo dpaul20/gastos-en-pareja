@@ -42,6 +42,36 @@ jobs:
       - name: Lint
         run: npx eslint --cache --cache-location .eslintcache
 
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - uses: actions/cache@v4
+        id: node-cache
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Install dependencies
+        if: steps.node-cache.outputs.cache-hit != 'true'
+        run: npm ci
+
+      # Enforces the compile-time invariant guard in settlement.test.ts
+      # (`HasSettlements` = false): Vitest strips types and never typechecks,
+      # so without this job that guard would silently rot if the balance
+      # signature ever grew a `settlements` field.
+      - name: Typecheck
+        run: npm run typecheck
+
   unit:
     name: Unit
     runs-on: ubuntu-latest

@@ -45,6 +45,10 @@ async function resetCoupleFinancialData(
     .eq("couple_id", coupleId);
   await admin.from("incomes").delete().eq("couple_id", coupleId);
   await admin.from("cards").delete().eq("couple_id", coupleId);
+  // PR5 (settlements-and-pending-bills): settlements are couple-scoped
+  // financial data too — without this, seeded rows from settlement tests
+  // would accumulate across the shared test couple the same way expenses did.
+  await admin.from("settlements").delete().eq("couple_id", coupleId);
 }
 
 /** Worker-scoped fixtures (one instance per worker, shared across tests) */

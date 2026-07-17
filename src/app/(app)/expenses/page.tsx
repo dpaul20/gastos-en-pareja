@@ -6,11 +6,17 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Home, CreditCard, ShoppingCart, type LucideIcon } from "lucide-react";
+import {
+  Home,
+  CreditCard,
+  ShoppingCart,
+  Info,
+  type LucideIcon,
+} from "lucide-react";
 import { FAB as Fab } from "@/components/shared/fab";
 import { getCategoryIcon } from "@/lib/category-icons";
-import { formatARS, getMonthDate, getInitials, cn } from "@/lib/utils";
-import { effectiveFixedAmount } from "@/lib/utils/balance";
+import { formatARS, getMonthDate, getInitials } from "@/lib/utils";
+import { isBilled, billedFixedAmount } from "@/lib/utils/balance";
 import { parseAmount } from "@/lib/utils/amount";
 import {
   useCoupleMember,
@@ -18,18 +24,21 @@ import {
   useCoupleMemberProfiles,
   useCategories,
 } from "@/lib/queries/use-monthly-data";
+import { useLastBilledAmounts } from "@/lib/queries/use-last-billed";
 import { useExpenseSave, type Tab } from "@/lib/queries/use-expense-save";
 import {
   updateFixedExpenseInstanceAmount,
   updateFixedExpenseInstanceDueDay,
   toggleFixedExpenseInstance,
-  confirmAllFixedExpenseInstances,
   deactivateFixedExpenseTemplate,
   reactivateFixedExpenseTemplate,
+  updateFixedExpenseTemplate,
+  markFixedExpenseInstanceAwaitingBill,
 } from "@/lib/actions/expenses";
 import { CuotaItem } from "./_components/cuota-item";
 import { FijoItem } from "./_components/fijo-item";
 import { VariableItem } from "./_components/variable-item";
+import { LoadBillSheet } from "./_components/load-bill-sheet";
 import {
   SegmentedControl,
   type ExpenseFilter,
@@ -73,6 +82,7 @@ type FlowState =
   | { step: "type-selector" }
   | { step: "service-list" }
   | { step: "edit-service"; instanceId: string }
+  | { step: "load-bill"; instanceId: string }
   | { step: "new-service" }
   | { step: "cuota-form" }
   | { step: "edit-cuota"; purchaseId: string }
@@ -344,7 +354,10 @@ function ServiceListSheet({
           </div>
         )}
         {instances.map((fi) => {
-          const amount = effectiveFixedAmount(fi);
+          // AWAITING_BILL ("sin factura") has no known amount yet — never
+          // fabricate "$0" here either (D1's exact trap, just in a list
+          // preview instead of a total).
+          const billed = isBilled(fi);
           return (
             <button
               key={fi.id}
@@ -372,12 +385,14 @@ function ServiceListSheet({
                 <div
                   className="text-xs"
                   style={{
-                    color: "var(--fg-3)",
-                    fontFamily: "var(--font-mono)",
+                    color: billed ? "var(--fg-3)" : "var(--status-pending)",
+                    fontFamily: billed
+                      ? "var(--font-mono)"
+                      : "var(--font-sans)",
                     marginTop: 2,
                   }}
                 >
-                  {formatARS(amount)}
+                  {billed ? formatARS(billedFixedAmount(fi)) : "sin monto"}
                 </div>
               </div>
               {fi.paid && (
@@ -422,6 +437,9 @@ interface EditServiceSheetProps {
   readonly coupleId: string;
   readonly month: string;
   readonly onClose: () => void;
+  /** Redirects to the "Cargar factura" sheet for this instance instead of
+   * closing back to idle — only used from the AWAITING_BILL CTA below. */
+  readonly onOpenLoadBill: (instanceId: string) => void;
 }
 
 function EditServiceSheet({
@@ -429,13 +447,18 @@ function EditServiceSheet({
   coupleId,
   month,
   onClose,
+  onOpenLoadBill,
 }: EditServiceSheetProps) {
   const queryClient = useQueryClient();
-  const currentAmount = effectiveFixedAmount(instance);
+  const isAwaitingBill = instance.status === "AWAITING_BILL";
+  const currentAmount = isBilled(instance) ? billedFixedAmount(instance) : 0;
   const currentDueDay =
     instance.due_day ?? instance.fixed_expense_templates.due_day;
   const [draft, setDraft] = useState(String(currentAmount));
   const [fieldError, setFieldError] = useState<string | null>(null);
+  const [awaitsBill, setAwaitsBill] = useState(
+    instance.fixed_expense_templates.awaits_bill,
+  );
 
   const {
     register,
@@ -484,6 +507,42 @@ function EditServiceSheet({
     },
   });
 
+  // "Hay que esperar la factura" — template-level flag (394): the ONLY
+  // user-reachable way to set `awaits_bill`. Saves immediately on toggle,
+  // same pattern as the paid switch above — not batched into the form
+  // submit below.
+  const awaitsBillMutation = useMutation({
+    mutationFn: ({
+      templateId,
+      value,
+    }: {
+      templateId: string;
+      value: boolean;
+    }) => updateFixedExpenseTemplate(templateId, { awaits_bill: value }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["monthly-data"] });
+    },
+    onError: () => {
+      // Revert the optimistic local toggle on failure.
+      setAwaitsBill((prev) => !prev);
+    },
+  });
+
+  // Per-instance override, independent of the template flag — "un mes
+  // Expensas no llegó" (394). Only reachable while the instance is
+  // currently billed (server-side guarded by canMarkAwaitingBill too).
+  const markAwaitingMutation = useMutation({
+    mutationFn: (instanceId: string) =>
+      markFixedExpenseInstanceAwaitingBill(instanceId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["monthly-data"] });
+      onClose();
+    },
+    onError: (err: Error) => {
+      setFieldError(err.message ?? "No se pudo marcar sin factura");
+    },
+  });
+
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
   const deleteMutation = useMutation({
@@ -505,13 +564,29 @@ function EditServiceSheet({
   });
 
   function handleSave(values: DueDayFields) {
+    const dueDay = Number.parseInt(values.due_day, 10);
+
+    // AWAITING_BILL has no amount to save here — it has no amount at all
+    // (D1). Loading one is a separate flow (`onOpenLoadBill`); this form
+    // only ever touches due day for an unpriced instance.
+    if (isAwaitingBill) {
+      if (dueDay !== currentDueDay) {
+        dueDayMutation.mutate(
+          { id: instance.id, dueDay },
+          { onSuccess: onClose },
+        );
+      } else {
+        onClose();
+      }
+      return;
+    }
+
     const parsed = parseAmount(draft);
     if (!Number.isFinite(parsed) || parsed <= 0) {
       setFieldError("El monto debe ser mayor a cero");
       return;
     }
     setFieldError(null);
-    const dueDay = Number.parseInt(values.due_day, 10);
 
     amountMutation.mutate(
       { id: instance.id, amount: parsed },
@@ -534,7 +609,9 @@ function EditServiceSheet({
     amountMutation.isPending ||
     toggleMutation.isPending ||
     dueDayMutation.isPending ||
-    deleteMutation.isPending;
+    deleteMutation.isPending ||
+    awaitsBillMutation.isPending ||
+    markAwaitingMutation.isPending;
   const name = instance.fixed_expense_templates.description;
 
   return (
@@ -545,75 +622,115 @@ function EditServiceSheet({
       data-testid="edit-service-sheet"
     >
       <form onSubmit={handleSubmit(handleSave)}>
-        {/* Amount edit */}
-        <div className="mb-3.5">
-          <label
-            htmlFor="edit-service-amount"
-            className="mb-1.5 block text-[13px] font-medium"
-            style={{ color: "var(--fg-2)", fontFamily: "var(--font-sans)" }}
-          >
-            Monto este mes
-          </label>
+        {/* Amount edit — AWAITING_BILL has no amount to edit here (D1): a
+            $0, editable field would be the exact trap this feature exists
+            to close. Redirect to "Cargar factura" instead. */}
+        {isAwaitingBill ? (
           <div
-            className="flex items-center overflow-hidden focus-within:ring-2 focus-within:ring-(--accent)"
+            data-testid="awaiting-bill-cta"
+            className="mb-3.5 flex items-center justify-between gap-3 rounded-xl"
             style={{
-              background: "var(--bg-sunken)",
-              borderRadius: 10,
-              border: "1.5px solid var(--border-default)",
+              padding: "11px 12px",
+              background: "var(--status-pending-subtle)",
+              border: "1px dashed var(--status-pending)",
             }}
           >
-            <span
-              aria-hidden
-              className="text-base font-semibold"
-              style={{
-                padding: "10px 6px 10px 12px",
-                color: "var(--fg-3)",
-                fontFamily: "var(--font-mono)",
-              }}
+            <div>
+              <div
+                className="text-[13px] font-semibold"
+                style={{
+                  color: "var(--status-pending)",
+                  fontFamily: "var(--font-sans)",
+                }}
+              >
+                Sin factura
+              </div>
+              <div
+                className="mt-0.5 text-xs"
+                style={{ color: "var(--fg-2)", fontFamily: "var(--font-sans)" }}
+              >
+                No suma al gasto real hasta que cargues el monto.
+              </div>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenLoadBill(instance.id)}
+              style={{ flexShrink: 0 }}
             >
-              $
-            </span>
-            <input
-              id="edit-service-amount"
-              type="text"
-              value={draft}
-              onChange={(e) => {
-                setDraft(e.target.value);
-                setFieldError(null);
-              }}
-              inputMode="decimal"
-              className="flex-1 text-base font-semibold"
-              style={{
-                border: "none",
-                background: "transparent",
-                padding: "10px 12px 10px 4px",
-                fontFamily: "var(--font-mono)",
-                outline: "none",
-                color: "var(--fg-1)",
-              }}
-            />
+              Cargar factura
+            </Button>
           </div>
-          {instance.amount_override == null && (
-            <div
-              className="mt-1 text-xs"
-              style={{ color: "var(--fg-3)", fontFamily: "var(--font-sans)" }}
+        ) : (
+          <div className="mb-3.5">
+            <label
+              htmlFor="edit-service-amount"
+              className="mb-1.5 block text-[13px] font-medium"
+              style={{ color: "var(--fg-2)", fontFamily: "var(--font-sans)" }}
             >
-              Default: {formatARS(instance.fixed_expense_templates.amount)}
-            </div>
-          )}
-          {fieldError && (
+              Monto este mes
+            </label>
             <div
-              role="alert"
-              className="mt-1 text-xs"
+              className="flex items-center overflow-hidden focus-within:ring-2 focus-within:ring-(--accent)"
               style={{
-                color: "var(--status-danger-text)",
-                fontFamily: "var(--font-sans)",
+                background: "var(--bg-sunken)",
+                borderRadius: 10,
+                border: "1.5px solid var(--border-default)",
               }}
             >
-              {fieldError}
+              <span
+                aria-hidden
+                className="text-base font-semibold"
+                style={{
+                  padding: "10px 6px 10px 12px",
+                  color: "var(--fg-3)",
+                  fontFamily: "var(--font-mono)",
+                }}
+              >
+                $
+              </span>
+              <input
+                id="edit-service-amount"
+                type="text"
+                value={draft}
+                onChange={(e) => {
+                  setDraft(e.target.value);
+                  setFieldError(null);
+                }}
+                inputMode="decimal"
+                className="flex-1 text-base font-semibold"
+                style={{
+                  border: "none",
+                  background: "transparent",
+                  padding: "10px 12px 10px 4px",
+                  fontFamily: "var(--font-mono)",
+                  outline: "none",
+                  color: "var(--fg-1)",
+                }}
+              />
             </div>
-          )}
-        </div>
+            {instance.amount_override == null && (
+              <div
+                className="mt-1 text-xs"
+                style={{ color: "var(--fg-3)", fontFamily: "var(--font-sans)" }}
+              >
+                Default: {formatARS(instance.fixed_expense_templates.amount)}
+              </div>
+            )}
+            {fieldError && (
+              <div
+                role="alert"
+                className="mt-1 text-xs"
+                style={{
+                  color: "var(--status-danger-text)",
+                  fontFamily: "var(--font-sans)",
+                }}
+              >
+                {fieldError}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Due day edit */}
         <div className="mb-3.5">
@@ -657,7 +774,8 @@ function EditServiceSheet({
           )}
         </div>
 
-        {/* Paid toggle */}
+        {/* Paid toggle — disabled while AWAITING_BILL: nothing has been
+            billed yet, so "already paid" is not a coherent state. */}
         <div className="mb-5 flex items-center justify-between">
           <span
             className="text-[13px] font-medium"
@@ -670,12 +788,79 @@ function EditServiceSheet({
             onCheckedChange={(checked) =>
               toggleMutation.mutate({ id: instance.id, paid: checked })
             }
-            disabled={isPending}
+            disabled={isPending || isAwaitingBill}
             aria-label={
               instance.paid ? "Marcar como no pagado" : "Marcar como pagado"
             }
           />
         </div>
+
+        {/* Template-level flag (394) — the only user-reachable way to set
+            `awaits_bill`. "Cada mes arranca sin monto..." copy matches the
+            approved mockup's "Editar servicio" screen. */}
+        <div
+          data-testid="awaits-bill-section"
+          className="mb-5 flex items-start gap-2.5 rounded-xl"
+          style={{
+            padding: "11px 12px",
+            background: "var(--accent-subtle)",
+          }}
+        >
+          <Switch
+            checked={awaitsBill}
+            onCheckedChange={(checked) => {
+              setAwaitsBill(checked);
+              awaitsBillMutation.mutate({
+                templateId: instance.template_id,
+                value: checked,
+              });
+            }}
+            disabled={isPending}
+            data-testid="toggle-awaits-bill"
+            aria-label="Hay que esperar la factura"
+          />
+          <div>
+            <div
+              className="text-[13px] font-semibold"
+              style={{ color: "var(--fg-1)", fontFamily: "var(--font-sans)" }}
+            >
+              Hay que esperar la factura
+            </div>
+            <div
+              className="mt-0.5 text-xs"
+              style={{ color: "var(--fg-2)", fontFamily: "var(--font-sans)" }}
+            >
+              Cada mes arranca sin monto y no suma hasta que la cargues.
+            </div>
+          </div>
+        </div>
+
+        {/* Per-instance override (394) — "un mes Expensas no llegó": marks
+            only THIS month's instance, independent of the template flag
+            above. Only reachable while the instance is currently billed. */}
+        {!isAwaitingBill && (
+          <button
+            type="button"
+            data-testid="mark-awaiting-bill"
+            onClick={() => markAwaitingMutation.mutate(instance.id)}
+            disabled={isPending}
+            className="mb-5 w-full"
+            style={{
+              background: "var(--bg-sunken)",
+              border: "1px dashed var(--status-pending)",
+              borderRadius: 10,
+              cursor: "pointer",
+              padding: "9px 4px",
+              color: "var(--status-pending)",
+              fontSize: 12,
+              fontWeight: 600,
+              fontFamily: "var(--font-sans)",
+              opacity: isPending ? 0.5 : 1,
+            }}
+          >
+            Marcar sin factura este mes
+          </button>
+        )}
 
         <Button
           type="submit"
@@ -818,7 +1003,6 @@ function ExpensesView() {
     fields: Record<string, string>,
     categoryId: string | null,
     autoRenew: boolean,
-    requiresMonthlyReview: boolean,
     isShared: boolean,
     payerId?: string | null,
     cardId?: string | null,
@@ -832,34 +1016,12 @@ function ExpensesView() {
           ? flow.expenseId
           : null;
     setFlow({ step: "idle" });
-    save(
-      fields,
-      categoryId,
-      autoRenew,
-      requiresMonthlyReview,
-      isShared,
-      payerId,
-      cardId,
-      editId,
-    );
+    save(fields, categoryId, autoRenew, isShared, payerId, cardId, editId);
   }
-
-  const queryClient = useQueryClient();
-
-  const confirmAllMutation = useMutation({
-    mutationFn: () => confirmAllFixedExpenseInstances(coupleId!, month),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["monthly-data"] });
-    },
-  });
 
   const allCuotas = data?.installmentPurchases ?? [];
   const allFijos = data?.fixedExpenseInstances ?? [];
   const allVariables = data?.variableExpenses ?? [];
-
-  const pendingFijosCount = allFijos.filter(
-    (fi) => fi.status === "PENDING_CONFIRMATION",
-  ).length;
 
   const cuotas = filterCategory
     ? allCuotas.filter((c) => c.category_id === filterCategory)
@@ -873,6 +1035,18 @@ function ExpensesView() {
     ? allVariables.filter((v) => v.category_id === filterCategory)
     : allVariables;
 
+  // "N sin factura — no están contados" + the per-row reference line both
+  // key off the currently VISIBLE (filtered) fijos — a hidden category's
+  // awaiting rows don't need their reference amount fetched either.
+  const awaitingFijosCount = fijos.filter(
+    (fi) => fi.status === "AWAITING_BILL",
+  ).length;
+  const { data: lastBilledAmounts } = useLastBilledAmounts(
+    coupleId,
+    month,
+    awaitingFijosCount,
+  );
+
   const showTodo = filter === "todo";
   const cuotasVisible = filter === "cuotas" || (showTodo && cuotas.length > 0);
   const fijosVisible = filter === "fijos" || (showTodo && fijos.length > 0);
@@ -884,6 +1058,12 @@ function ExpensesView() {
   // Resolve the active fixed instance for edit-service step
   const activeInstance =
     flow.step === "edit-service"
+      ? (allFijos.find((fi) => fi.id === flow.instanceId) ?? null)
+      : null;
+
+  // Resolve the active fixed instance for the "Cargar factura" sheet
+  const loadBillInstance =
+    flow.step === "load-bill"
       ? (allFijos.find((fi) => fi.id === flow.instanceId) ?? null)
       : null;
 
@@ -1029,29 +1209,6 @@ function ExpensesView() {
               )}
               {fijos.length > 0 && (
                 <>
-                  {pendingFijosCount > 0 && coupleId && (
-                    <div className="mb-2 flex justify-end">
-                      <Button
-                        data-testid="confirm-all-fijos"
-                        onClick={() => confirmAllMutation.mutate()}
-                        disabled={confirmAllMutation.isPending}
-                        variant="outline"
-                        size="sm"
-                        className={cn(
-                          "text-[13px] font-semibold",
-                          confirmAllMutation.isPending && "opacity-50",
-                        )}
-                        style={{
-                          border: `1.5px solid var(--status-danger-text)`,
-                          background:
-                            "color-mix(in srgb, var(--status-danger) 10%, transparent)",
-                          color: "var(--status-danger-text)",
-                        }}
-                      >
-                        Confirmar todos
-                      </Button>
-                    </div>
-                  )}
                   <ul
                     className="m-0 flex list-none flex-col overflow-hidden rounded-2xl p-0"
                     style={{
@@ -1071,41 +1228,70 @@ function ExpensesView() {
                           onEditDueDay={(id) =>
                             setFlow({ step: "edit-service", instanceId: id })
                           }
+                          onLoadBill={(id) =>
+                            setFlow({ step: "load-bill", instanceId: id })
+                          }
+                          referenceAmount={
+                            fi.status === "AWAITING_BILL"
+                              ? (lastBilledAmounts?.[fi.template_id] ?? null)
+                              : null
+                          }
                         />
                       </li>
                     ))}
                   </ul>
                   <div
-                    className="mt-2 flex justify-between rounded-xl px-4 py-3"
+                    className="mt-2 rounded-xl px-4 py-3"
                     style={{
                       background: "var(--bg-elevated)",
                       border: "1px solid var(--border-subtle)",
                     }}
                   >
-                    <span
-                      className="text-[13px] font-semibold"
-                      style={{
-                        color: "var(--fg-2)",
-                        fontFamily: "var(--font-sans)",
-                      }}
-                    >
-                      Total servicios
-                    </span>
-                    <span
-                      data-testid="fijos-total"
-                      className="text-[15px] font-bold"
-                      style={{
-                        fontFamily: "var(--font-mono)",
-                        color: "var(--fg-1)",
-                      }}
-                    >
-                      {formatARS(
-                        fijos.reduce(
-                          (s, fi) => s + effectiveFixedAmount(fi),
-                          0,
-                        ),
-                      )}
-                    </span>
+                    <div className="flex justify-between">
+                      <span
+                        className="text-[13px] font-semibold"
+                        style={{
+                          color: "var(--fg-2)",
+                          fontFamily: "var(--font-sans)",
+                        }}
+                      >
+                        Total servicios
+                      </span>
+                      <span
+                        data-testid="fijos-total"
+                        className="text-[15px] font-bold"
+                        style={{
+                          fontFamily: "var(--font-mono)",
+                          color: "var(--fg-1)",
+                        }}
+                      >
+                        {formatARS(
+                          fijos.reduce(
+                            (s, fi) =>
+                              isBilled(fi) ? s + billedFixedAmount(fi) : s,
+                            0,
+                          ),
+                        )}
+                      </span>
+                    </div>
+                    {awaitingFijosCount > 0 && (
+                      <div
+                        data-testid="awaiting-fijos-hint"
+                        className="mt-2.5 flex items-center gap-1.5 pt-2.5 text-xs"
+                        style={{
+                          borderTop: "1px solid var(--border-subtle)",
+                          // `--fg-3` fails AA on dark `--bg-elevated` (3.44:1,
+                          // a real axe finding) — `--fg-2` (6.23:1+) instead.
+                          color: "var(--fg-2)",
+                          fontFamily: "var(--font-sans)",
+                        }}
+                      >
+                        <Info aria-hidden size={13} />
+                        {awaitingFijosCount === 1
+                          ? "1 sin factura — no está contada"
+                          : `${awaitingFijosCount} sin factura — no están contados`}
+                      </div>
+                    )}
                   </div>
                 </>
               )}
@@ -1191,6 +1377,25 @@ function ExpensesView() {
           instance={activeInstance}
           coupleId={coupleId}
           month={month}
+          onClose={() => setFlow({ step: "idle" })}
+          onOpenLoadBill={(id) =>
+            setFlow({ step: "load-bill", instanceId: id })
+          }
+        />
+      )}
+
+      {/* CARGAR FACTURA */}
+      {flow.step === "load-bill" && loadBillInstance && coupleId && data && (
+        <LoadBillSheet
+          instance={loadBillInstance}
+          coupleId={coupleId}
+          month={month}
+          referenceAmount={
+            lastBilledAmounts?.[loadBillInstance.template_id] ?? null
+          }
+          members={profiles}
+          currentUserId={member?.user_id}
+          monthlyData={data}
           onClose={() => setFlow({ step: "idle" })}
         />
       )}

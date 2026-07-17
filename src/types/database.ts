@@ -160,6 +160,7 @@ export type Database = {
       fixed_expense_instances: {
         Row: {
           amount_override: number | null;
+          billed_at: string | null;
           couple_id: string;
           created_at: string;
           due_day: number | null;
@@ -172,6 +173,7 @@ export type Database = {
         };
         Insert: {
           amount_override?: number | null;
+          billed_at?: string | null;
           couple_id: string;
           created_at?: string;
           due_day?: number | null;
@@ -184,6 +186,7 @@ export type Database = {
         };
         Update: {
           amount_override?: number | null;
+          billed_at?: string | null;
           couple_id?: string;
           created_at?: string;
           due_day?: number | null;
@@ -215,6 +218,7 @@ export type Database = {
         Row: {
           active: boolean;
           amount: number;
+          awaits_bill: boolean;
           category_id: string | null;
           couple_id: string;
           created_at: string;
@@ -228,6 +232,7 @@ export type Database = {
         Insert: {
           active?: boolean;
           amount: number;
+          awaits_bill?: boolean;
           category_id?: string | null;
           couple_id: string;
           created_at?: string;
@@ -241,6 +246,7 @@ export type Database = {
         Update: {
           active?: boolean;
           amount?: number;
+          awaits_bill?: boolean;
           category_id?: string | null;
           couple_id?: string;
           created_at?: string;
@@ -449,6 +455,53 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "invitations_couple_id_fkey";
+            columns: ["couple_id"];
+            isOneToOne: false;
+            referencedRelation: "couples";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      settlements: {
+        Row: {
+          amount: number;
+          couple_id: string;
+          created_at: string;
+          created_by: string;
+          from_user_id: string;
+          id: string;
+          month: string;
+          note: string | null;
+          paid_on: string;
+          to_user_id: string;
+        };
+        Insert: {
+          amount: number;
+          couple_id: string;
+          created_at?: string;
+          created_by: string;
+          from_user_id: string;
+          id?: string;
+          month: string;
+          note?: string | null;
+          paid_on: string;
+          to_user_id: string;
+        };
+        Update: {
+          amount?: number;
+          couple_id?: string;
+          created_at?: string;
+          created_by?: string;
+          from_user_id?: string;
+          id?: string;
+          month?: string;
+          note?: string | null;
+          paid_on?: string;
+          to_user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "settlements_couple_id_fkey";
             columns: ["couple_id"];
             isOneToOne: false;
             referencedRelation: "couples";

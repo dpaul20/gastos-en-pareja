@@ -250,6 +250,9 @@
   --status-danger-text: var(--color-coral-400);
   --status-warning-subtle: rgba(253, 203, 110, 0.12);
   --status-warning-fg: var(--color-amber-300);
+  --status-pending: var(
+    --color-neutral-450
+  ); /* #9a9aa6 — was inheriting light's neutral-400 (2.8:1, fails AA); 6.88:1 bg-base · 6.23:1 elevated · 5.27:1 on pending-subtle ✅ AA (D4) */
   --status-pending-subtle: rgba(255, 255, 255, 0.06);
 
   --border-subtle: rgba(255, 255, 255, 0.06);

@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { buildMonthSummaryLines } from "../summary-lines";
+import { calculateMonthlyBalance } from "../balance";
 import type { Database } from "@/types/database";
 
 type Income = Database["public"]["Tables"]["incomes"]["Row"];
@@ -62,6 +63,7 @@ function makeTemplate(
     is_shared: true,
     owner_user_id: null,
     requires_monthly_review: false,
+    awaits_bill: false,
     created_at: "",
     ...overrides,
   };
@@ -80,6 +82,7 @@ function makeInstance(
     paid: false,
     paid_by_user_id: null,
     amount_override: null,
+    billed_at: null,
     status: "CONFIRMED",
     created_at: "",
     fixed_expense_templates: template,
@@ -173,7 +176,7 @@ describe("buildMonthSummaryLines", () => {
     expect(result.cuotas).toHaveLength(1);
   });
 
-  it("mapea fijos usando effectiveFixedAmount (amount_override ?? template.amount)", () => {
+  it("mapea fijos usando billedFixedAmount (amount_override ?? template.amount)", () => {
     const template = makeTemplate({ description: "Alquiler", amount: 100_000 });
     const result = buildMonthSummaryLines({
       incomes: [],
@@ -190,6 +193,95 @@ describe("buildMonthSummaryLines", () => {
       label: "Alquiler",
       amount: 110_000,
     });
+  });
+
+  it("excluye instancias AWAITING_BILL de fijos — nunca aparecen con monto $0 (trap 1)", () => {
+    const template = makeTemplate({ description: "Epec", amount: 72_375 });
+    const result = buildMonthSummaryLines({
+      incomes: [],
+      installmentPurchases: [],
+      fixedExpenseInstances: [
+        makeInstance(
+          { id: "fi-epec", status: "AWAITING_BILL", amount_override: null },
+          template,
+        ),
+      ],
+      variableExpenses: [],
+    });
+
+    expect(result.fijos).toHaveLength(0);
+  });
+
+  it("una instancia PENDING_CONFIRMATION viva sigue apareciendo en fijos (simétrico al zombie-row guarantee de balance.test.ts)", () => {
+    const template = makeTemplate({ description: "Luz", amount: 80_000 });
+    const result = buildMonthSummaryLines({
+      incomes: [],
+      installmentPurchases: [],
+      fixedExpenseInstances: [
+        makeInstance(
+          { id: "fi-luz", status: "PENDING_CONFIRMATION" },
+          template,
+        ),
+      ],
+      variableExpenses: [],
+    });
+
+    expect(result.fijos).toHaveLength(1);
+    expect(result.fijos[0]).toMatchObject({
+      id: "fi-luz",
+      label: "Luz",
+      amount: 80_000,
+    });
+  });
+
+  it("invariante: suma de lines.fijos === calculateMonthlyBalance().fixedTotal con un AWAITING_BILL presente", () => {
+    const awaitingTemplate = makeTemplate({
+      id: "tpl-epec",
+      description: "Epec",
+      amount: 72_375,
+      awaits_bill: true,
+    });
+    const confirmedTemplate = makeTemplate({
+      id: "tpl-expensas",
+      description: "Expensas",
+      amount: 26_292,
+    });
+    const fixedExpenseInstances = [
+      makeInstance(
+        {
+          id: "fi-epec",
+          status: "AWAITING_BILL",
+          amount_override: null,
+          template_id: "tpl-epec",
+        },
+        awaitingTemplate,
+      ),
+      makeInstance(
+        {
+          id: "fi-expensas",
+          status: "CONFIRMED",
+          template_id: "tpl-expensas",
+        },
+        confirmedTemplate,
+      ),
+    ];
+
+    const lines = buildMonthSummaryLines({
+      incomes: [],
+      installmentPurchases: [],
+      fixedExpenseInstances,
+      variableExpenses: [],
+    });
+    const balance = calculateMonthlyBalance({
+      incomes: [],
+      installmentPurchases: [],
+      fixedExpenseInstances,
+      variableExpenses: [],
+    });
+
+    const linesSum = lines.fijos.reduce((s, l) => s + l.amount, 0);
+    expect(linesSum).toBe(balance.fixedTotal);
+    expect(linesSum).toBe(26_292);
   });
 
   it("mapea variables 1:1 con su descripción y monto", () => {

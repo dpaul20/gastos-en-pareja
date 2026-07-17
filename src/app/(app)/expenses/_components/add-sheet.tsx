@@ -255,7 +255,6 @@ export function AddSheet({
     data: Record<string, string>,
     categoryId: string | null,
     autoRenew: boolean,
-    requiresMonthlyReview: boolean,
     isShared: boolean,
     payerId?: string | null,
     cardId?: string | null,
@@ -274,7 +273,6 @@ export function AddSheet({
     editingCuota?.category_id ?? editingVariable?.category_id ?? null,
   );
   const [autoRenew, setAutoRenew] = useState(editingCuota?.auto_renew ?? false);
-  const [requiresMonthlyReview, setRequiresMonthlyReview] = useState(false);
   const [isShared, setIsShared] = useState(editingVariable?.is_shared ?? true);
   const [payerId, setPayerId] = useState<string | null>(
     editingCuota?.paid_by_user_id ?? currentUserId ?? null,
@@ -333,7 +331,6 @@ export function AddSheet({
       ) as Record<string, string>,
       categoryId,
       autoRenew,
-      requiresMonthlyReview,
       isShared,
       tab === "cuotas" || (tab === "fijos" && !isShared) ? payerId : undefined,
       tab === "cuotas" ? cardId : undefined,
@@ -453,35 +450,6 @@ export function AddSheet({
                 {errors.due_day.message}
               </div>
             )}
-          </div>
-        )}
-
-        {tab === "fijos" && (
-          <div
-            style={{
-              marginBottom: 14,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              minHeight: 44,
-            }}
-          >
-            <span
-              style={{
-                fontSize: 13,
-                fontWeight: 500,
-                color: "var(--fg-2)",
-                fontFamily: "var(--font-sans)",
-              }}
-            >
-              Pedirme confirmación cada mes
-            </span>
-            <Switch
-              checked={requiresMonthlyReview}
-              onCheckedChange={setRequiresMonthlyReview}
-              data-testid="toggle-requires-review"
-              aria-label="Pedirme confirmación cada mes"
-            />
           </div>
         )}
 
