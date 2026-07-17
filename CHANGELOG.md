@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.21.0](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.20.0...gastos-en-pareja-v1.21.0) (2026-07-17)
+
+
+### ✨ Features
+
+* **settlements:** settlements and pending bills (sin factura + liquidar) ([#149](https://github.com/dpaul20/gastos-en-pareja/issues/149)) ([bef9f09](https://github.com/dpaul20/gastos-en-pareja/commit/bef9f09a78e365f9682cf89b1bb0b8d7b4a6ad09))
+
 ## [1.20.0](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.19.0...gastos-en-pareja-v1.20.0) (2026-07-15)
 
 
