@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { getCouple } from "./expenses";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import { createServiceClient } from "@/lib/supabase/server";
+import { assertValidSettlement } from "@/lib/utils/settlement";
 import type { Database } from "@/types/database";
 
 // ── SETTLEMENTS ────────────────────────────────────────────────
@@ -13,40 +14,39 @@ import type { Database } from "@/types/database";
 // duplicating couple resolution. Never touches expense attribution — see
 // src/lib/utils/settlement.ts for the pure math this data layer feeds.
 
+type SettlementUpdate = Database["public"]["Tables"]["settlements"]["Update"];
+
 /**
- * Verifies `userId` is a member of `coupleId` — the IDOR guard for
- * `from_user_id`/`to_user_id`. Unlike `createInstallmentPurchase`'s payer
- * field (which silently falls back to the caller on an invalid id), a
- * settlement's two parties are the entire meaning of the record: silently
- * substituting one would record a transaction between the wrong people, so
- * this throws instead of falling back.
+ * Verifies every id in `userIds` belongs to `coupleId` — the IDOR guard for
+ * `from_user_id`/`to_user_id`.
+ *
+ * MUST use the service client. The `couple_members` SELECT policy is
+ * `user_id = auth.uid()`, so the RLS client only ever sees the CALLER's own
+ * membership row. A settlement's other party is, by definition, the partner,
+ * whose row is invisible under RLS — validating it with the RLS client
+ * rejected every real settlement. Same bug class already fixed in
+ * `ensureIncomeCarriedForward`; one query reads the full member list and both
+ * parties are checked against it.
+ *
+ * Throws instead of falling back (unlike `createInstallmentPurchase`'s payer
+ * field): a settlement's two parties are the entire meaning of the record, so
+ * silently substituting one would log a transaction between the wrong people.
  */
-async function assertCoupleMember(
-  supabase: SupabaseClient<Database>,
+async function assertCoupleMembers(
   coupleId: string,
-  userId: string,
+  userIds: string[],
 ): Promise<void> {
-  const { data } = await supabase
+  const service = await createServiceClient();
+  const { data: members } = await service
     .from("couple_members")
     .select("user_id")
-    .eq("couple_id", coupleId)
-    .eq("user_id", userId)
-    .maybeSingle();
-  if (!data) {
-    throw new Error("La persona seleccionada no pertenece a esta pareja");
-  }
-}
+    .eq("couple_id", coupleId);
 
-function assertValidSettlement(params: {
-  amount: number;
-  from_user_id: string;
-  to_user_id: string;
-}): void {
-  if (!Number.isFinite(params.amount) || params.amount <= 0) {
-    throw new Error("El monto debe ser mayor a cero");
-  }
-  if (params.from_user_id === params.to_user_id) {
-    throw new Error("No podés registrar un pago a vos mismo");
+  const memberIds = new Set((members ?? []).map((m) => m.user_id));
+  for (const id of userIds) {
+    if (!memberIds.has(id)) {
+      throw new Error("La persona seleccionada no pertenece a esta pareja");
+    }
   }
 }
 
@@ -64,8 +64,7 @@ export async function createSettlement(data: {
   // Either member may record a settlement between either party (spec:
   // "either member records"), so both ids are validated regardless of
   // which one matches the caller.
-  await assertCoupleMember(supabase, coupleId, data.from_user_id);
-  await assertCoupleMember(supabase, coupleId, data.to_user_id);
+  await assertCoupleMembers(coupleId, [data.from_user_id, data.to_user_id]);
 
   const { error } = await supabase.from("settlements").insert({
     couple_id: coupleId,
@@ -115,16 +114,27 @@ export async function updateSettlement(
     to_user_id: nextTo,
   });
 
-  if (data.from_user_id) {
-    await assertCoupleMember(supabase, coupleId, data.from_user_id);
+  // Only re-validate the parties that actually changed; both are read from
+  // the same couple member list.
+  const changedParties: string[] = [];
+  if (data.from_user_id) changedParties.push(data.from_user_id);
+  if (data.to_user_id) changedParties.push(data.to_user_id);
+  if (changedParties.length) {
+    await assertCoupleMembers(coupleId, changedParties);
   }
-  if (data.to_user_id) {
-    await assertCoupleMember(supabase, coupleId, data.to_user_id);
-  }
+
+  // Whitelist the columns a client may update — never spread the raw payload
+  // into `.update()`, which would let an unexpected key reach the table.
+  const patch: SettlementUpdate = {};
+  if (data.amount !== undefined) patch.amount = data.amount;
+  if (data.note !== undefined) patch.note = data.note;
+  if (data.paid_on !== undefined) patch.paid_on = data.paid_on;
+  if (data.from_user_id !== undefined) patch.from_user_id = data.from_user_id;
+  if (data.to_user_id !== undefined) patch.to_user_id = data.to_user_id;
 
   const { error } = await supabase
     .from("settlements")
-    .update(data)
+    .update(patch)
     .eq("id", id)
     .eq("couple_id", coupleId);
 

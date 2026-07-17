@@ -100,6 +100,27 @@ export function summarizeSettlements(params: {
   };
 }
 
+/**
+ * Guards a settlement's core invariants before it is written: a positive,
+ * finite amount and two DISTINCT parties. Pure (throws, no I/O) so it is
+ * unit-tested here directly, rather than only through the Server Actions that
+ * call it (`createSettlement`/`updateSettlement`), which live outside Vitest's
+ * coverage. Member-of-couple validation is deliberately NOT here — that needs
+ * the DB and is enforced in the action via the service client.
+ */
+export function assertValidSettlement(params: {
+  amount: number;
+  from_user_id: string;
+  to_user_id: string;
+}): void {
+  if (!Number.isFinite(params.amount) || params.amount <= 0) {
+    throw new Error("El monto debe ser mayor a cero");
+  }
+  if (params.from_user_id === params.to_user_id) {
+    throw new Error("No podés registrar un pago a vos mismo");
+  }
+}
+
 export interface BillImpactPreview {
   currentRemainingDebt: number;
   projectedRemainingDebt: number;

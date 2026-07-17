@@ -3,6 +3,7 @@ import { calculateMonthlyBalance } from "../balance";
 import {
   summarizeSettlements,
   previewBillImpact,
+  assertValidSettlement,
   type Settlement,
 } from "../settlement";
 
@@ -127,6 +128,26 @@ describe("summarizeSettlements", () => {
     });
     expect(result.settledTotal).toBe(15_000);
     expect(result.remainingDebt).toBe(-15_000);
+  });
+
+  it("defensive: a settlement between unexpected parties is ADDED, never silently dropped (settlement.ts:89-92)", () => {
+    const settlements: Settlement[] = [
+      { from_user_id: ANNIE_ID, to_user_id: DEIVY_ID, amount: 10_000 },
+      // Can't happen in a real two-person couple, but the reducer must never
+      // drop money it doesn't recognize — it adds it in the debt direction.
+      {
+        from_user_id: "user-stranger",
+        to_user_id: "user-other",
+        amount: 5_000,
+      },
+    ];
+    const result = summarizeSettlements({
+      debtor: ANNIE_ID,
+      creditor: DEIVY_ID,
+      debtAmount: 20_000,
+      settlements,
+    });
+    expect(result.settledTotal).toBe(15_000);
   });
 });
 
@@ -263,17 +284,27 @@ describe("previewBillImpact", () => {
     expect(result).toBeNull();
   });
 
-  it("returns null when loading the bill does not actually reopen the month", () => {
-    // Nothing is AWAITING_BILL and a $0 hypothetical amount on a non-existent
-    // instance id changes nothing — projected stays equal to current.
+  it("returns null via the SECOND guard: month already settled AND the bill keeps it at zero (settlement.ts:176)", () => {
+    // This reaches the "does not reopen" guard, NOT the earlier
+    // `currentRemainingDebt > 0` short-circuit. A month with no billed
+    // expenses is balanced (no debtor, remainingDebt 0), so it PASSES the
+    // first guard. The only instance is AWAITING_BILL (excluded from the
+    // current math); billing it at $0 adds no obligation, so
+    // projectedRemainingDebt stays exactly 0 and line 176 is the return.
+    const awaitingInstance = {
+      ...baseFixedInstances[0],
+      id: "fi-awaiting",
+      paid: false,
+      paid_by_user_id: null,
+      amount_override: null,
+      status: "AWAITING_BILL",
+    };
     const result = previewBillImpact({
       ...params,
-      fixedExpenseInstances: baseFixedInstances,
-      settlements: [
-        { from_user_id: ANNIE_ID, to_user_id: DEIVY_ID, amount: 0 },
-      ],
-      instanceId: "does-not-exist",
-      amount: 100,
+      fixedExpenseInstances: [awaitingInstance],
+      settlements: [],
+      instanceId: "fi-awaiting",
+      amount: 0,
     });
     expect(result).toBeNull();
   });
@@ -340,5 +371,59 @@ describe("previewBillImpact", () => {
     expect(result?.currentRemainingDebt).toBe(0);
     expect(result?.projectedRemainingDebt).toBe(2_000);
     expect(result?.difference).toBe(2_000);
+  });
+});
+
+// ── assertValidSettlement ────────────────────────────────────────────────
+
+describe("assertValidSettlement", () => {
+  it("accepts a positive amount between two distinct parties", () => {
+    expect(() =>
+      assertValidSettlement({
+        amount: 10_000,
+        from_user_id: ANNIE_ID,
+        to_user_id: DEIVY_ID,
+      }),
+    ).not.toThrow();
+  });
+
+  it("rejects a zero amount", () => {
+    expect(() =>
+      assertValidSettlement({
+        amount: 0,
+        from_user_id: ANNIE_ID,
+        to_user_id: DEIVY_ID,
+      }),
+    ).toThrow("El monto debe ser mayor a cero");
+  });
+
+  it("rejects a negative amount", () => {
+    expect(() =>
+      assertValidSettlement({
+        amount: -1,
+        from_user_id: ANNIE_ID,
+        to_user_id: DEIVY_ID,
+      }),
+    ).toThrow("El monto debe ser mayor a cero");
+  });
+
+  it("rejects a non-finite amount (NaN/Infinity from a bad payload)", () => {
+    expect(() =>
+      assertValidSettlement({
+        amount: Number.NaN,
+        from_user_id: ANNIE_ID,
+        to_user_id: DEIVY_ID,
+      }),
+    ).toThrow("El monto debe ser mayor a cero");
+  });
+
+  it("rejects a settlement to oneself (from === to)", () => {
+    expect(() =>
+      assertValidSettlement({
+        amount: 10_000,
+        from_user_id: ANNIE_ID,
+        to_user_id: ANNIE_ID,
+      }),
+    ).toThrow("No podés registrar un pago a vos mismo");
   });
 });
