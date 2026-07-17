@@ -1,4 +1,5 @@
 import type { Database } from "@/types/database";
+import { isBilled } from "./balance";
 
 type FixedExpenseInstanceRow =
   Database["public"]["Tables"]["fixed_expense_instances"]["Row"];
@@ -68,6 +69,13 @@ export function getUpcomingDues(
 
   for (const instance of instances) {
     if (instance.paid) continue;
+    // "sin factura" (AWAITING_BILL) instances have no bill yet: no amount and
+    // nothing to pay, so they can never be "due" or "overdue" — showing one as
+    // "vencido" (and offering a Pagar button that would mark a non-existent
+    // bill paid) is the bug this guards. They surface in /expenses' sin-factura
+    // row instead. Keyed off isBilled (status !== AWAITING_BILL) so legacy
+    // PENDING_CONFIRMATION rows, which DO carry an amount, still appear here.
+    if (!isBilled(instance)) continue;
 
     const rawDueDay =
       instance.due_day ?? instance.fixed_expense_templates.due_day;
