@@ -21,6 +21,7 @@ import {
   isBilled,
   billedFixedAmount,
 } from "@/lib/utils/balance";
+import { summarizeSettlements } from "@/lib/utils/settlement";
 import { groupByCategory } from "@/lib/utils/categories";
 import { buildMonthSummaryLines } from "@/lib/utils/summary-lines";
 import { MonthSummaryCard } from "@/components/shared/month-summary-card";
@@ -31,6 +32,7 @@ import {
 import { NoCoupleState } from "./_components/no-couple-state";
 import { NewInstancesBanner } from "./_components/new-instances-banner";
 import { BalanceCard } from "./_components/balance-card";
+import { SettleSheet } from "./_components/settle-sheet";
 import { CategoryBreakdownCard } from "./_components/category-breakdown-card";
 import { UpcomingDuesWidget } from "./_components/upcoming-dues-widget";
 
@@ -107,6 +109,7 @@ function DashboardView() {
     monthParamToDate(searchParams.get("mes")),
   );
   const [newInstancesBanner, setNewInstancesBanner] = useState(0);
+  const [settleOpen, setSettleOpen] = useState(false);
   const month = getMonthDate(currentDate);
   const isCurrentMonth = month === getMonthDate();
 
@@ -188,6 +191,29 @@ function DashboardView() {
             variableExpenses: data.variableExpenses,
           })
         : null,
+    [data],
+  );
+
+  // Settlements layered on top of the balance (PR6). Never feeds back into
+  // calculateMonthlyBalance — it only reports the debt that remains after
+  // recorded payments (design D3, structural invariant).
+  const settlementSummary = useMemo(
+    () =>
+      balance && data
+        ? summarizeSettlements({
+            debtor: balance.debtor,
+            creditor: balance.creditor,
+            debtAmount: balance.debtAmount,
+            settlements: data.settlements,
+          })
+        : null,
+    [balance, data],
+  );
+
+  const awaitingBillCount = useMemo(
+    () =>
+      data?.fixedExpenseInstances.filter((i) => i.status === "AWAITING_BILL")
+        .length ?? 0,
     [data],
   );
 
@@ -290,12 +316,15 @@ function DashboardView() {
                   month={month}
                 />
               )}
-              {balance && (
+              {balance && settlementSummary && (
                 <BalanceCard
                   balance={balance}
+                  summary={settlementSummary}
+                  awaitingBillCount={awaitingBillCount}
                   month={month}
                   myProfile={myProfile}
                   partnerProfile={partnerProfile}
+                  onRegisterPayment={() => setSettleOpen(true)}
                 />
               )}
               {data?.fixedExpenseInstances &&
@@ -341,6 +370,23 @@ function DashboardView() {
             </div>
           </div>
         </div>
+      )}
+
+      {settleOpen && coupleId && settlementSummary?.direction && (
+        <SettleSheet
+          coupleId={coupleId}
+          month={month}
+          members={
+            [myProfile, partnerProfile].filter(Boolean) as {
+              user_id: string;
+              full_name: string;
+            }[]
+          }
+          defaultFromUserId={settlementSummary.direction.debtor}
+          defaultToUserId={settlementSummary.direction.creditor}
+          defaultAmount={settlementSummary.remainingDebt}
+          onClose={() => setSettleOpen(false)}
+        />
       )}
     </div>
   );
