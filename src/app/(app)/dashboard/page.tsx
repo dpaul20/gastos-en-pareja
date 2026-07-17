@@ -22,6 +22,7 @@ import {
   billedFixedAmount,
 } from "@/lib/utils/balance";
 import { summarizeSettlements } from "@/lib/utils/settlement";
+import type { Database } from "@/types/database";
 import { groupByCategory } from "@/lib/utils/categories";
 import { buildMonthSummaryLines } from "@/lib/utils/summary-lines";
 import { MonthSummaryCard } from "@/components/shared/month-summary-card";
@@ -39,6 +40,7 @@ import { UpcomingDuesWidget } from "./_components/upcoming-dues-widget";
 // ── SUB-COMPONENTS ───────────────────────────────────────────────────────────
 
 type FixedInstance = Parameters<typeof isBilled>[0];
+type SettlementRow = Database["public"]["Tables"]["settlements"]["Row"];
 
 function MonthlyFixedSummary({
   instances,
@@ -110,6 +112,8 @@ function DashboardView() {
   );
   const [newInstancesBanner, setNewInstancesBanner] = useState(0);
   const [settleOpen, setSettleOpen] = useState(false);
+  const [editingSettlement, setEditingSettlement] =
+    useState<SettlementRow | null>(null);
   const month = getMonthDate(currentDate);
   const isCurrentMonth = month === getMonthDate();
 
@@ -324,7 +328,9 @@ function DashboardView() {
                   month={month}
                   myProfile={myProfile}
                   partnerProfile={partnerProfile}
+                  settlements={data?.settlements ?? []}
                   onRegisterPayment={() => setSettleOpen(true)}
+                  onEditSettlement={setEditingSettlement}
                 />
               )}
               {data?.fixedExpenseInstances &&
@@ -372,22 +378,28 @@ function DashboardView() {
         </div>
       )}
 
-      {settleOpen && coupleId && settlementSummary?.direction && (
-        <SettleSheet
-          coupleId={coupleId}
-          month={month}
-          members={
-            [myProfile, partnerProfile].filter(Boolean) as {
-              user_id: string;
-              full_name: string;
-            }[]
-          }
-          defaultFromUserId={settlementSummary.direction.debtor}
-          defaultToUserId={settlementSummary.direction.creditor}
-          defaultAmount={settlementSummary.remainingDebt}
-          onClose={() => setSettleOpen(false)}
-        />
-      )}
+      {coupleId &&
+        settlementSummary &&
+        (editingSettlement || (settleOpen && settlementSummary.direction)) && (
+          <SettleSheet
+            coupleId={coupleId}
+            month={month}
+            members={
+              [myProfile, partnerProfile].filter(Boolean) as {
+                user_id: string;
+                full_name: string;
+              }[]
+            }
+            defaultFromUserId={settlementSummary.direction?.debtor ?? ""}
+            defaultToUserId={settlementSummary.direction?.creditor ?? ""}
+            defaultAmount={settlementSummary.remainingDebt}
+            editing={editingSettlement ?? undefined}
+            onClose={() => {
+              setSettleOpen(false);
+              setEditingSettlement(null);
+            }}
+          />
+        )}
     </div>
   );
 }

@@ -7,9 +7,14 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { PersonAvatar } from "@/components/shared/avatar";
 import { ResponsiveModal } from "@/components/shared/responsive-modal";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { formatARS, getInitials, getTodayBADate } from "@/lib/utils";
 import { parseAmount } from "@/lib/utils/amount";
-import { useCreateSettlement } from "@/lib/queries/use-settlements";
+import {
+  useCreateSettlement,
+  useUpdateSettlement,
+  useDeleteSettlement,
+} from "@/lib/queries/use-settlements";
 
 // ── SCHEMA ──────────────────────────────────────────────────────────────────
 
@@ -32,6 +37,16 @@ interface Profile {
   readonly full_name: string;
 }
 
+/** The existing settlement being edited — a subset of the DB row. */
+interface EditingSettlement {
+  readonly id: string;
+  readonly from_user_id: string;
+  readonly to_user_id: string;
+  readonly amount: number;
+  readonly paid_on: string;
+  readonly note: string | null;
+}
+
 interface SettleSheetProps {
   readonly coupleId: string;
   readonly month: string;
@@ -44,16 +59,20 @@ interface SettleSheetProps {
   /** Remaining debt, pre-filled into the amount field ("lo que falta"). `0`
    * leaves the field blank rather than pre-filling a non-actionable zero. */
   readonly defaultAmount: number;
+  /** When present the sheet EDITS this settlement (update + delete) instead of
+   * creating a new one; its fields pre-fill the form. */
+  readonly editing?: EditingSettlement;
   readonly onClose: () => void;
 }
 
 /**
- * "Registrar pago" — records a real money movement between partners
- * (`createSettlement`, PR5b). A settlement is NOT an expense: it never
- * touches `calculateMonthlyBalance`, it only pays down the debt that balance
- * surfaced (design D3 — the structural invariant). Direction and amount are
- * pre-filled from the current balance and both are editable: the amount by
- * typing, the direction with "Invertir".
+ * "Registrar pago" / "Editar pago" — records or amends a real money movement
+ * between partners (`createSettlement`/`updateSettlement`, PR5b). A settlement
+ * is NOT an expense: it never touches `calculateMonthlyBalance`, it only pays
+ * down the debt that balance surfaced (design D3 — the structural invariant).
+ * Direction and amount pre-fill from the current balance (create) or the
+ * edited row, and both stay editable: amount by typing, direction with
+ * "Invertir".
  */
 export function SettleSheet({
   coupleId,
@@ -62,11 +81,16 @@ export function SettleSheet({
   defaultFromUserId,
   defaultToUserId,
   defaultAmount,
+  editing,
   onClose,
 }: SettleSheetProps) {
-  const [fromId, setFromId] = useState(defaultFromUserId);
-  const [toId, setToId] = useState(defaultToUserId);
+  const isEditing = editing !== undefined;
+  const [fromId, setFromId] = useState(
+    editing?.from_user_id ?? defaultFromUserId,
+  );
+  const [toId, setToId] = useState(editing?.to_user_id ?? defaultToUserId);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const {
     register,
@@ -75,13 +99,23 @@ export function SettleSheet({
   } = useForm<SettlementForm>({
     resolver: zodResolver(settlementSchema),
     defaultValues: {
-      amount: defaultAmount > 0 ? String(defaultAmount) : "",
-      paid_on: getTodayBADate(),
-      note: "",
+      amount: editing
+        ? String(editing.amount)
+        : defaultAmount > 0
+          ? String(defaultAmount)
+          : "",
+      paid_on: editing?.paid_on ?? getTodayBADate(),
+      note: editing?.note ?? "",
     },
   });
 
   const createSettlement = useCreateSettlement(coupleId, month);
+  const updateSettlement = useUpdateSettlement(coupleId, month);
+  const deleteSettlement = useDeleteSettlement(coupleId, month);
+  const isBusy =
+    createSettlement.isPending ||
+    updateSettlement.isPending ||
+    deleteSettlement.isPending;
 
   const personOf = (id: string): "a" | "b" =>
     members[0]?.user_id === id ? "a" : "b";
@@ -99,6 +133,27 @@ export function SettleSheet({
 
   function onValid(values: SettlementForm) {
     setSubmitError(null);
+    const onError = (err: Error) =>
+      setSubmitError(err.message ?? "No se pudo registrar el pago");
+    const onSuccess = () => onClose();
+
+    if (editing) {
+      updateSettlement.mutate(
+        {
+          id: editing.id,
+          data: {
+            from_user_id: fromId,
+            to_user_id: toId,
+            amount: parseAmount(values.amount),
+            paid_on: values.paid_on,
+            note: values.note?.trim() ? values.note.trim() : null,
+          },
+        },
+        { onSuccess, onError },
+      );
+      return;
+    }
+
     createSettlement.mutate(
       {
         month,
@@ -108,12 +163,17 @@ export function SettleSheet({
         paid_on: values.paid_on,
         note: values.note?.trim() ? values.note.trim() : null,
       },
-      {
-        onSuccess: () => onClose(),
-        onError: (err: Error) =>
-          setSubmitError(err.message ?? "No se pudo registrar el pago"),
-      },
+      { onSuccess, onError },
     );
+  }
+
+  function handleDelete() {
+    if (!editing) return;
+    deleteSettlement.mutate(editing.id, {
+      onSuccess: () => onClose(),
+      onError: (err: Error) =>
+        setSubmitError(err.message ?? "No se pudo eliminar el pago"),
+    });
   }
 
   const labelStyle = {
@@ -125,7 +185,7 @@ export function SettleSheet({
     <ResponsiveModal
       open
       onOpenChange={(open) => !open && onClose()}
-      title="Registrar pago"
+      title={isEditing ? "Editar pago" : "Registrar pago"}
       data-testid="settle-sheet"
     >
       <form onSubmit={handleSubmit(onValid)}>
@@ -239,7 +299,7 @@ export function SettleSheet({
               {...register("amount")}
             />
           </div>
-          {defaultAmount > 0 && (
+          {!isEditing && defaultAmount > 0 && (
             <div
               className="mt-1.5 text-xs"
               style={{ color: "var(--fg-2)", fontFamily: "var(--font-sans)" }}
@@ -344,16 +404,16 @@ export function SettleSheet({
         <Button
           type="submit"
           data-testid="settle-submit"
-          disabled={createSettlement.isPending}
+          disabled={isBusy}
           className="w-full"
-          style={{ opacity: createSettlement.isPending ? 0.7 : 1 }}
+          style={{ opacity: isBusy ? 0.7 : 1 }}
         >
-          Registrar pago
+          {isEditing ? "Guardar cambios" : "Registrar pago"}
         </Button>
         <button
           type="button"
           onClick={onClose}
-          disabled={createSettlement.isPending}
+          disabled={isBusy}
           className="mt-2.5 w-full"
           style={{
             background: "var(--bg-sunken)",
@@ -365,12 +425,45 @@ export function SettleSheet({
             fontSize: 13,
             fontWeight: 600,
             fontFamily: "var(--font-sans)",
-            opacity: createSettlement.isPending ? 0.5 : 1,
+            opacity: isBusy ? 0.5 : 1,
           }}
         >
           Cancelar
         </button>
+
+        {isEditing && (
+          <button
+            type="button"
+            data-testid="settle-delete"
+            onClick={() => setConfirmDelete(true)}
+            disabled={isBusy}
+            className="mt-2 w-full"
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              padding: "8px 4px",
+              color: "var(--status-danger-text)",
+              fontSize: 13,
+              fontWeight: 600,
+              fontFamily: "var(--font-sans)",
+              opacity: isBusy ? 0.5 : 1,
+            }}
+          >
+            Eliminar pago
+          </button>
+        )}
       </form>
+
+      <ConfirmDialog
+        open={confirmDelete}
+        onOpenChange={setConfirmDelete}
+        title="¿Eliminar este pago?"
+        description="El pago se borra del historial y la deuda vuelve a reflejarlo. No se puede deshacer."
+        confirmLabel="Sí, eliminar"
+        destructive
+        onConfirm={handleDelete}
+      />
     </ResponsiveModal>
   );
 }

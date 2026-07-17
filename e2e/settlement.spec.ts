@@ -136,4 +136,114 @@ test.describe("PR6a: registrar pago entre dos miembros reales", () => {
         },
       ]);
   });
+
+  test("el ledger permite editar un pago y recalcula la deuda restante", async ({
+    authenticatedPage: page,
+    adminClient,
+    coupleId,
+    testUserId,
+  }) => {
+    test.slow();
+    // Seed a full settlement so the month starts saldado and the ledger shows.
+    const { data: seeded, error } = await adminClient
+      .from("settlements")
+      .insert({
+        couple_id: coupleId,
+        month: currentMonth(),
+        from_user_id: partnerId,
+        to_user_id: testUserId,
+        amount: 20_000,
+        paid_on: dateInMonth(10),
+        created_by: testUserId,
+      })
+      .select("id")
+      .single();
+    if (error || !seeded)
+      throw new Error(`Settlement seed failed: ${error?.message}`);
+
+    await page.goto("/dashboard");
+    await expect(page.getByTestId("balance-zero")).toBeVisible({
+      timeout: 12_000,
+    });
+
+    // Tap the ledger row → edit sheet, pre-filled with the recorded amount.
+    await page.getByTestId(`settlement-row-${seeded.id}`).click();
+    await expect(page.getByTestId("settle-sheet")).toBeVisible();
+    await expect(page.getByTestId("settle-amount")).toHaveValue("20000");
+
+    // Halve the payment → $10.000 of the debt reappears.
+    await page.getByTestId("settle-amount").fill("10000");
+    await page.getByTestId("settle-submit").click();
+
+    await expect(page.getByTestId("settle-sheet")).toBeHidden({
+      timeout: 10_000,
+    });
+    await expect(page.getByTestId("balance-debt-amount")).toContainText(
+      "$10.000",
+    );
+
+    await expect
+      .poll(async () => {
+        const { data } = await adminClient
+          .from("settlements")
+          .select("amount")
+          .eq("id", seeded.id)
+          .maybeSingle();
+        return data?.amount ?? null;
+      })
+      .toBe(10_000);
+  });
+
+  test("el ledger permite eliminar un pago y restaura la deuda completa", async ({
+    authenticatedPage: page,
+    adminClient,
+    coupleId,
+    testUserId,
+  }) => {
+    test.slow();
+    const { data: seeded, error } = await adminClient
+      .from("settlements")
+      .insert({
+        couple_id: coupleId,
+        month: currentMonth(),
+        from_user_id: partnerId,
+        to_user_id: testUserId,
+        amount: 20_000,
+        paid_on: dateInMonth(10),
+        created_by: testUserId,
+      })
+      .select("id")
+      .single();
+    if (error || !seeded)
+      throw new Error(`Settlement seed failed: ${error?.message}`);
+
+    await page.goto("/dashboard");
+    await expect(page.getByTestId("balance-zero")).toBeVisible({
+      timeout: 12_000,
+    });
+
+    await page.getByTestId(`settlement-row-${seeded.id}`).click();
+    await expect(page.getByTestId("settle-sheet")).toBeVisible();
+
+    await page.getByTestId("settle-delete").click();
+    await page.getByRole("button", { name: "Sí, eliminar" }).click();
+
+    await expect(page.getByTestId("settle-sheet")).toBeHidden({
+      timeout: 10_000,
+    });
+    // Full debt is back.
+    await expect(page.getByTestId("balance-debt-amount")).toContainText(
+      "$20.000",
+    );
+
+    await expect
+      .poll(async () => {
+        const { data } = await adminClient
+          .from("settlements")
+          .select("id")
+          .eq("couple_id", coupleId);
+        return (data ?? []).length;
+      })
+      .toBe(0);
+  });
 });
