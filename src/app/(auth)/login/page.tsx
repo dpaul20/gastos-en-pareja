@@ -3,6 +3,8 @@
 import { Suspense, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 const IS_DEV = process.env.NODE_ENV === "development";
 
@@ -16,17 +18,13 @@ function AppLogo({ size = 80 }: { size?: number }) {
   const radius = Math.round(size * 0.3);
   return (
     <div
+      className="flex shrink-0 items-center justify-center shadow-[var(--shadow-lg)]"
       style={{
         width: size,
         height: size,
         borderRadius: radius,
         background:
           "linear-gradient(135deg, var(--color-violet-500) 0%, var(--color-violet-400) 100%)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        boxShadow: "var(--shadow-lg)",
-        flexShrink: 0,
       }}
     >
       <svg
@@ -49,7 +47,13 @@ function AppLogo({ size = 80 }: { size?: number }) {
 
 function GoogleIcon() {
   return (
-    <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24">
+    <svg
+      aria-hidden="true"
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      className="size-[22px]"
+    >
       <path
         d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
         fill="#4285F4"
@@ -74,39 +78,15 @@ function FeatureList() {
   return (
     <ul
       aria-label="Características"
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: 10,
-        width: "100%",
-        listStyle: "none",
-        margin: 0,
-        padding: 0,
-      }}
+      className="m-0 flex w-full list-none flex-col gap-2.5 p-0"
     >
       {FEATURES.map((f) => (
         <li
           key={f.text}
-          style={{
-            background: "var(--bg-elevated)",
-            borderRadius: 12,
-            border: "1px solid var(--border-subtle)",
-            padding: "12px 16px",
-            display: "flex",
-            alignItems: "center",
-            gap: 12,
-            boxShadow: "var(--shadow-sm)",
-          }}
+          className="flex items-center gap-3 rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--bg-elevated)] px-4 py-3 shadow-[var(--shadow-sm)]"
         >
-          <span style={{ fontSize: 18 }}>{f.icon}</span>
-          <span
-            style={{
-              fontSize: 14,
-              color: "var(--fg-2)",
-              fontFamily: "var(--font-sans)",
-              fontWeight: 500,
-            }}
-          >
+          <span className="text-[18px]">{f.icon}</span>
+          <span className="[font-family:var(--font-sans)] text-sm font-medium [color:var(--fg-2)]">
             {f.text}
           </span>
         </li>
@@ -153,91 +133,41 @@ function LoginContent() {
   }
 
   return (
-    <div
-      className="flex min-h-dvh flex-col md:flex-row"
-      style={{ background: "var(--bg-base)" }}
-    >
+    <div className="flex min-h-dvh flex-col bg-[var(--bg-base)] md:flex-row">
       {/* ── Branding panel — desktop left side ──────────────── */}
       <div
-        className="hidden flex-1 flex-col items-center justify-center gap-10 p-16 md:flex"
+        className="hidden flex-1 flex-col items-center justify-center gap-10 border-r border-[var(--border-subtle)] p-16 md:flex"
         style={{
           background:
             "linear-gradient(160deg, color-mix(in srgb, var(--accent) 6%, var(--bg-elevated)) 0%, var(--bg-elevated) 65%)",
-          borderRight: "1px solid var(--border-subtle)",
         }}
       >
         <AppLogo size={96} />
-        <div style={{ textAlign: "center" }}>
-          <h1
-            style={{
-              fontSize: 36,
-              fontWeight: 700,
-              color: "var(--fg-1)",
-              letterSpacing: "-0.02em",
-              fontFamily: "var(--font-sans)",
-              lineHeight: 1.2,
-              margin: "0 0 10px",
-            }}
-          >
+        <div className="text-center">
+          <h1 className="mb-2.5 [font-family:var(--font-sans)] text-4xl leading-[1.2] font-bold tracking-[-0.02em] [color:var(--fg-1)]">
             Gastos en Pareja
           </h1>
-          <p
-            style={{
-              fontSize: 16,
-              color: "var(--fg-2)",
-              fontFamily: "var(--font-sans)",
-              lineHeight: 1.5,
-              margin: 0,
-            }}
-          >
+          <p className="[font-family:var(--font-sans)] text-base leading-normal [color:var(--fg-2)]">
             Gestioná los gastos del mes
             <br />
             de forma proporcional
           </p>
         </div>
-        <div style={{ width: "100%", maxWidth: 360 }}>
+        <div className="w-full max-w-[360px]">
           <FeatureList />
         </div>
       </div>
 
       {/* ── Login panel ──────────────────────────────────────── */}
-      <main
-        className="flex flex-col items-center md:w-120 md:shrink-0 md:justify-center"
-        style={{
-          minHeight: "100dvh",
-          padding: "60px 32px 48px",
-        }}
-      >
+      <main className="flex flex-col items-center px-8 pt-[60px] pb-12 md:w-120 md:shrink-0 md:justify-center">
         {/* Mobile only: logo + tagline + features */}
-        <div
-          className="flex w-full flex-1 flex-col items-center justify-center gap-5 md:hidden"
-          style={{ maxWidth: 390 }}
-        >
+        <div className="flex w-full max-w-[390px] flex-1 flex-col items-center justify-center gap-5 md:hidden">
           <AppLogo size={80} />
-          <div style={{ textAlign: "center" }}>
-            <h1
-              style={{
-                fontSize: 28,
-                fontWeight: 700,
-                color: "var(--fg-1)",
-                letterSpacing: "-0.02em",
-                fontFamily: "var(--font-sans)",
-                lineHeight: 1.2,
-                margin: 0,
-              }}
-            >
+          <div className="text-center">
+            <h1 className="[font-family:var(--font-sans)] text-[28px] leading-[1.2] font-bold tracking-[-0.02em] [color:var(--fg-1)]">
               Gastos en Pareja
             </h1>
-            <p
-              style={{
-                fontSize: 15,
-                color: "var(--fg-2)",
-                marginTop: 8,
-                lineHeight: 1.5,
-                fontFamily: "var(--font-sans)",
-                margin: "8px 0 0",
-              }}
-            >
+            <p className="mt-2 [font-family:var(--font-sans)] text-[15px] leading-normal [color:var(--fg-2)]">
               Gestioná los gastos del mes
               <br />
               de forma proporcional
@@ -247,98 +177,42 @@ function LoginContent() {
         </div>
 
         {/* Desktop only: section heading */}
-        <div className="mb-8 hidden w-full md:block" style={{ maxWidth: 360 }}>
-          <p
-            style={{
-              fontSize: 22,
-              fontWeight: 700,
-              color: "var(--fg-1)",
-              fontFamily: "var(--font-sans)",
-              margin: "0 0 4px",
-            }}
-          >
+        <div className="mb-8 hidden w-full max-w-[360px] md:block">
+          <p className="mb-1 [font-family:var(--font-sans)] text-[22px] font-bold [color:var(--fg-1)]">
             Bienvenido
           </p>
-          <p
-            style={{
-              fontSize: 14,
-              color: "var(--fg-2)",
-              fontFamily: "var(--font-sans)",
-              margin: 0,
-            }}
-          >
+          <p className="[font-family:var(--font-sans)] text-sm [color:var(--fg-2)]">
             Ingresá para gestionar los gastos del mes
           </p>
         </div>
 
         {/* CTA — always visible */}
-        <div className="w-full" style={{ maxWidth: 360 }}>
-          <button
+        <div className="w-full max-w-[360px]">
+          <Button
             type="button"
+            variant="outline"
             onClick={signInWithGoogle}
-            style={{
-              width: "100%",
-              background: "var(--bg-elevated)",
-              border: "1.5px solid var(--border-default)",
-              borderRadius: 14,
-              padding: "16px 20px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 12,
-              cursor: "pointer",
-              boxShadow: "var(--shadow-sm)",
-              fontFamily: "var(--font-sans)",
-              fontSize: 16,
-              fontWeight: 600,
-              color: "var(--fg-1)",
-            }}
+            className="h-auto w-full gap-3 rounded-[14px] border-[1.5px] border-[var(--border-default)] bg-[var(--bg-elevated)] px-5 py-4 [font-family:var(--font-sans)] text-base font-semibold [color:var(--fg-1)] shadow-[var(--shadow-sm)] hover:bg-[var(--bg-elevated)] hover:[color:var(--fg-1)]"
           >
             <GoogleIcon />
             Continuar con Google
-          </button>
-          <p
-            style={{
-              textAlign: "center",
-              marginTop: 14,
-              fontSize: 12,
-              color: "var(--fg-3)",
-              fontFamily: "var(--font-sans)",
-            }}
-          >
+          </Button>
+          <p className="mt-3.5 text-center [font-family:var(--font-sans)] text-xs [color:var(--fg-3)]">
             Al continuar aceptás los términos de uso
           </p>
 
           {IS_DEV && (
             <form
               onSubmit={signInWithEmail}
-              style={{
-                marginTop: 24,
-                padding: "16px",
-                background: "var(--bg-elevated)",
-                border: "1.5px dashed var(--border-default)",
-                borderRadius: 14,
-                display: "flex",
-                flexDirection: "column",
-                gap: 10,
-              }}
+              className="mt-6 flex flex-col gap-2.5 rounded-[14px] border-[1.5px] border-dashed border-[var(--border-default)] bg-[var(--bg-elevated)] p-4"
             >
-              <div
-                style={{
-                  fontSize: 11,
-                  fontWeight: 600,
-                  color: "var(--fg-3)",
-                  fontFamily: "var(--font-sans)",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.08em",
-                }}
-              >
+              <div className="[font-family:var(--font-sans)] text-[11px] font-semibold tracking-[0.08em] [color:var(--fg-3)] uppercase">
                 Dev — seed users
               </div>
               <label htmlFor="dev-email" className="sr-only">
                 Email
               </label>
-              <input
+              <Input
                 id="dev-email"
                 type="email"
                 placeholder="persona_a@test.local"
@@ -347,21 +221,12 @@ function LoginContent() {
                 required
                 autoComplete="email"
                 spellCheck={false}
-                style={{
-                  border: "1px solid var(--border-default)",
-                  borderRadius: 10,
-                  padding: "10px 12px",
-                  fontSize: 14,
-                  fontFamily: "var(--font-sans)",
-                  background: "var(--bg-sunken)",
-                  color: "var(--fg-1)",
-                  outline: "none",
-                }}
+                className="h-auto rounded-[10px] border-[var(--border-default)] bg-[var(--bg-sunken)] px-3 py-2.5 [font-family:var(--font-sans)] text-sm [color:var(--fg-1)] shadow-none"
               />
               <label htmlFor="dev-password" className="sr-only">
                 Contraseña
               </label>
-              <input
+              <Input
                 id="dev-password"
                 type="password"
                 placeholder="password123"
@@ -369,47 +234,23 @@ function LoginContent() {
                 onChange={(e) => setDevPassword(e.target.value)}
                 required
                 autoComplete="current-password"
-                style={{
-                  border: "1px solid var(--border-default)",
-                  borderRadius: 10,
-                  padding: "10px 12px",
-                  fontSize: 14,
-                  fontFamily: "var(--font-sans)",
-                  background: "var(--bg-sunken)",
-                  color: "var(--fg-1)",
-                  outline: "none",
-                }}
+                className="h-auto rounded-[10px] border-[var(--border-default)] bg-[var(--bg-sunken)] px-3 py-2.5 [font-family:var(--font-sans)] text-sm [color:var(--fg-1)] shadow-none"
               />
               {devError && (
                 <div
                   role="alert"
-                  style={{
-                    fontSize: 12,
-                    color: "var(--status-danger-text)",
-                    fontFamily: "var(--font-sans)",
-                  }}
+                  className="[font-family:var(--font-sans)] text-xs [color:var(--status-danger-text)]"
                 >
                   {devError}
                 </div>
               )}
-              <button
+              <Button
                 type="submit"
                 disabled={devLoading}
-                style={{
-                  background: "var(--accent)",
-                  color: "white",
-                  border: "none",
-                  borderRadius: 10,
-                  padding: "10px",
-                  fontSize: 14,
-                  fontWeight: 600,
-                  fontFamily: "var(--font-sans)",
-                  cursor: devLoading ? "not-allowed" : "pointer",
-                  opacity: devLoading ? 0.7 : 1,
-                }}
+                className="h-auto w-full rounded-[10px] px-2.5 py-2.5 [font-family:var(--font-sans)] text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {devLoading ? "Entrando…" : "Entrar"}
-              </button>
+              </Button>
             </form>
           )}
         </div>
