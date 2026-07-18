@@ -65,6 +65,20 @@ test.describe("Visual — mobile (393px)", () => {
   }
 });
 
+// ── Expenses — Compras tab (variable-item row) ───────────────────────────────
+// Dedicated pixel-identity oracle for the DS refactor: covers the amount +
+// edit-button + Personal-badge row rendered by variable-item.tsx.
+
+test.describe("Visual — expenses Compras tab", () => {
+  test("mobile", async ({ authenticatedPage: page }) => {
+    await page.goto("/expenses");
+    await waitForPage(page, "h1");
+    await page.getByTestId("tab-compras").click();
+    await page.waitForLoadState("networkidle");
+    await expect(page).toHaveScreenshot("expenses-compras-mobile.png");
+  });
+});
+
 // ── Authenticated pages — desktop ────────────────────────────────────────────
 
 test.describe("Visual — desktop (1366px)", () => {

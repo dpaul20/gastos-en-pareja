@@ -1,5 +1,6 @@
 import { Pencil } from "lucide-react";
 import { PersonAvatar } from "@/components/shared/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatARS, formatDayMonth } from "@/lib/utils";
 import {
@@ -31,87 +32,32 @@ export function VariableItem({
           person={getPerson(v.user_id)}
           size="md"
         />
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div
-            style={{
-              fontSize: 14,
-              fontWeight: 500,
-              color: "var(--fg-1)",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-sm font-medium [color:var(--fg-1)]">
             {v.description}
           </div>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              marginTop: 2,
-            }}
-          >
-            <span style={{ fontSize: 12, color: "var(--fg-3)" }}>
+          <div className="mt-0.5 flex items-center gap-1.5">
+            <span className="text-xs [color:var(--fg-3)]">
               {formatDayMonth(v.date)}
             </span>
             {!v.is_shared && (
-              <span
-                style={{
-                  fontSize: 10,
-                  fontWeight: 600,
-                  color: "var(--fg-3)",
-                  background: "var(--bg-sunken)",
-                  border: "1px solid var(--border-subtle)",
-                  borderRadius: 4,
-                  padding: "1px 5px",
-                  fontFamily: "var(--font-sans)",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.05em",
-                }}
-              >
+              <Badge variant="personal" size="sm">
                 Personal
-              </span>
+              </Badge>
             )}
           </div>
         </div>
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "flex-end",
-            gap: 2,
-          }}
-        >
-          <div
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 15,
-              fontWeight: 600,
-              color: "var(--fg-1)",
-            }}
-          >
+        <div className="flex flex-col items-end gap-0.5">
+          <span className="ds-amount text-[15px] font-semibold [color:var(--fg-1)]">
             {formatARS(v.amount)}
-          </div>
+          </span>
           <div className="flex items-center gap-1">
             {onEdit && (
               <button
                 type="button"
                 onClick={() => onEdit(v.id)}
                 aria-label="Editar compra"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 4,
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  padding: "4px 8px",
-                  color: "var(--fg-3)",
-                  fontSize: 12,
-                  fontFamily: "var(--font-sans)",
-                  flexShrink: 0,
-                }}
+                className="inline-flex shrink-0 cursor-pointer items-center gap-1 border-none bg-transparent px-2 py-1 [font-family:var(--font-sans)] text-xs [color:var(--fg-3)]"
               >
                 <Pencil size={14} aria-hidden="true" />
                 Editar

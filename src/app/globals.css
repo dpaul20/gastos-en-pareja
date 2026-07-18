@@ -273,6 +273,79 @@
   color-scheme: dark;
 }
 
+/* ── TYPOGRAPHY — semantic type styles (ds-*) ─────────────────
+   The DS typography contract. Use as className="ds-amount", etc.,
+   instead of re-describing fontFamily/size/weight inline. Wrapped in
+   @layer components so Tailwind utilities still override them. */
+
+@layer components {
+  .ds-display {
+    font-family: var(--font-sans);
+    font-size: var(--text-3xl);
+    font-weight: var(--weight-bold);
+    line-height: var(--leading-tight);
+    letter-spacing: -0.02em;
+    color: var(--fg-1);
+  }
+  .ds-h1 {
+    font-family: var(--font-sans);
+    font-size: var(--text-2xl);
+    font-weight: var(--weight-semibold);
+    line-height: var(--leading-tight);
+    letter-spacing: -0.015em;
+    color: var(--fg-1);
+  }
+  .ds-h2 {
+    font-family: var(--font-sans);
+    font-size: var(--text-xl);
+    font-weight: var(--weight-semibold);
+    line-height: var(--leading-snug);
+    letter-spacing: -0.01em;
+    color: var(--fg-1);
+  }
+  .ds-h3 {
+    font-family: var(--font-sans);
+    font-size: var(--text-lg);
+    font-weight: var(--weight-semibold);
+    line-height: var(--leading-snug);
+    color: var(--fg-1);
+  }
+  .ds-label {
+    font-family: var(--font-sans);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+    line-height: var(--leading-normal);
+    color: var(--fg-2);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .ds-body {
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    font-weight: var(--weight-regular);
+    line-height: var(--leading-normal);
+    color: var(--fg-1);
+  }
+  .ds-body-sm {
+    font-family: var(--font-sans);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-regular);
+    line-height: var(--leading-normal);
+    color: var(--fg-2);
+  }
+  .ds-caption {
+    font-family: var(--font-sans);
+    font-size: var(--text-xs);
+    font-weight: var(--weight-regular);
+    line-height: var(--leading-normal);
+    color: var(--fg-3);
+  }
+  .ds-amount {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
 /* ── FOCUS VISIBLE ────────────────────────────────────────── */
 
 :focus-visible {

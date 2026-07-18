@@ -28,10 +28,22 @@ const badgeVariants = cva(
         neutral:
           "[background-color:var(--color-neutral-100)] [color:var(--fg-2)]",
         accent: "[background-color:var(--accent-subtle)] [color:var(--accent)]",
+        // Micro-tags (pair with size="sm"): the squared inline pills that
+        // used to be hand-rolled <span>s across the expense items.
+        personal:
+          "[background-color:var(--bg-sunken)] [color:var(--fg-3)] [border-color:var(--border-subtle)] uppercase tracking-[0.05em]",
+        editado:
+          "[background-color:color-mix(in_srgb,var(--accent)_12%,transparent)] [color:var(--accent)]",
+      },
+      size: {
+        default: "",
+        // Small squared tag: 10px, tighter padding, sharp corners.
+        sm: "rounded-sm px-1.5 py-px text-[10px] font-semibold",
       },
     },
     defaultVariants: {
       variant: "neutral",
+      size: "default",
     },
   },
 );
@@ -39,6 +51,7 @@ const badgeVariants = cva(
 function Badge({
   className,
   variant = "default",
+  size,
   asChild = false,
   ...props
 }: React.ComponentProps<"span"> &
@@ -49,7 +62,7 @@ function Badge({
     <Comp
       data-slot="badge"
       data-variant={variant}
-      className={cn(badgeVariants({ variant }), className)}
+      className={cn(badgeVariants({ variant, size }), className)}
       {...props}
     />
   );
