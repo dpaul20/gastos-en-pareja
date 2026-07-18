@@ -123,32 +123,13 @@ export function FijoItem({
       type="button"
       onClick={() => onEditDueDay(fi.id)}
       aria-label="Editar día de vencimiento"
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 4,
-        marginTop: 1,
-        padding: 0,
-        border: "none",
-        background: "transparent",
-        cursor: "pointer",
-        fontSize: 11,
-        color: "var(--fg-2)",
-        fontFamily: "var(--font-sans)",
-      }}
+      className="mt-px inline-flex cursor-pointer items-center gap-1 border-none bg-transparent p-0 font-sans text-[11px] [color:var(--fg-2)]"
     >
       Vence día {effectiveDueDay}
-      <Pencil aria-hidden size={12} style={{ color: "var(--accent)" }} />
+      <Pencil aria-hidden size={12} className="[color:var(--accent)]" />
     </button>
   ) : (
-    <div
-      style={{
-        fontSize: 11,
-        color: "var(--fg-2)",
-        marginTop: 1,
-        fontFamily: "var(--font-sans)",
-      }}
-    >
+    <div className="mt-px font-sans text-[11px] [color:var(--fg-2)]">
       Vence día {effectiveDueDay}
     </div>
   );
@@ -160,55 +141,34 @@ export function FijoItem({
     return (
       <div
         data-testid="fijo-item-awaiting"
-        style={{
-          padding: "14px 16px",
-          display: "flex",
-          flexDirection: "column",
-          gap: 8,
-          borderBottom: isLast ? "none" : "1px solid var(--border-subtle)",
-          background: "var(--status-pending-subtle)",
-        }}
+        className={cn(
+          "flex flex-col gap-2 [background-color:var(--status-pending-subtle)] px-4 py-3.5",
+          isLast
+            ? "border-b-0"
+            : "border-b [border-color:var(--border-subtle)]",
+        )}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-          <div style={{ flex: 1, minWidth: 0 }}>
+        <div className="flex items-center gap-[9px]">
+          <div className="min-w-0 flex-1">
             <div
-              style={{
-                fontSize: 14,
-                fontWeight: 500,
-                // Mockup's own `.nm` treatment (`--fg-3`) fails AA (2.91:1)
-                // against dark `--status-pending-subtle` — a real axe finding
-                // from testing this exact row in dark, not present in the
-                // mockup's own preview. `--fg-2` (6.23:1+) keeps the "muted"
-                // intent without the regression.
-                color: "var(--fg-2)",
-                fontFamily: "var(--font-sans)",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              }}
+              // Mockup's own `.nm` treatment (`--fg-3`) fails AA (2.91:1)
+              // against dark `--status-pending-subtle` — a real axe finding
+              // from testing this exact row in dark, not present in the
+              // mockup's own preview. `--fg-2` (6.23:1+) keeps the "muted"
+              // intent without the regression.
+              className="truncate font-sans text-sm font-medium [color:var(--fg-2)]"
             >
               {fi.fixed_expense_templates.description}
             </div>
             {dueDayNode}
             {!fi.fixed_expense_templates.is_shared && (
-              <span
-                style={{
-                  display: "inline-block",
-                  marginTop: 3,
-                  background: "var(--bg-sunken)",
-                  color: "var(--fg-3)",
-                  border: "1px solid var(--border-subtle)",
-                  fontSize: 10,
-                  fontWeight: 600,
-                  borderRadius: 4,
-                  padding: "1px 5px",
-                  fontFamily: "var(--font-sans)",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.05em",
-                }}
+              <Badge
+                variant="personal"
+                size="sm"
+                className="mt-[3px] rounded-[4px] px-[5px]"
               >
                 Personal
-              </span>
+              </Badge>
             )}
           </div>
           <button
@@ -216,67 +176,23 @@ export function FijoItem({
             data-testid="open-load-bill"
             onClick={() => onLoadBill?.(fi.id)}
             aria-label={`Cargar factura de ${fi.fixed_expense_templates.description}`}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              flexShrink: 0,
-              border: "none",
-              background: "transparent",
-              cursor: onLoadBill ? "pointer" : "default",
-              padding: 0,
-            }}
+            className={cn(
+              "flex shrink-0 items-center gap-2 border-none bg-transparent p-0",
+              onLoadBill ? "cursor-pointer" : "cursor-default",
+            )}
           >
-            <span
-              style={{
-                color: "var(--status-pending)",
-                fontWeight: 500,
-                fontFamily: "var(--font-sans)",
-                fontSize: 12,
-              }}
-            >
+            <span className="font-sans text-xs font-medium [color:var(--status-pending)]">
               sin monto
             </span>
-            <span
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                borderRadius: 999,
-                padding: "2px 8px",
-                fontSize: 10,
-                fontWeight: 700,
-                whiteSpace: "nowrap",
-                background: "transparent",
-                color: "var(--status-pending)",
-                border: "1px dashed var(--status-pending)",
-                fontFamily: "var(--font-sans)",
-              }}
-            >
+            <Badge variant="sin-factura" className="text-[10px] font-bold">
               sin factura
-            </span>
+            </Badge>
           </button>
         </div>
         {referenceAmount != null && (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 5,
-              fontSize: 10.5,
-              color: "var(--status-pending)",
-              paddingTop: 7,
-              borderTop:
-                "1px dashed color-mix(in srgb, var(--status-pending) 40%, transparent)",
-              fontFamily: "var(--font-sans)",
-            }}
-          >
+          <div className="flex items-center gap-[5px] border-t border-dashed [border-color:color-mix(in_srgb,var(--status-pending)_40%,transparent)] pt-[7px] font-sans text-[10.5px] [color:var(--status-pending)]">
             El mes pasado pagaste{" "}
-            <b
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontWeight: 600,
-              }}
-            >
+            <b className="ds-amount text-[10.5px] font-semibold">
               {formatARS(referenceAmount)}
             </b>
           </div>
@@ -287,90 +203,47 @@ export function FijoItem({
 
   return (
     <div
-      style={{
-        padding: "14px 16px",
-        display: "flex",
-        alignItems: "center",
-        gap: 12,
-        borderBottom: isLast ? "none" : "1px solid var(--border-subtle)",
-      }}
+      className={cn(
+        "flex items-center gap-3 px-4 py-3.5",
+        isLast ? "border-b-0" : "border-b [border-color:var(--border-subtle)]",
+      )}
     >
       {/* Left: description + meta */}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div
-          style={{
-            fontSize: 14,
-            fontWeight: 500,
-            color: "var(--fg-1)",
-            fontFamily: "var(--font-sans)",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-          }}
-        >
+      <div className="min-w-0 flex-1">
+        <div className="truncate font-sans text-sm font-medium [color:var(--fg-1)]">
           {fi.fixed_expense_templates.description}
         </div>
         {dueDayNode}
         {!fi.fixed_expense_templates.is_shared && (
-          <span
-            style={{
-              display: "inline-block",
-              marginTop: 3,
-              marginRight: 4,
-              background: "var(--bg-sunken)",
-              color: "var(--fg-3)",
-              border: "1px solid var(--border-subtle)",
-              fontSize: 10,
-              fontWeight: 600,
-              borderRadius: 4,
-              padding: "1px 5px",
-              fontFamily: "var(--font-sans)",
-              textTransform: "uppercase",
-              letterSpacing: "0.05em",
-            }}
+          <Badge
+            variant="personal"
+            size="sm"
+            className="mt-[3px] mr-1 rounded-[4px] px-[5px]"
           >
             Personal
-          </span>
+          </Badge>
         )}
         {hasOverride && (
-          <span
-            style={{
-              display: "inline-block",
-              marginTop: 3,
-              background: "color-mix(in srgb, var(--accent) 12%, transparent)",
-              color: "var(--accent)",
-              fontSize: 10,
-              fontWeight: 600,
-              borderRadius: 4,
-              padding: "1px 5px",
-              fontFamily: "var(--font-sans)",
-            }}
+          <Badge
+            variant="editado"
+            size="sm"
+            className="mt-[3px] rounded-[4px] px-[5px]"
           >
             editado
-          </span>
+          </Badge>
         )}
         {showNuevoPill && (
-          <Badge
-            variant="accent"
-            style={{ display: "inline-flex", marginTop: 3, marginLeft: 4 }}
-          >
+          <Badge variant="accent" className="mt-[3px] ml-1 inline-flex">
             nuevo
           </Badge>
         )}
       </div>
 
       {/* Center: amount display or inline edit */}
-      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+      <div className="flex items-center gap-1">
         {editing ? (
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 4,
-              alignItems: "flex-end",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <div className="flex flex-col items-end gap-1">
+            <div className="flex items-center gap-1">
               <Input
                 type="text"
                 inputMode="decimal"
@@ -381,16 +254,7 @@ export function FijoItem({
                   if (e.key === "Enter") handleSave();
                   if (e.key === "Escape") handleCancel();
                 }}
-                className={cn("font-mono font-semibold")}
-                style={{
-                  width: 110,
-                  padding: "4px 8px",
-                  border: "1.5px solid var(--accent)",
-                  borderRadius: 8,
-                  background: "var(--bg-sunken)",
-                  color: "var(--fg-1)",
-                  fontSize: 13,
-                }}
+                className="w-[110px] rounded-lg border-[1.5px] [border-color:var(--accent)] bg-[var(--bg-sunken)] px-2 py-1 font-mono text-[13px] font-semibold [color:var(--fg-1)]"
               />
               <Button
                 variant="ghost"
@@ -399,15 +263,10 @@ export function FijoItem({
                 disabled={amountMutation.isPending}
                 title="Guardar"
                 aria-label="Guardar monto"
-                style={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: 8,
-                  background: "var(--accent)",
-                  color: "var(--accent-foreground)",
-                  flexShrink: 0,
-                  opacity: amountMutation.isPending ? 0.6 : 1,
-                }}
+                className={cn(
+                  "size-7 shrink-0 rounded-lg bg-[var(--accent)] [color:var(--accent-foreground)]",
+                  amountMutation.isPending ? "opacity-60" : "opacity-100",
+                )}
               >
                 <Check aria-hidden size={16} />
               </Button>
@@ -416,15 +275,7 @@ export function FijoItem({
                 size="icon"
                 onClick={handleCancel}
                 aria-label="Cancelar edición"
-                style={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: 8,
-                  border: "1px solid var(--border-subtle)",
-                  background: "var(--bg-sunken)",
-                  color: "var(--fg-2)",
-                  flexShrink: 0,
-                }}
+                className="size-7 shrink-0 rounded-lg border [border-color:var(--border-subtle)] bg-[var(--bg-sunken)] [color:var(--fg-2)]"
               >
                 <X aria-hidden size={16} />
               </Button>
@@ -432,26 +283,15 @@ export function FijoItem({
             {mutationError && (
               <div
                 role="alert"
-                style={{
-                  fontSize: 11,
-                  color: "var(--status-danger-text)",
-                  fontFamily: "var(--font-sans)",
-                }}
+                className="font-sans text-[11px] [color:var(--status-danger-text)]"
               >
                 {mutationError}
               </div>
             )}
           </div>
         ) : (
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "flex-end",
-              gap: 2,
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <div className="flex flex-col items-end gap-0.5">
+            <div className="flex items-center gap-1">
               {fi.paid_by_user_id && getPersonInitials && getPerson && (
                 <PersonAvatar
                   initials={getPersonInitials(fi.paid_by_user_id)}
@@ -467,13 +307,10 @@ export function FijoItem({
                   disabled={amountMutation.isPending}
                   aria-label="Restablecer monto"
                   title={`Restablecer (${formatARS(templateAmount)})`}
-                  style={{
-                    padding: "2px 4px",
-                    borderRadius: 4,
-                    color: "var(--fg-3)",
-                    fontSize: 14,
-                    opacity: amountMutation.isPending ? 0.5 : 1,
-                  }}
+                  className={cn(
+                    "rounded px-1 py-0.5 text-sm [color:var(--fg-3)]",
+                    amountMutation.isPending ? "opacity-50" : "opacity-100",
+                  )}
                 >
                   <RotateCcw aria-hidden size={14} />
                 </Button>
@@ -483,57 +320,31 @@ export function FijoItem({
                 onClick={handleStartEdit}
                 title="Editar monto"
                 aria-label="Editar monto"
-                style={{
-                  height: 32,
-                  padding: "0 8px",
-                  justifyContent: "flex-end",
-                }}
+                className="h-8 justify-end px-2 py-0"
               >
-                <span
-                  style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 14,
-                    fontWeight: 600,
-                    color: "var(--fg-1)",
-                  }}
-                >
+                <span className="ds-amount text-sm font-semibold [color:var(--fg-1)]">
                   {formatARS(activeAmount)}
                 </span>
               </Button>
             </div>
             {hasOverride && (
-              <div
-                style={{
-                  fontSize: 11,
-                  color: "var(--fg-3)",
-                  fontFamily: "var(--font-mono)",
-                  textDecoration: "line-through",
-                }}
-              >
+              <span className="ds-amount text-[11px] [color:var(--fg-3)] line-through">
                 {formatARS(templateAmount)}
-              </div>
+              </span>
             )}
           </div>
         )}
       </div>
 
       {/* Right: paid toggle with visible status label */}
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: 3,
-          flexShrink: 0,
-        }}
-      >
+      <div className="flex shrink-0 flex-col items-center gap-[3px]">
         <span
-          style={{
-            fontSize: 10,
-            fontWeight: 600,
-            fontFamily: "var(--font-sans)",
-            color: fi.paid ? "var(--status-success-text)" : "var(--fg-3)",
-          }}
+          className={cn(
+            "font-sans text-[10px] font-semibold",
+            fi.paid
+              ? "[color:var(--status-success-text)]"
+              : "[color:var(--fg-3)]",
+          )}
         >
           {fi.paid ? "Pagado" : "Sin pagar"}
         </span>

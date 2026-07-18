@@ -34,6 +34,11 @@ const badgeVariants = cva(
           "[background-color:var(--bg-sunken)] [color:var(--fg-3)] [border-color:var(--border-subtle)] uppercase tracking-[0.05em]",
         editado:
           "[background-color:color-mix(in_srgb,var(--accent)_12%,transparent)] [color:var(--accent)]",
+        // "sin factura" pending pill (fijo-item AWAITING_BILL row): dashed
+        // outline, no fill — pair with `className="text-[10px] font-bold"`
+        // (default size's `text-xs font-medium` is 12px/500, not 10px/700).
+        "sin-factura":
+          "[color:var(--status-pending)] [border-color:var(--status-pending)] border-dashed bg-transparent",
       },
       size: {
         default: "",
