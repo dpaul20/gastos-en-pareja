@@ -6,8 +6,9 @@ import { Check, Minus, Pencil, Plus, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 import { PersonAvatar } from "@/components/shared/avatar";
-import { formatARS } from "@/lib/utils";
+import { cn, formatARS } from "@/lib/utils";
 import {
   deleteInstallmentPurchase,
   restoreInstallmentPurchase,
@@ -26,19 +27,12 @@ type InstallmentPurchase = MonthlyData["installmentPurchases"][number];
 type Card_ = MonthlyData["cards"][number];
 type InstallmentOverride = MonthlyData["installmentMonthOverrides"][number];
 
-const stepperButtonStyle: React.CSSProperties = {
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  width: 20,
-  height: 20,
-  padding: 0,
-  border: "1px solid var(--border-default)",
-  borderRadius: 6,
-  background: "var(--bg-elevated)",
-  color: "var(--fg-2)",
-  cursor: "pointer",
-};
+// Slice 0 precedent (variable-item.tsx edit affordance): shadcn `Button`'s
+// base classes bake in forced icon sizing (`size-4` unless the icon carries
+// a `size-*` class) that would regress these 12px stepper icons — a plain
+// Tailwind `<button>` stays the pixel-exact one-off trigger.
+const stepperButtonClass =
+  "inline-flex h-5 w-5 cursor-pointer items-center justify-center rounded-md border border-[var(--border-default)] bg-[var(--bg-elevated)] p-0 [color:var(--fg-2)]";
 
 // ── SUB-COMPONENTS ───────────────────────────────────────────────────────────
 
@@ -70,20 +64,7 @@ function InstallmentNumberCorrection({
           setDraft(currentNumber);
           setOpen(true);
         }}
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 3,
-          background: "none",
-          border: "none",
-          padding: 0,
-          marginTop: 2,
-          cursor: "pointer",
-          fontSize: 11,
-          fontWeight: 500,
-          color: "var(--fg-3)",
-          fontFamily: "var(--font-sans)",
-        }}
+        className="mt-0.5 inline-flex cursor-pointer items-center gap-[3px] border-none bg-transparent p-0 font-sans text-[11px] font-medium [color:var(--fg-3)]"
       >
         <Pencil size={11} aria-hidden="true" />
         Corregir número
@@ -96,34 +77,23 @@ function InstallmentNumberCorrection({
   }
 
   return (
-    <div
-      style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}
-    >
+    <div className="mt-0.5 flex items-center gap-1.5">
       <button
         type="button"
         aria-label="Restar"
         onClick={() => clamp(draft - 1)}
-        style={stepperButtonStyle}
+        className={stepperButtonClass}
       >
         <Minus size={12} aria-hidden="true" />
       </button>
-      <span
-        style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: 12,
-          fontWeight: 600,
-          color: "var(--fg-1)",
-          minWidth: 14,
-          textAlign: "center",
-        }}
-      >
+      <span className="min-w-[14px] text-center font-mono text-xs font-semibold [color:var(--fg-1)]">
         {draft}
       </span>
       <button
         type="button"
         aria-label="Sumar"
         onClick={() => clamp(draft + 1)}
-        style={stepperButtonStyle}
+        className={stepperButtonClass}
       >
         <Plus size={12} aria-hidden="true" />
       </button>
@@ -137,7 +107,7 @@ function InstallmentNumberCorrection({
             setOpen(false);
           })
         }
-        style={{ ...stepperButtonStyle, color: "var(--accent)" }}
+        className={cn(stepperButtonClass, "[color:var(--accent)]")}
       >
         <Check size={12} aria-hidden="true" />
       </button>
@@ -194,22 +164,10 @@ export function CuotaItem({
       <CardContent className="p-[14px_16px]">
         <div className="mb-2 flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <div
-              style={{
-                fontSize: 15,
-                fontWeight: 500,
-                color: "var(--fg-1)",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              }}
-            >
+            <div className="truncate text-[15px] font-medium [color:var(--fg-1)]">
               {c.description}
             </div>
-            <div
-              className="flex flex-wrap items-center gap-1.5"
-              style={{ fontSize: 12, color: "var(--fg-3)", marginTop: 3 }}
-            >
+            <div className="mt-[3px] flex flex-wrap items-center gap-1.5 text-xs [color:var(--fg-3)]">
               {card && (
                 <Badge variant="accent" data-testid="cuota-card-badge">
                   {card.name}
@@ -223,7 +181,7 @@ export function CuotaItem({
                 <RefreshCw
                   aria-label="Se renueva automáticamente"
                   size={12}
-                  style={{ display: "inline", verticalAlign: "-2px" }}
+                  className="inline align-[-2px]"
                 />
               ) : null}
             </div>
@@ -245,16 +203,9 @@ export function CuotaItem({
                   size="sm"
                 />
               )}
-              <div
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 15,
-                  fontWeight: 600,
-                  color: "var(--fg-1)",
-                }}
-              >
+              <span className="ds-amount text-[15px] font-semibold [color:var(--fg-1)]">
                 {formatARS(cuota)}
-              </div>
+              </span>
             </div>
             <div className="flex items-center gap-1.5">
               <Badge
@@ -282,47 +233,25 @@ export function CuotaItem({
             </div>
           </div>
         </div>
-        <div
-          role="progressbar"
-          aria-valuemin={0}
-          aria-valuemax={c.installments}
-          aria-valuenow={displayNumber}
+        <Progress
+          value={displayNumber}
+          max={c.installments}
           aria-label={`Cuota ${displayNumber} de ${c.installments}`}
-          style={{
-            background: "var(--border-default)",
-            borderRadius: 99,
-            height: 5,
-            overflow: "hidden",
-          }}
-        >
-          <div
-            style={{
-              width: `${(displayNumber / c.installments) * 100}%`,
-              height: "100%",
-              background: isPaid ? "var(--status-success)" : "var(--accent)",
-              borderRadius: 99,
-            }}
-          />
-        </div>
+          aria-valuetext={undefined}
+          className={cn(
+            "h-[5px] w-full overflow-hidden rounded-full bg-[var(--border-default)]",
+            isPaid
+              ? "[&_[data-slot=progress-indicator]]:bg-[var(--status-success)]"
+              : "[&_[data-slot=progress-indicator]]:bg-[var(--accent)]",
+          )}
+        />
         <div className="mt-2 flex items-center justify-end gap-1">
           {onEdit && (
             <button
               type="button"
               onClick={() => onEdit(c.id)}
               aria-label="Editar cuota"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 4,
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                padding: "4px 8px",
-                color: "var(--fg-3)",
-                fontSize: 12,
-                fontFamily: "var(--font-sans)",
-                flexShrink: 0,
-              }}
+              className="inline-flex shrink-0 cursor-pointer items-center gap-1 border-none bg-transparent px-2 py-1 font-sans text-xs [color:var(--fg-3)]"
             >
               <Pencil size={14} aria-hidden="true" />
               Editar
