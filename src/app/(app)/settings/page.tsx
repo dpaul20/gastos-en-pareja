@@ -27,6 +27,7 @@ import { NoCoupleCard } from "./_components/no-couple-card";
 import { ModeToggle } from "@/components/shared/mode-toggle";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Card } from "@/components/ui/card";
 
 export default function SettingsPage() {
   const { data: member, isLoading } = useCoupleMember();
@@ -148,14 +149,8 @@ export default function SettingsPage() {
 
   if (isLoading) {
     return (
-      <div
-        className="flex items-center justify-center"
-        style={{ minHeight: "100%" }}
-      >
-        <span
-          className="text-sm"
-          style={{ color: "var(--fg-3)", fontFamily: "var(--font-sans)" }}
-        >
+      <div className="flex min-h-full items-center justify-center">
+        <span className="[font-family:var(--font-sans)] text-sm [color:var(--fg-3)]">
           Cargando…
         </span>
       </div>
@@ -163,21 +158,9 @@ export default function SettingsPage() {
   }
 
   return (
-    <div
-      className="flex flex-col"
-      style={{ minHeight: "100%", background: "var(--bg-base)" }}
-    >
-      <div
-        style={{
-          background: "var(--bg-elevated)",
-          borderBottom: "1px solid var(--border-subtle)",
-          padding: "14px 20px",
-        }}
-      >
-        <h1
-          className="m-0 text-xl font-bold"
-          style={{ color: "var(--fg-1)", fontFamily: "var(--font-sans)" }}
-        >
+    <div className="flex min-h-full flex-col [background-color:var(--bg-base)]">
+      <div className="border-b [border-color:var(--border-subtle)] bg-[var(--bg-elevated)] px-5 py-3.5">
+        <h1 className="m-0 [font-family:var(--font-sans)] text-xl font-bold [color:var(--fg-1)]">
           Configuración
         </h1>
       </div>
@@ -185,25 +168,10 @@ export default function SettingsPage() {
       <div className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-4 p-4">
         {/* Pareja */}
         <section>
-          <h2
-            className="mb-2 text-xs font-semibold uppercase"
-            style={{
-              color: "var(--fg-3)",
-              letterSpacing: "0.05em",
-              fontFamily: "var(--font-sans)",
-            }}
-          >
+          <h2 className="mb-2 [font-family:var(--font-sans)] text-xs font-semibold tracking-wider [color:var(--fg-3)] uppercase">
             Pareja
           </h2>
-          <div
-            style={{
-              background: "var(--bg-elevated)",
-              borderRadius: 16,
-              border: "1px solid var(--border-subtle)",
-              overflow: "hidden",
-              boxShadow: "var(--shadow-sm)",
-            }}
-          >
+          <Card className="overflow-hidden rounded-[var(--radius-lg)] border-[var(--border-subtle)] p-0 shadow-[var(--shadow-sm)]">
             {member ? (
               <>
                 <div className="flex items-center gap-3 p-4">
@@ -216,13 +184,7 @@ export default function SettingsPage() {
                       size="lg"
                     />
                     {profiles[1] && (
-                      <div
-                        style={{
-                          marginLeft: -12,
-                          border: "2px solid var(--bg-elevated)",
-                          borderRadius: 9999,
-                        }}
-                      >
+                      <div className="-ml-3 rounded-full border-2 [border-color:var(--bg-elevated)]">
                         <Avatar
                           initials={getInitials(profiles[1].full_name)}
                           person="b"
@@ -232,25 +194,12 @@ export default function SettingsPage() {
                     )}
                   </div>
                   <div>
-                    <div
-                      className="font-semibold"
-                      style={{
-                        fontSize: 15,
-                        color: "var(--fg-1)",
-                        fontFamily: "var(--font-sans)",
-                      }}
-                    >
+                    <div className="[font-family:var(--font-sans)] text-[15px] font-semibold [color:var(--fg-1)]">
                       {profiles
                         .map((p) => p.full_name.split(" ")[0])
                         .join(" y ") || "Tu pareja"}
                     </div>
-                    <div
-                      className="text-xs"
-                      style={{
-                        color: "var(--fg-3)",
-                        fontFamily: "var(--font-sans)",
-                      }}
-                    >
+                    <div className="[font-family:var(--font-sans)] text-xs [color:var(--fg-3)]">
                       {member.couples?.status === "PENDING"
                         ? "⏳ Invitación pendiente"
                         : "✓ Activa"}
@@ -259,51 +208,21 @@ export default function SettingsPage() {
                 </div>
 
                 {member.couples?.status === "PENDING" && (
-                  <div
-                    style={{
-                      padding: "14px 16px",
-                      borderTop: "1px solid var(--border-subtle)",
-                    }}
-                  >
-                    <div
-                      className="mb-3 font-semibold"
-                      style={{
-                        fontSize: 13,
-                        color: "var(--fg-1)",
-                        fontFamily: "var(--font-sans)",
-                      }}
-                    >
+                  <div className="border-t [border-color:var(--border-subtle)] px-4 py-3.5">
+                    <div className="mb-3 [font-family:var(--font-sans)] text-[13px] font-semibold [color:var(--fg-1)]">
                       Invitar pareja
                     </div>
 
                     {/* Email invite */}
-                    <div style={{ marginBottom: 12 }}>
-                      <div
-                        style={{
-                          fontSize: 11,
-                          fontWeight: 600,
-                          color: "var(--fg-3)",
-                          textTransform: "uppercase",
-                          letterSpacing: "0.05em",
-                          marginBottom: 8,
-                          fontFamily: "var(--font-sans)",
-                        }}
-                      >
+                    <div className="mb-3">
+                      <div className="mb-2 [font-family:var(--font-sans)] text-[11px] font-semibold tracking-wider [color:var(--fg-3)] uppercase">
                         Por email
                       </div>
                       {inviteExpiresAt &&
                       new Date(inviteExpiresAt) > new Date() ? (
                         <div
                           aria-live="polite"
-                          style={{
-                            background: "var(--bg-sunken)",
-                            border: "1px solid var(--border-subtle)",
-                            borderRadius: 10,
-                            padding: "10px 12px",
-                            fontSize: 13,
-                            color: "var(--fg-2)",
-                            fontFamily: "var(--font-sans)",
-                          }}
+                          className="rounded-[10px] border [border-color:var(--border-subtle)] bg-[var(--bg-sunken)] px-3 py-2.5 [font-family:var(--font-sans)] text-[13px] [color:var(--fg-2)]"
                         >
                           ⏳ Invitación pendiente hasta el{" "}
                           <strong>
@@ -322,13 +241,12 @@ export default function SettingsPage() {
                               value={inviteEmail}
                               onChange={(e) => setInviteEmail(e.target.value)}
                               placeholder="email@ejemplo.com"
-                              className="flex-1"
-                              style={{ fontFamily: "var(--font-sans)" }}
+                              className="flex-1 [font-family:var(--font-sans)]"
                             />
                             <Button
                               type="submit"
                               disabled={isPending || !inviteEmail}
-                              style={{ whiteSpace: "nowrap" }}
+                              className="whitespace-nowrap"
                             >
                               Invitar
                             </Button>
@@ -336,12 +254,11 @@ export default function SettingsPage() {
                           {inviteMsg && (
                             <div
                               aria-live="polite"
-                              className="mt-1.5 text-xs"
+                              className="mt-1.5 [font-family:var(--font-sans)] text-xs"
                               style={{
                                 color: inviteMsg.includes("✓")
                                   ? "var(--status-success-text)"
                                   : "var(--status-danger-text)",
-                                fontFamily: "var(--font-sans)",
                               }}
                             >
                               {inviteMsg}
@@ -354,50 +271,28 @@ export default function SettingsPage() {
                     {/* Divider */}
                     <div
                       aria-hidden
-                      style={{
-                        height: 1,
-                        background: "var(--border-subtle)",
-                        margin: "12px 0",
-                      }}
+                      className="my-3 h-px bg-[var(--border-subtle)]"
                     />
 
                     {/* Link invite */}
                     <div>
-                      <div
-                        style={{
-                          fontSize: 11,
-                          fontWeight: 600,
-                          color: "var(--fg-3)",
-                          textTransform: "uppercase",
-                          letterSpacing: "0.05em",
-                          marginBottom: 8,
-                          fontFamily: "var(--font-sans)",
-                        }}
-                      >
+                      <div className="mb-2 [font-family:var(--font-sans)] text-[11px] font-semibold tracking-wider [color:var(--fg-3)] uppercase">
                         Por link
                       </div>
                       {inviteUrl ? (
                         <>
-                          <div
-                            className="flex gap-2"
-                            style={{ marginBottom: 6 }}
-                          >
+                          <div className="mb-1.5 flex gap-2">
                             <Input
                               readOnly
                               value={inviteUrl}
                               aria-label="Link de invitación"
-                              className="flex-1 text-xs"
-                              style={{
-                                fontFamily: "var(--font-mono)",
-                                color: "var(--fg-2)",
-                                background: "var(--bg-sunken)",
-                              }}
+                              className="flex-1 bg-[var(--bg-sunken)] [font-family:var(--font-mono)] text-xs [color:var(--fg-2)]"
                             />
                             <Button
                               type="button"
                               variant="outline"
                               onClick={handleCopyLink}
-                              style={{ whiteSpace: "nowrap" }}
+                              className="whitespace-nowrap"
                             >
                               {copied ? "Copiado ✓" : "Copiar"}
                             </Button>
@@ -413,13 +308,7 @@ export default function SettingsPage() {
                             )}
                           </div>
                           {activeLinkInvitation?.expires_at && (
-                            <div
-                              style={{
-                                fontSize: 11,
-                                color: "var(--fg-3)",
-                                fontFamily: "var(--font-sans)",
-                              }}
-                            >
+                            <div className="[font-family:var(--font-sans)] text-[11px] [color:var(--fg-3)]">
                               Expira el{" "}
                               {new Date(
                                 activeLinkInvitation.expires_at,
@@ -436,8 +325,7 @@ export default function SettingsPage() {
                           variant="outline"
                           onClick={handleGenerateLink}
                           disabled={isPending}
-                          className="w-full justify-start"
-                          style={{ fontFamily: "var(--font-sans)" }}
+                          className="w-full justify-start [font-family:var(--font-sans)]"
                         >
                           {isPending
                             ? "Generando…"
@@ -447,11 +335,7 @@ export default function SettingsPage() {
                       {linkError && (
                         <div
                           aria-live="polite"
-                          className="mt-1.5 text-xs"
-                          style={{
-                            color: "var(--status-danger-text)",
-                            fontFamily: "var(--font-sans)",
-                          }}
+                          className="mt-1.5 [font-family:var(--font-sans)] text-xs [color:var(--status-danger-text)]"
                         >
                           {linkError}
                         </div>
@@ -468,48 +352,19 @@ export default function SettingsPage() {
                 coupleMessage={coupleMsg}
               />
             )}
-          </div>
+          </Card>
         </section>
 
         {/* Ingreso mensual */}
         {member && (
           <section>
-            <h2
-              className="mb-2 text-xs font-semibold uppercase"
-              style={{
-                color: "var(--fg-3)",
-                letterSpacing: "0.05em",
-                fontFamily: "var(--font-sans)",
-              }}
-            >
+            <h2 className="mb-2 [font-family:var(--font-sans)] text-xs font-semibold tracking-wider [color:var(--fg-3)] uppercase">
               Mi ingreso este mes
             </h2>
-            <div
-              style={{
-                background: "var(--bg-elevated)",
-                borderRadius: 16,
-                border: "1px solid var(--border-subtle)",
-                overflow: "hidden",
-                boxShadow: "var(--shadow-sm)",
-              }}
-            >
-              <div style={{ padding: "14px 16px" }}>
-                <div
-                  className="flex items-center overflow-hidden focus-within:ring-2 focus-within:ring-(--accent)"
-                  style={{
-                    background: "var(--bg-sunken)",
-                    borderRadius: 10,
-                    border: "1.5px solid var(--border-default)",
-                  }}
-                >
-                  <span
-                    className="text-base font-semibold"
-                    style={{
-                      padding: "10px 6px 10px 12px",
-                      color: "var(--fg-3)",
-                      fontFamily: "var(--font-mono)",
-                    }}
-                  >
+            <Card className="overflow-hidden rounded-[var(--radius-lg)] border-[var(--border-subtle)] p-0 shadow-[var(--shadow-sm)]">
+              <div className="px-4 py-3.5">
+                <div className="flex items-center overflow-hidden rounded-[10px] border-[1.5px] border-[var(--border-default)] bg-[var(--bg-sunken)] focus-within:ring-2 focus-within:ring-(--accent)">
+                  <span className="py-2.5 pr-1.5 pl-3 [font-family:var(--font-mono)] text-base font-semibold [color:var(--fg-3)]">
                     $
                   </span>
                   <input
@@ -519,121 +374,66 @@ export default function SettingsPage() {
                     onChange={(e) => setMyIncome(e.target.value)}
                     inputMode="decimal"
                     placeholder="0"
-                    className="flex-1 border-none bg-transparent py-2.5 pr-3 pl-1 text-base font-semibold outline-none"
-                    style={{
-                      fontFamily: "var(--font-mono)",
-                      color: "var(--fg-1)",
-                    }}
+                    className="ds-amount flex-1 border-none bg-transparent py-2.5 pr-3 pl-1 text-base font-semibold [color:var(--fg-1)] outline-none"
                   />
                 </div>
               </div>
               {previousIncome !== null &&
                 currentIncome === null &&
                 !myIncome && (
-                  <div style={{ padding: "0 16px 10px" }}>
+                  <div className="px-4 pb-2.5">
                     <Button
                       type="button"
                       variant="outline"
                       onClick={() => setMyIncome(String(previousIncome.amount))}
-                      className="w-full justify-start"
-                      style={{
-                        color: "var(--accent)",
-                        background: "var(--accent-subtle)",
-                        borderColor: "var(--border-subtle)",
-                        fontFamily: "var(--font-sans)",
-                      }}
+                      className="w-full justify-start border-[var(--border-subtle)] bg-[var(--accent-subtle)] [font-family:var(--font-sans)] [color:var(--accent)]"
                     >
                       Igual al mes pasado — {formatARS(previousIncome.amount)}
                     </Button>
                   </div>
                 )}
-              <div style={{ padding: "0 16px 14px" }}>
+              <div className="px-4 pb-3.5">
                 <Button
                   onClick={handleSaveIncome}
                   disabled={isPending || !myIncome || parsedIncome <= 0}
                   aria-busy={isPending}
-                  className="w-full"
-                  style={{ fontFamily: "var(--font-sans)" }}
+                  className="w-full [font-family:var(--font-sans)]"
                 >
                   {isPending ? "Guardando…" : "Guardar ingreso"}
                 </Button>
               </div>
-            </div>
+            </Card>
           </section>
         )}
 
         {/* Cuenta */}
         <section>
-          <h2
-            className="mb-2 text-xs font-semibold uppercase"
-            style={{
-              color: "var(--fg-3)",
-              letterSpacing: "0.05em",
-              fontFamily: "var(--font-sans)",
-            }}
-          >
+          <h2 className="mb-2 [font-family:var(--font-sans)] text-xs font-semibold tracking-wider [color:var(--fg-3)] uppercase">
             Cuenta
           </h2>
-          <div
-            style={{
-              background: "var(--bg-elevated)",
-              borderRadius: 16,
-              border: "1px solid var(--border-subtle)",
-              overflow: "hidden",
-              boxShadow: "var(--shadow-sm)",
-            }}
-          >
-            <div
-              className="flex items-center justify-between"
-              style={{
-                padding: "14px 16px",
-                borderBottom: "1px solid var(--border-subtle)",
-              }}
-            >
-              <span
-                className="text-sm font-medium"
-                style={{ color: "var(--fg-1)", fontFamily: "var(--font-sans)" }}
-              >
+          <Card className="overflow-hidden rounded-[var(--radius-lg)] border-[var(--border-subtle)] p-0 shadow-[var(--shadow-sm)]">
+            <div className="flex items-center justify-between border-b [border-color:var(--border-subtle)] px-4 py-3.5">
+              <span className="[font-family:var(--font-sans)] text-sm font-medium [color:var(--fg-1)]">
                 Tema
               </span>
               <ModeToggle />
             </div>
-            <div
-              className="flex justify-between"
-              style={{
-                padding: "14px 16px",
-                borderBottom: "1px solid var(--border-subtle)",
-              }}
-            >
-              <span
-                className="text-sm font-medium"
-                style={{ color: "var(--fg-1)", fontFamily: "var(--font-sans)" }}
-              >
+            <div className="flex justify-between border-b [border-color:var(--border-subtle)] px-4 py-3.5">
+              <span className="[font-family:var(--font-sans)] text-sm font-medium [color:var(--fg-1)]">
                 Moneda
               </span>
-              <span
-                style={{
-                  fontSize: 13,
-                  color: "var(--fg-2)",
-                  fontFamily: "var(--font-sans)",
-                }}
-              >
+              <span className="[font-family:var(--font-sans)] text-[13px] [color:var(--fg-2)]">
                 ARS — Peso argentino
               </span>
             </div>
             <Button
               variant="ghost"
               onClick={handleSignOut}
-              className="w-full justify-start rounded-none text-sm font-medium"
-              style={{
-                padding: "14px 16px",
-                color: "var(--status-danger-text)",
-                fontFamily: "var(--font-sans)",
-              }}
+              className="w-full justify-start rounded-none px-4 py-3.5 [font-family:var(--font-sans)] text-sm font-medium [color:var(--status-danger-text)]"
             >
               Cerrar sesión
             </Button>
-          </div>
+          </Card>
         </section>
       </div>
     </div>
