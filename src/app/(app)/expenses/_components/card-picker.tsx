@@ -8,6 +8,14 @@ import { z } from "zod";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { cn } from "@/lib/utils";
 import { createCard } from "@/lib/actions/cards";
@@ -95,11 +103,17 @@ function NewCardForm({
   const [paymentDay, setPaymentDay] = useState<number | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<NewCardFields>({ resolver: zodResolver(newCardSchema) });
+  // `defaultValues: { name: "" }` is required here — without it, an untouched
+  // FormField/Controller-bound input submits `undefined` (not the DOM's
+  // native `""`), which fails Zod's base string type check with its English
+  // "Required" fallback instead of our custom Spanish "Requerido" .min(1)
+  // message. `register()`-based (uncontrolled) inputs don't have this issue
+  // since they read the DOM value (always a string) at submit time.
+  const form = useForm<NewCardFields>({
+    resolver: zodResolver(newCardSchema),
+    defaultValues: { name: "" },
+  });
+  const { control, handleSubmit } = form;
 
   async function onSubmit(values: NewCardFields) {
     setSaveError(null);
@@ -121,67 +135,74 @@ function NewCardForm({
   }
 
   return (
-    <div
-      data-testid="new-card-form"
-      style={{
-        marginTop: 8,
-        padding: 12,
-        borderRadius: 12,
-        border: "1.5px dashed var(--border-default)",
-        background: "var(--bg-sunken)",
-      }}
-    >
-      <div style={{ marginBottom: 10 }}>
-        <label htmlFor="new-card-name" style={labelCss}>
-          Nombre de la tarjeta
-        </label>
-        <Input
-          id="new-card-name"
-          {...register("name")}
-          placeholder="ej: Visa Santander"
-          className="w-full rounded-xl px-3.5 py-3 text-[15px]"
-          style={{
-            border: "1.5px solid var(--border-default)",
-            background: "var(--bg-elevated)",
-            color: "var(--fg-1)",
-          }}
+    <Form {...form}>
+      <div
+        data-testid="new-card-form"
+        style={{
+          marginTop: 8,
+          padding: 12,
+          borderRadius: 12,
+          border: "1.5px dashed var(--border-default)",
+          background: "var(--bg-sunken)",
+        }}
+      >
+        <FormField
+          control={control}
+          name="name"
+          render={({ field }) => (
+            <FormItem className="block" style={{ marginBottom: 10 }}>
+              <FormLabel htmlFor="new-card-name" style={labelCss}>
+                Nombre de la tarjeta
+              </FormLabel>
+              <FormControl>
+                <Input
+                  {...field}
+                  value={field.value ?? ""}
+                  id="new-card-name"
+                  placeholder="ej: Visa Santander"
+                  className="w-full rounded-xl px-3.5 py-3 text-[15px]"
+                  style={{
+                    border: "1.5px solid var(--border-default)",
+                    background: "var(--bg-elevated)",
+                    color: "var(--fg-1)",
+                  }}
+                />
+              </FormControl>
+              <FormMessage role="alert" style={errorCss} />
+            </FormItem>
+          )}
         />
-        {errors.name?.message && (
-          <div role="alert" style={errorCss}>
-            {errors.name.message}
+        <div style={{ marginBottom: 10 }}>
+          <div style={{ ...labelCss, marginBottom: 8 }}>
+            Día de pago (opcional)
+          </div>
+          <DueDayPicker value={paymentDay} onChange={setPaymentDay} />
+        </div>
+        {saveError && (
+          <div role="alert" style={{ ...errorCss, marginBottom: 10 }}>
+            {saveError}
           </div>
         )}
-      </div>
-      <div style={{ marginBottom: 10 }}>
-        <div style={{ ...labelCss, marginBottom: 8 }}>
-          Día de pago (opcional)
+        <div style={{ display: "flex", gap: 8 }}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            style={{ flex: 1 }}
+          >
+            Cancelar
+          </Button>
+          <Button
+            type="button"
+            disabled={isSaving}
+            onClick={handleSubmit(onSubmit)}
+            style={{ flex: 1, opacity: isSaving ? 0.7 : 1 }}
+          >
+            Crear tarjeta
+          </Button>
         </div>
-        <DueDayPicker value={paymentDay} onChange={setPaymentDay} />
       </div>
-      {saveError && (
-        <div role="alert" style={{ ...errorCss, marginBottom: 10 }}>
-          {saveError}
-        </div>
-      )}
-      <div style={{ display: "flex", gap: 8 }}>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onCancel}
-          style={{ flex: 1 }}
-        >
-          Cancelar
-        </Button>
-        <Button
-          type="button"
-          disabled={isSaving}
-          onClick={handleSubmit(onSubmit)}
-          style={{ flex: 1, opacity: isSaving ? 0.7 : 1 }}
-        >
-          Crear tarjeta
-        </Button>
-      </div>
-    </div>
+    </Form>
   );
 }
 

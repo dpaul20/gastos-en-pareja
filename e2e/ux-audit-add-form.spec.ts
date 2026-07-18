@@ -398,4 +398,48 @@ test.describe("UX audit — add expense form", () => {
       await expect(day10).toHaveAttribute("aria-checked", "false");
     });
   });
+
+  // ── SLICE 4a: shadcn Form adoption (card-picker + add-sheet) ─────
+  test.describe("Form adoption — labelCss/errorCss migrated to shadcn Form primitives", () => {
+    test("new card mini-form — label stays associated with its input and empty submit shows a visible error", async ({
+      authenticatedPage: page,
+    }) => {
+      await openForm(page, "cuota");
+      await page.getByTestId("new-card-trigger").click();
+
+      const nameInput = page.getByLabel("Nombre de la tarjeta");
+      await expect(nameInput).toBeVisible();
+
+      await page.getByRole("button", { name: "Crear tarjeta" }).click();
+
+      const error = page
+        .getByTestId("new-card-form")
+        .getByRole("alert")
+        .filter({ hasText: "Requerido" });
+      await expect(error.first()).toBeVisible();
+    });
+
+    test("add-sheet fields — labels stay associated with their inputs via FormField/FormControl", async ({
+      authenticatedPage: page,
+    }) => {
+      await openForm(page, "cuota");
+
+      await expect(
+        page.getByLabel("Descripción", { exact: true }),
+      ).toBeVisible();
+      await expect(
+        page.getByLabel("Monto total", { exact: true }),
+      ).toBeVisible();
+      await expect(page.getByLabel("Cuotas", { exact: true })).toBeVisible();
+
+      // Empty submit still surfaces errors via FormMessage, matching the
+      // original errorCss div's role="alert" + visible text contract.
+      await page.getByRole("button", { name: "Guardar" }).click();
+      const descriptionError = page
+        .locator('[role="dialog"]')
+        .getByRole("alert")
+        .filter({ hasText: "Requerido" });
+      await expect(descriptionError.first()).toBeVisible();
+    });
+  });
 });
