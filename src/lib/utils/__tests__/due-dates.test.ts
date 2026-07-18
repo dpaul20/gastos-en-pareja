@@ -157,6 +157,33 @@ describe("getUpcomingDues", () => {
     expect(result.upcoming).toHaveLength(0);
   });
 
+  it("una instancia AWAITING_BILL (sin factura) con due_day pasado NO aparece como vencida", () => {
+    // Reproduce del bug de prod: EPEC 'sin factura', vence día 10, hoy es 15.
+    // Sin la guarda caería en overdue con $0 y con botón Pagar. Debe quedar
+    // fuera de las tres listas — se muestra en /expenses como 'sin factura'.
+    const awaitingOverdue = makeInstance({
+      status: "AWAITING_BILL",
+      amount_override: null,
+      fixed_expense_templates: { due_day: 10, awaits_bill: true },
+    });
+    const result = getUpcomingDues([awaitingOverdue], TODAY);
+    expect(result.overdue).toHaveLength(0);
+    expect(result.today).toHaveLength(0);
+    expect(result.upcoming).toHaveLength(0);
+  });
+
+  it("una instancia legacy PENDING_CONFIRMATION (con monto) SÍ sigue apareciendo", () => {
+    // isBilled excluye solo AWAITING_BILL: las zombie PENDING_CONFIRMATION
+    // tienen monto y deben seguir dunneándose como cualquier fila confirmada.
+    const zombieOverdue = makeInstance({
+      status: "PENDING_CONFIRMATION",
+      fixed_expense_templates: { due_day: 10 },
+    });
+    const result = getUpcomingDues([zombieOverdue], TODAY);
+    expect(result.overdue).toHaveLength(1);
+    expect(result.overdue[0].instance.id).toBe("inst-1");
+  });
+
   it("override de instancia gana sobre el due_day del template", () => {
     // template vence día 10 (overdue), pero la instancia lo overridea a 15 (hoy)
     const instance = makeInstance({
