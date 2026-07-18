@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.21.1](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.21.0...gastos-en-pareja-v1.21.1) (2026-07-18)
+
+
+### 🐛 Bug Fixes
+
+* **dashboard:** exclude sin-factura services from the dues widget ([#151](https://github.com/dpaul20/gastos-en-pareja/issues/151)) ([5fcb45b](https://github.com/dpaul20/gastos-en-pareja/commit/5fcb45b83dcddd49dc7f42b5c4904531379867ae))
+
 ## [1.21.0](https://github.com/dpaul20/gastos-en-pareja/compare/gastos-en-pareja-v1.20.0...gastos-en-pareja-v1.21.0) (2026-07-17)
 
 
