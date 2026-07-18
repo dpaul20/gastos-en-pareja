@@ -8,12 +8,18 @@ import { z } from "zod";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { cn } from "@/lib/utils";
 import { createCard } from "@/lib/actions/cards";
 import { useCards } from "@/lib/queries/use-cards";
 import { DueDayPicker } from "./due-day-picker";
 import type { Database } from "@/types/database";
 
 type CardRow = Database["public"]["Tables"]["cards"]["Row"];
+
+// Radix ToggleGroup requires string values; `null` (no card) is modeled as
+// this sentinel and translated back to `null` in onValueChange.
+const NONE_VALUE = "__none__";
 
 // ── SCHEMA ────────────────────────────────────────────────────────────────
 
@@ -59,6 +65,18 @@ function chipStyle(selected: boolean): React.CSSProperties {
     whiteSpace: "nowrap",
   };
 }
+
+// ToggleGroupItem re-skin matching `chipStyle` exactly — the shadcn Toggle
+// base classes bake in their own (mismatched) bg/hover tokens, so colors are
+// overridden per data-state here instead of reusing the inline chipStyle.
+const cardToggleItemClassName = cn(
+  "h-auto min-h-11 gap-1 rounded-full border-none px-3.5 py-[5px]",
+  "text-[13px] font-medium whitespace-nowrap [font-family:var(--font-sans)]",
+  "data-[state=off]:[background-color:var(--bg-sunken)] data-[state=off]:[color:var(--fg-2)]",
+  "data-[state=off]:hover:[background-color:var(--bg-sunken)] data-[state=off]:hover:[color:var(--fg-2)]",
+  "data-[state=on]:[background-color:var(--accent)] data-[state=on]:[color:var(--accent-foreground)]",
+  "data-[state=on]:hover:[background-color:var(--accent)] data-[state=on]:hover:[color:var(--accent-foreground)]",
+);
 
 // ── SUB-COMPONENTS ───────────────────────────────────────────────────────────
 
@@ -183,47 +201,50 @@ export function CardPicker({
 
   return (
     <div>
-      <fieldset style={{ border: 0, margin: 0, padding: 0, minInlineSize: 0 }}>
-        <legend className="sr-only">Tarjeta</legend>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+      <ToggleGroup
+        type="single"
+        spacing={1}
+        value={value ?? NONE_VALUE}
+        onValueChange={(next) => {
+          // Radix fires "" when re-clicking the already-active item
+          // (deselect). The original chips have no deselect affordance —
+          // clicking the active chip was a no-op — so ignore empty values.
+          if (!next) return;
+          onChange(next === NONE_VALUE ? null : next);
+        }}
+        aria-label="Tarjeta"
+        className="flex w-full flex-wrap items-center gap-1.5 rounded-none border-0 bg-transparent p-0"
+      >
+        <ToggleGroupItem value={NONE_VALUE} className={cardToggleItemClassName}>
+          Sin tarjeta
+        </ToggleGroupItem>
+        {cards.map((card) => (
+          <ToggleGroupItem
+            key={card.id}
+            value={card.id}
+            className={cardToggleItemClassName}
+          >
+            {card.name}
+          </ToggleGroupItem>
+        ))}
+        {!creating && coupleId && (
           <button
             type="button"
-            onClick={() => onChange(null)}
-            aria-pressed={value === null}
-            style={chipStyle(value === null)}
+            onClick={() => setCreating(true)}
+            data-testid="new-card-trigger"
+            style={{
+              ...chipStyle(false),
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 4,
+              color: "var(--accent)",
+            }}
           >
-            Sin tarjeta
+            <Plus size={12} aria-hidden="true" />
+            Nueva tarjeta
           </button>
-          {cards.map((card) => (
-            <button
-              key={card.id}
-              type="button"
-              onClick={() => onChange(card.id)}
-              aria-pressed={value === card.id}
-              style={chipStyle(value === card.id)}
-            >
-              {card.name}
-            </button>
-          ))}
-          {!creating && coupleId && (
-            <button
-              type="button"
-              onClick={() => setCreating(true)}
-              data-testid="new-card-trigger"
-              style={{
-                ...chipStyle(false),
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 4,
-                color: "var(--accent)",
-              }}
-            >
-              <Plus size={12} aria-hidden="true" />
-              Nueva tarjeta
-            </button>
-          )}
-        </div>
-      </fieldset>
+        )}
+      </ToggleGroup>
       {creating && coupleId && (
         <NewCardForm
           coupleId={coupleId}
