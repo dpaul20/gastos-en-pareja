@@ -126,10 +126,7 @@ export function LoadBillSheet({
       data-testid="load-bill-sheet"
     >
       <form onSubmit={handleSubmit}>
-        <div
-          className="mb-3.5 text-xs"
-          style={{ color: "var(--fg-2)", fontFamily: "var(--font-sans)" }}
-        >
+        <div className="mb-3.5 [font-family:var(--font-sans)] text-xs [color:var(--fg-2)]">
           {name} · vence día{" "}
           {instance.due_day ?? instance.fixed_expense_templates.due_day}
         </div>
@@ -137,27 +134,14 @@ export function LoadBillSheet({
         <div className="mb-3.5">
           <label
             htmlFor="load-bill-amount"
-            className="mb-1.5 block text-[13px] font-medium"
-            style={{ color: "var(--fg-2)", fontFamily: "var(--font-sans)" }}
+            className="mb-1.5 block [font-family:var(--font-sans)] text-[13px] font-medium [color:var(--fg-2)]"
           >
             Monto de la factura
           </label>
-          <div
-            className="flex items-center overflow-hidden focus-within:ring-2 focus-within:ring-(--accent)"
-            style={{
-              background: "var(--bg-sunken)",
-              borderRadius: 10,
-              border: "1.5px solid var(--accent)",
-            }}
-          >
+          <div className="flex items-center overflow-hidden rounded-[10px] border-[1.5px] [border-color:var(--accent)] [background-color:var(--bg-sunken)] focus-within:ring-2 focus-within:ring-(--accent)">
             <span
               aria-hidden
-              className="text-base font-semibold"
-              style={{
-                padding: "10px 6px 10px 12px",
-                color: "var(--fg-3)",
-                fontFamily: "var(--font-mono)",
-              }}
+              className="ds-amount py-2.5 pr-1.5 pl-3 text-base font-semibold [color:var(--fg-3)]"
             >
               $
             </span>
@@ -172,22 +156,11 @@ export function LoadBillSheet({
                 setDraft(e.target.value);
                 setFieldError(null);
               }}
-              className="flex-1 text-base font-semibold"
-              style={{
-                border: "none",
-                background: "transparent",
-                padding: "10px 12px 10px 4px",
-                fontFamily: "var(--font-mono)",
-                outline: "none",
-                color: "var(--fg-1)",
-              }}
+              className="ds-amount flex-1 border-none bg-transparent py-2.5 pr-3 pl-1 text-base font-semibold [color:var(--fg-1)] outline-none"
             />
           </div>
           {referenceAmount != null && (
-            <div
-              className="mt-1.5 flex items-center gap-1.5 text-xs"
-              style={{ color: "var(--fg-2)", fontFamily: "var(--font-sans)" }}
-            >
+            <div className="mt-1.5 flex items-center gap-1.5 [font-family:var(--font-sans)] text-xs [color:var(--fg-2)]">
               El mes pasado pagaste {formatARS(referenceAmount)}
             </div>
           )}
@@ -195,11 +168,7 @@ export function LoadBillSheet({
             <div
               data-testid="load-bill-impact-warning"
               role="status"
-              className="mt-1.5 text-xs"
-              style={{
-                color: "var(--status-warning-fg)",
-                fontFamily: "var(--font-sans)",
-              }}
+              className="mt-1.5 [font-family:var(--font-sans)] text-xs [color:var(--status-warning-fg)]"
             >
               Este mes ya estaba saldado — cargar esta factura deja una
               diferencia de {formatARS(Math.abs(impactPreview.difference))}
@@ -208,11 +177,7 @@ export function LoadBillSheet({
           {fieldError && (
             <div
               role="alert"
-              className="mt-1 text-xs"
-              style={{
-                color: "var(--status-danger-text)",
-                fontFamily: "var(--font-sans)",
-              }}
+              className="mt-1 [font-family:var(--font-sans)] text-xs [color:var(--status-danger-text)]"
             >
               {fieldError}
             </div>
@@ -221,16 +186,10 @@ export function LoadBillSheet({
 
         {members.length >= 2 && (
           <div className="mb-3.5">
-            <div
-              className="mb-2 text-[13px] font-medium"
-              style={{ color: "var(--fg-2)", fontFamily: "var(--font-sans)" }}
-            >
+            <div className="mb-2 [font-family:var(--font-sans)] text-[13px] font-medium [color:var(--fg-2)]">
               Quién la pagó
             </div>
-            <div
-              data-testid="load-bill-payer-selector"
-              style={{ display: "flex", gap: 8 }}
-            >
+            <div data-testid="load-bill-payer-selector" className="flex gap-2">
               {members.map((m, idx) => {
                 const person: "a" | "b" = idx === 0 ? "a" : "b";
                 const isSelected = payerId === m.user_id;
@@ -241,22 +200,11 @@ export function LoadBillSheet({
                     data-testid={`load-bill-payer-${m.user_id}`}
                     onClick={() => setPayerId(m.user_id)}
                     aria-pressed={isSelected}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 8,
-                      flex: 1,
-                      padding: "8px 12px",
-                      borderRadius: 10,
-                      border: isSelected
-                        ? "2px solid var(--accent)"
-                        : "1.5px solid var(--border-default)",
-                      background: isSelected
-                        ? "color-mix(in srgb, var(--accent) 10%, transparent)"
-                        : "var(--bg-sunken)",
-                      cursor: "pointer",
-                      transition: "border 150ms, background 150ms",
-                    }}
+                    className={`flex flex-1 cursor-pointer items-center gap-2 rounded-[10px] px-3 py-2 transition-[border,background-color] duration-150 ${
+                      isSelected
+                        ? "border-2 [border-color:var(--accent)] [background-color:color-mix(in_srgb,var(--accent)_10%,transparent)]"
+                        : "border-[1.5px] [border-color:var(--border-default)] [background-color:var(--bg-sunken)]"
+                    }`}
                   >
                     <PersonAvatar
                       initials={getInitials(m.full_name)}
@@ -264,15 +212,11 @@ export function LoadBillSheet({
                       size="sm"
                     />
                     <span
-                      style={{
-                        fontSize: 13,
-                        fontWeight: isSelected ? 600 : 400,
-                        color: isSelected ? "var(--accent)" : "var(--fg-1)",
-                        fontFamily: "var(--font-sans)",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                      }}
+                      className={`overflow-hidden [font-family:var(--font-sans)] text-[13px] text-ellipsis whitespace-nowrap ${
+                        isSelected
+                          ? "font-semibold [color:var(--accent)]"
+                          : "font-normal [color:var(--fg-1)]"
+                      }`}
                     >
                       {m.full_name.split(" ")[0]}
                     </span>
@@ -287,8 +231,7 @@ export function LoadBillSheet({
           type="submit"
           data-testid="load-bill-submit"
           disabled={mutation.isPending}
-          className="w-full"
-          style={{ opacity: mutation.isPending ? 0.7 : 1 }}
+          className={`w-full ${mutation.isPending ? "opacity-70" : ""}`}
         >
           Cargar factura
         </Button>
@@ -296,19 +239,9 @@ export function LoadBillSheet({
           type="button"
           onClick={onClose}
           disabled={mutation.isPending}
-          className="mt-2.5 w-full"
-          style={{
-            background: "var(--bg-sunken)",
-            border: "none",
-            borderRadius: 10,
-            cursor: "pointer",
-            padding: "10px 4px",
-            color: "var(--fg-1)",
-            fontSize: 13,
-            fontWeight: 600,
-            fontFamily: "var(--font-sans)",
-            opacity: mutation.isPending ? 0.5 : 1,
-          }}
+          className={`mt-2.5 w-full cursor-pointer rounded-[10px] border-none [background-color:var(--bg-sunken)] px-1 py-2.5 [font-family:var(--font-sans)] text-[13px] font-semibold [color:var(--fg-1)] ${
+            mutation.isPending ? "opacity-50" : ""
+          }`}
         >
           Cancelar
         </button>
