@@ -37,55 +37,18 @@ export default function HistoryPage() {
   }
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        minHeight: "100%",
-        background: "var(--bg-base)",
-      }}
-    >
-      <div
-        style={{
-          background: "var(--bg-elevated)",
-          borderBottom: "1px solid var(--border-subtle)",
-          padding: "14px 20px",
-        }}
-      >
-        <h1
-          style={{
-            fontSize: 20,
-            fontWeight: 700,
-            color: "var(--fg-1)",
-            fontFamily: "var(--font-sans)",
-            margin: 0,
-          }}
-        >
+    <div className="flex min-h-full flex-col [background-color:var(--bg-base)]">
+      <div className="border-b [border-color:var(--border-subtle)] [background-color:var(--bg-elevated)] px-5 py-3.5">
+        <h1 className="m-0 [font-family:var(--font-sans)] text-[20px] font-bold [color:var(--fg-1)]">
           Historial
         </h1>
         {isLoading && (
-          <div
-            style={{
-              fontSize: 12,
-              color: "var(--fg-3)",
-              marginTop: 4,
-              fontFamily: "var(--font-sans)",
-            }}
-          >
+          <div className="mt-1 [font-family:var(--font-sans)] text-xs [color:var(--fg-3)]">
             Cargando…
           </div>
         )}
       </div>
-      <div
-        className="mx-auto w-full max-w-3xl"
-        style={{
-          flex: 1,
-          padding: "12px 16px",
-          display: "flex",
-          flexDirection: "column",
-          gap: 8,
-        }}
-      >
+      <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-2 px-4 py-3">
         {coupleId ? (
           months.map((month, i) => (
             <MonthCard
@@ -98,15 +61,7 @@ export default function HistoryPage() {
             />
           ))
         ) : (
-          <div
-            style={{
-              textAlign: "center",
-              padding: "48px 0",
-              color: "var(--fg-3)",
-              fontFamily: "var(--font-sans)",
-              fontSize: 14,
-            }}
-          >
+          <div className="py-12 text-center [font-family:var(--font-sans)] text-sm [color:var(--fg-3)]">
             Configurá tu pareja para ver el historial.
           </div>
         )}

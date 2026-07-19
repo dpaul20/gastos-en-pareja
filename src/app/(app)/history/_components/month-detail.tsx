@@ -1,3 +1,4 @@
+import { ChevronLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MonthSummaryCard } from "@/components/shared/month-summary-card";
@@ -26,151 +27,58 @@ export function MonthDetail({
     : null;
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        minHeight: "100%",
-        background: "var(--bg-base)",
-      }}
-    >
-      <div
-        style={{
-          background: "var(--bg-elevated)",
-          borderBottom: "1px solid var(--border-subtle)",
-          padding: "14px 16px",
-          display: "flex",
-          alignItems: "center",
-          gap: 12,
-        }}
-      >
+    <div className="flex min-h-full flex-col [background-color:var(--bg-base)]">
+      <div className="flex items-center gap-3 border-b [border-color:var(--border-subtle)] [background-color:var(--bg-elevated)] px-4 py-3.5">
         <button
           onClick={onBack}
           aria-label="Volver"
-          style={{
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            padding: 4,
-            minWidth: 44,
-            minHeight: 44,
-            display: "flex",
-            alignItems: "center",
-          }}
+          className="flex min-h-11 min-w-11 cursor-pointer items-center border-none bg-transparent p-1"
         >
-          <svg
-            width="22"
-            height="22"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="var(--fg-2)"
-            strokeWidth="2"
-          >
-            <polyline points="15 18 9 12 15 6" />
-          </svg>
+          <ChevronLeft
+            size={22}
+            strokeWidth={2}
+            className="[color:var(--fg-2)]"
+          />
         </button>
-        <span
-          style={{
-            fontSize: 17,
-            fontWeight: 600,
-            color: "var(--fg-1)",
-            fontFamily: "var(--font-sans)",
-          }}
-        >
+        <span className="[font-family:var(--font-sans)] text-[17px] font-semibold [color:var(--fg-1)]">
           {formatMonth(month)}
         </span>
         <Badge variant="neutral">Solo lectura</Badge>
       </div>
-      <div
-        className="mx-auto w-full max-w-3xl"
-        style={{
-          flex: 1,
-          padding: "16px",
-          display: "flex",
-          flexDirection: "column",
-          gap: 12,
-        }}
-      >
+      <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-3 p-4">
         {isLoading && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <div
-              style={{
-                background: "var(--bg-elevated)",
-                borderRadius: 16,
-                padding: "18px",
-                border: "1px solid var(--border-subtle)",
-                display: "flex",
-                flexDirection: "column",
-                gap: 10,
-              }}
-            >
-              <Skeleton style={{ height: 14, width: "30%" }} />
-              <Skeleton style={{ height: 38, width: "55%" }} />
-              <Skeleton style={{ height: 16, width: "45%" }} />
-              <Skeleton style={{ height: 6, borderRadius: 99 }} />
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-2.5 rounded-[var(--radius-lg)] border [border-color:var(--border-subtle)] [background-color:var(--bg-elevated)] p-[18px]">
+              <Skeleton className="h-3.5 w-[30%]" />
+              <Skeleton className="h-[38px] w-[55%]" />
+              <Skeleton className="h-4 w-[45%]" />
+              <Skeleton className="h-1.5 rounded-full" />
             </div>
           </div>
         )}
         {!isLoading && balance && (
           <>
-            <div
-              style={{
-                background: "var(--bg-elevated)",
-                borderRadius: 16,
-                padding: "18px",
-                border: "1px solid var(--border-subtle)",
-                boxShadow: "var(--shadow-sm)",
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 11,
-                  fontWeight: 600,
-                  color: "var(--fg-3)",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.05em",
-                  marginBottom: 8,
-                  fontFamily: "var(--font-sans)",
-                }}
-              >
+            <div className="rounded-[var(--radius-lg)] border [border-color:var(--border-subtle)] [background-color:var(--bg-elevated)] p-[18px] shadow-[var(--shadow-sm)]">
+              <div className="mb-2 [font-family:var(--font-sans)] text-[11px] font-semibold tracking-[0.05em] [color:var(--fg-3)] uppercase">
                 Balance del mes
               </div>
               <div
+                className="ds-amount text-[32px] font-bold tracking-[-0.02em]"
                 style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 32,
-                  fontWeight: 700,
                   color:
                     balance.debtAmount > 0
                       ? "var(--status-danger-text)"
                       : "var(--status-success-text)",
-                  letterSpacing: "-0.02em",
                 }}
               >
                 {formatARS(balance.debtAmount)}
               </div>
-              <div
-                style={{
-                  fontSize: 14,
-                  color: "var(--fg-2)",
-                  marginTop: 4,
-                  fontFamily: "var(--font-sans)",
-                }}
-              >
+              <div className="mt-1 [font-family:var(--font-sans)] text-sm [color:var(--fg-2)]">
                 {balance.debtAmount > 0
                   ? "Diferencia entre aportes"
                   : "Todo equilibrado"}
               </div>
-              <div
-                style={{
-                  marginTop: 14,
-                  background: "var(--color-neutral-200)",
-                  borderRadius: 99,
-                  height: 6,
-                  display: "flex",
-                  overflow: "hidden",
-                }}
-              >
+              <div className="mt-3.5 flex h-1.5 overflow-hidden rounded-full [background-color:var(--color-neutral-200)]">
                 {balance.balances.map((b, i) => (
                   <div
                     key={b.userId}
