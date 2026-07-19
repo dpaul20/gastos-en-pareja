@@ -18,12 +18,7 @@ export function BottomNav() {
   return (
     <nav
       aria-label="Navegación principal"
-      className="fixed right-0 bottom-0 left-0 z-50 lg:hidden"
-      style={{
-        background: "var(--bg-elevated)",
-        borderTop: "1px solid var(--border-subtle)",
-        paddingBottom: "env(safe-area-inset-bottom)",
-      }}
+      className="fixed right-0 bottom-0 left-0 z-50 border-t [border-color:var(--border-subtle)] [background-color:var(--bg-elevated)] pb-[env(safe-area-inset-bottom)] lg:hidden"
     >
       <div className="flex h-16 items-stretch">
         {items.map((item) => {
@@ -38,12 +33,11 @@ export function BottomNav() {
               // "Configuración" to match the desktop sidebar nav.
               aria-label={item.id === "settings" ? "Configuración" : undefined}
               className={cn(
-                "flex flex-1 flex-col items-center justify-center gap-1 text-[10px] font-semibold transition-colors",
+                "flex flex-1 flex-col items-center justify-center gap-1 [font-family:var(--font-sans)] text-[10px] font-semibold transition-colors",
                 isActive
                   ? "text-(--accent)"
                   : "text-(--fg-3) hover:text-(--fg-1)",
               )}
-              style={{ fontFamily: "var(--font-sans)" }}
             >
               <item.icon
                 className={cn("size-5 shrink-0", isActive && "stroke-[2.2]")}

@@ -36,28 +36,13 @@ export function InstallPrompt() {
   }
 
   return (
-    <Card
-      style={{
-        position: "fixed",
-        bottom: "calc(var(--bottom-nav-height) + 12px)",
-        left: 16,
-        right: 16,
-        maxWidth: 358,
-        margin: "0 auto",
-        zIndex: 80,
-      }}
-    >
+    <Card className="fixed right-4 bottom-[calc(var(--bottom-nav-height)_+_12px)] left-4 z-[80] mx-auto max-w-[358px]">
       <CardContent className="flex items-center gap-3 p-4">
         <div
+          className="flex size-10 shrink-0 items-center justify-center rounded-[10px]"
           style={{
-            width: 40,
-            height: 40,
-            borderRadius: 10,
-            flexShrink: 0,
-            background: "linear-gradient(135deg, #6C5CE7 0%, #8B79FA 100%)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
+            background:
+              "linear-gradient(135deg, var(--color-violet-500) 0%, var(--color-violet-400) 100%)",
           }}
         >
           <svg
@@ -74,24 +59,11 @@ export function InstallPrompt() {
             <path d="M16 3.13a4 4 0 0 1 0 7.75" />
           </svg>
         </div>
-        <div style={{ flex: 1 }}>
-          <div
-            style={{
-              fontSize: 13,
-              fontWeight: 600,
-              color: "var(--fg-1)",
-              fontFamily: "var(--font-sans)",
-            }}
-          >
+        <div className="flex-1">
+          <div className="[font-family:var(--font-sans)] text-[13px] font-semibold [color:var(--fg-1)]">
             Instalá la app
           </div>
-          <div
-            style={{
-              fontSize: 11,
-              color: "var(--fg-3)",
-              fontFamily: "var(--font-sans)",
-            }}
-          >
+          <div className="[font-family:var(--font-sans)] text-[11px] [color:var(--fg-3)]">
             Acceso rápido desde tu pantalla de inicio
           </div>
         </div>
@@ -100,15 +72,11 @@ export function InstallPrompt() {
           size="icon"
           onClick={() => setDismissed(true)}
           aria-label="Cerrar"
-          style={{ color: "var(--fg-3)", minWidth: 32, minHeight: 32 }}
+          className="min-h-8 min-w-8 [color:var(--fg-3)]"
         >
           ×
         </Button>
-        <Button
-          size="sm"
-          onClick={handleInstall}
-          style={{ whiteSpace: "nowrap" }}
-        >
+        <Button size="sm" onClick={handleInstall} className="whitespace-nowrap">
           Instalar
         </Button>
       </CardContent>
