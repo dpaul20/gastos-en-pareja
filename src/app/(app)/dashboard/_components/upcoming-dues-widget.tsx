@@ -28,30 +28,12 @@ function DueItem({ due, showPayButton, onPay, isPaying }: DueItemProps) {
   const dueLabel = `Día ${due.dueDay}`;
 
   return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        gap: 8,
-        padding: "10px 0",
-        borderBottom: "1px solid var(--border-subtle)",
-      }}
-    >
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div
-          style={{
-            fontSize: 14,
-            fontWeight: 500,
-            color: "var(--fg-1)",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-          }}
-        >
+    <div className="flex items-center justify-between gap-2 border-b [border-color:var(--border-subtle)] py-2.5">
+      <div className="min-w-0 flex-1">
+        <div className="overflow-hidden text-sm font-medium text-ellipsis whitespace-nowrap [color:var(--fg-1)]">
           {name}
         </div>
-        <div style={{ fontSize: 12, color: "var(--fg-3)", marginTop: 2 }}>
+        <div className="mt-0.5 text-xs [color:var(--fg-3)]">
           {dueLabel} · {formatARS(amount)}
         </div>
       </div>
@@ -59,19 +41,7 @@ function DueItem({ due, showPayButton, onPay, isPaying }: DueItemProps) {
         <button
           onClick={() => onPay(instance.id)}
           disabled={isPaying}
-          style={{
-            background: "var(--accent)",
-            color: "white",
-            border: "none",
-            borderRadius: 8,
-            padding: "6px 12px",
-            fontSize: 12,
-            fontWeight: 600,
-            cursor: isPaying ? "not-allowed" : "pointer",
-            opacity: isPaying ? 0.6 : 1,
-            fontFamily: "var(--font-sans)",
-            flexShrink: 0,
-          }}
+          className={`shrink-0 rounded-[8px] border-none [background-color:var(--accent)] px-3 py-1.5 [font-family:var(--font-sans)] text-xs font-semibold text-white ${isPaying ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
         >
           Pagar
         </button>
@@ -100,16 +70,10 @@ function DueSection({
   if (items.length === 0) return null;
 
   return (
-    <div style={{ marginBottom: 12 }}>
+    <div className="mb-3">
       <div
-        style={{
-          fontSize: 11,
-          fontWeight: 700,
-          color: titleColor,
-          textTransform: "uppercase",
-          letterSpacing: "0.05em",
-          marginBottom: 4,
-        }}
+        className="mb-1 text-[11px] font-bold tracking-[0.05em] uppercase"
+        style={{ color: titleColor }}
       >
         {title}
       </div>
@@ -171,16 +135,7 @@ export function UpcomingDuesWidget({
   return (
     <Card data-testid="upcoming-dues-widget">
       <CardContent className="px-4 pt-4 pb-1">
-        <h3
-          style={{
-            fontSize: 11,
-            fontWeight: 700,
-            color: "var(--fg-2)",
-            textTransform: "uppercase",
-            letterSpacing: "0.05em",
-            marginBottom: 8,
-          }}
-        >
+        <h3 className="mb-2 text-[11px] font-bold tracking-[0.05em] [color:var(--fg-2)] uppercase">
           Servicios
         </h3>
 

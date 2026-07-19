@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { PersonAvatar } from "@/components/shared/avatar";
 import { formatARS, formatMonth, getInitials } from "@/lib/utils";
 import type { MonthlyBalance } from "@/lib/utils/balance";
@@ -50,14 +51,7 @@ function SettlementLedger({
   return (
     <div
       data-testid="settlement-ledger"
-      style={{
-        marginTop: 14,
-        paddingTop: 12,
-        borderTop: "1px solid var(--border-subtle)",
-        display: "flex",
-        flexDirection: "column",
-        gap: 2,
-      }}
+      className="mt-3.5 flex flex-col gap-0.5 border-t [border-color:var(--border-subtle)] pt-3"
     >
       {settlements.map((s) => (
         <button
@@ -65,77 +59,32 @@ function SettlementLedger({
           type="button"
           data-testid={`settlement-row-${s.id}`}
           onClick={() => onEdit(s)}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            width: "100%",
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            padding: "7px 4px",
-            borderRadius: 8,
-            textAlign: "left",
-            fontFamily: "var(--font-sans)",
-          }}
+          className="flex w-full cursor-pointer items-center gap-2 rounded-[var(--radius-sm)] border-none bg-transparent px-1 py-[7px] text-left [font-family:var(--font-sans)]"
         >
           <PersonAvatar
             initials={initialsOf(s.from_user_id)}
             person={personOf(s.from_user_id)}
             size="sm"
           />
-          <span style={{ fontSize: 12, color: "var(--fg-2)", flex: 1 }}>
+          <span className="flex-1 text-[12px] [color:var(--fg-2)]">
             {formatShortDate(s.paid_on)} · {firstName(s.from_user_id)} →{" "}
             {firstName(s.to_user_id)}
             {s.note ? (
-              <span style={{ color: "var(--fg-3)" }}> · {s.note}</span>
+              <span className="[color:var(--fg-3)]"> · {s.note}</span>
             ) : null}
           </span>
-          <span
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 13,
-              fontWeight: 600,
-              color: "var(--status-success-text)",
-              fontVariantNumeric: "tabular-nums",
-              whiteSpace: "nowrap",
-            }}
-          >
+          <span className="ds-amount text-[13px] font-semibold whitespace-nowrap [color:var(--status-success-text)]">
             {formatARS(s.amount)}
           </span>
         </button>
       ))}
 
       {settlements.length > 1 && (
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "baseline",
-            marginTop: 4,
-            paddingTop: 8,
-            borderTop: "1px solid var(--border-subtle)",
-          }}
-        >
-          <span
-            style={{
-              fontSize: 12,
-              fontWeight: 600,
-              color: "var(--fg-1)",
-              fontFamily: "var(--font-sans)",
-            }}
-          >
+        <div className="mt-1 flex items-baseline justify-between border-t [border-color:var(--border-subtle)] pt-2">
+          <span className="[font-family:var(--font-sans)] text-[12px] font-semibold [color:var(--fg-1)]">
             Total liquidado
           </span>
-          <span
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 13,
-              fontWeight: 700,
-              color: "var(--fg-1)",
-              fontVariantNumeric: "tabular-nums",
-            }}
-          >
+          <span className="ds-amount text-[13px] font-bold [color:var(--fg-1)]">
             {formatARS(settledTotal)}
           </span>
         </div>
@@ -208,59 +157,26 @@ export function BalanceCard({
       : `Faltan ${awaitingBillCount} facturas. Cuando lleguen puede aparecer una diferencia.`;
 
   return (
-    <div
-      style={{
-        background: "var(--bg-elevated)",
-        borderRadius: 20,
-        border: "1px solid var(--border-subtle)",
-        boxShadow: "var(--shadow-md)",
-        overflow: "hidden",
-      }}
-    >
+    <Card className="overflow-hidden rounded-[var(--radius-xl)] shadow-[var(--shadow-md)]">
       <div
+        className="px-5 pt-5 pb-4"
         style={{
-          background:
+          backgroundImage:
             "linear-gradient(135deg, color-mix(in srgb, var(--accent) 7%, transparent) 0%, color-mix(in srgb, var(--accent) 2%, transparent) 100%)",
-          padding: "20px 20px 16px",
         }}
       >
-        <h2
-          style={{
-            fontSize: 11,
-            fontWeight: 600,
-            color: "var(--accent)",
-            textTransform: "uppercase",
-            letterSpacing: "0.05em",
-            marginBottom: 4,
-            fontFamily: "var(--font-sans)",
-            margin: 0,
-          }}
-        >
+        <h2 className="m-0 [font-family:var(--font-sans)] text-[11px] font-semibold tracking-[0.05em] [color:var(--accent)] uppercase">
           Balance {formatMonth(month)}
         </h2>
         {hasDebt ? (
           <>
             <div
               data-testid="balance-debt-amount"
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 38,
-                fontWeight: 700,
-                color: "var(--status-danger-text)",
-                letterSpacing: "-0.02em",
-                lineHeight: 1.1,
-              }}
+              className="ds-amount text-[38px] leading-[1.1] font-bold [letter-spacing:-0.02em] [color:var(--status-danger-text)]"
             >
               {formatARS(remainingDebt)}
             </div>
-            <div
-              style={{
-                fontSize: 14,
-                color: "var(--fg-2)",
-                marginTop: 5,
-                fontFamily: "var(--font-sans)",
-              }}
-            >
+            <div className="mt-[5px] [font-family:var(--font-sans)] text-[14px] [color:var(--fg-2)]">
               {debtorName} le debe a {creditorName}
             </div>
           </>
@@ -268,25 +184,11 @@ export function BalanceCard({
           <>
             <div
               data-testid="balance-zero"
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 38,
-                fontWeight: 700,
-                color: "var(--status-success-text)",
-                letterSpacing: "-0.02em",
-                lineHeight: 1.1,
-              }}
+              className="ds-amount text-[38px] leading-[1.1] font-bold [letter-spacing:-0.02em] [color:var(--status-success-text)]"
             >
               $0
             </div>
-            <div
-              style={{
-                fontSize: 14,
-                color: "var(--fg-2)",
-                marginTop: 5,
-                fontFamily: "var(--font-sans)",
-              }}
-            >
+            <div className="mt-[5px] [font-family:var(--font-sans)] text-[14px] [color:var(--fg-2)]">
               {isSettled
                 ? "Saldado"
                 : balance.balances.length === 0
@@ -300,16 +202,10 @@ export function BalanceCard({
           <div
             data-testid="balance-awaiting-note"
             role="status"
+            className="mt-3 rounded-[10px] px-3 py-[10px] [font-family:var(--font-sans)] text-[12px] leading-[1.45] [color:var(--status-warning-fg)]"
             style={{
-              marginTop: 12,
-              padding: "10px 12px",
-              borderRadius: 10,
-              background:
+              backgroundColor:
                 "color-mix(in srgb, var(--status-warning-fg) 8%, transparent)",
-              color: "var(--status-warning-fg)",
-              fontSize: 12,
-              lineHeight: 1.45,
-              fontFamily: "var(--font-sans)",
             }}
           >
             {awaitingNote}
@@ -334,8 +230,8 @@ export function BalanceCard({
           onEdit={onEditSettlement}
         />
       </div>
-      <div style={{ padding: "16px 20px" }}>
-        <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+      <div className="px-5 py-4">
+        <div className="mb-2.5 flex gap-2">
           {[
             {
               initials: myInitials,
@@ -358,69 +254,39 @@ export function BalanceCard({
           ].map((p) => (
             <div
               key={p.person}
-              style={{
-                flex: 1,
-                background: p.bg,
-                borderRadius: 12,
-                padding: "10px 12px",
-              }}
+              className="flex-1 rounded-[var(--radius-md)] px-3 py-[10px]"
+              style={{ backgroundColor: p.bg }}
             >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                  marginBottom: 4,
-                }}
-              >
+              <div className="mb-1 flex items-center gap-1.5">
                 <PersonAvatar
                   initials={p.initials}
                   person={p.person}
                   size="sm"
                 />
                 <span
-                  style={{
-                    fontSize: 12,
-                    fontWeight: 600,
-                    color: p.color,
-                    fontFamily: "var(--font-sans)",
-                  }}
+                  className="[font-family:var(--font-sans)] text-[12px] font-semibold"
+                  style={{ color: p.color }}
                 >
                   {p.name} · {p.pct}%
                 </span>
               </div>
               <div
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 18,
-                  fontWeight: 700,
-                  color: p.color,
-                }}
+                className="ds-amount text-[18px] font-bold"
+                style={{ color: p.color }}
               >
                 {formatARS(p.amt)}
               </div>
             </div>
           ))}
         </div>
-        <div
-          style={{
-            background: "var(--border-default)",
-            borderRadius: 99,
-            height: 6,
-            display: "flex",
-            overflow: "hidden",
-          }}
-        >
+        <div className="flex h-1.5 overflow-hidden rounded-full [background-color:var(--border-default)]">
           <div
-            style={{
-              width: `${myPct}%`,
-              background: "var(--person-a)",
-              transition: "width 400ms",
-            }}
+            className="[background-color:var(--person-a)] transition-[width] duration-[400ms]"
+            style={{ width: `${myPct}%` }}
           />
-          <div style={{ flex: 1, background: "var(--person-b)" }} />
+          <div className="flex-1 [background-color:var(--person-b)]" />
         </div>
       </div>
-    </div>
+    </Card>
   );
 }

@@ -586,6 +586,54 @@ test.describe("Cuota terminada — visible, editable y eliminable, badge distint
   });
 });
 
+// ── Cuota — Progress ARIA preservation (Slice 1a / DS refactor) ──────────────
+// Guards the shadcn `Progress` migration: the progressbar's `aria-valuenow`/
+// `aria-valuemax` MUST keep reporting "installments paid / total", exactly as
+// the hand-rolled `role="progressbar"` div did before the refactor — never a
+// 0-100 percentage (spec: "Behavior Preservation" / "Accessibility
+// Preservation").
+
+test.describe("Gasto cuota — Progress ARIA preservation", () => {
+  const DESCRIPCION = `E2E-cuota-progress-${Date.now()}`;
+
+  test.beforeEach(async ({ adminClient, coupleId }) => {
+    const today = new Date().toISOString().split("T")[0];
+    await adminClient.from("installment_purchases").insert({
+      couple_id: coupleId,
+      description: DESCRIPCION,
+      total_amount: 40000,
+      installments: 4,
+      paid_installments: 1,
+      auto_renew: false,
+      first_payment_date: today,
+    });
+  });
+
+  test.afterEach(async ({ adminClient, coupleId }) => {
+    await adminClient
+      .from("installment_purchases")
+      .delete()
+      .eq("couple_id", coupleId)
+      .like("description", "E2E-cuota-progress-%");
+  });
+
+  test("el progressbar reporta aria-valuenow=cuotas pagadas y aria-valuemax=total, no un porcentaje", async ({
+    authenticatedPage: page,
+  }) => {
+    test.slow();
+    const expenses = new ExpensesPage(page);
+    await expenses.goto();
+
+    const item = page.locator("li", { hasText: DESCRIPCION }).first();
+    await expect(item).toBeVisible({ timeout: 15_000 });
+
+    const progressbar = item.getByRole("progressbar");
+    await expect(progressbar).toHaveAttribute("aria-valuenow", "1");
+    await expect(progressbar).toHaveAttribute("aria-valuemax", "4");
+    await expect(progressbar).toHaveAttribute("aria-valuemin", "0");
+  });
+});
+
 // ── Network failure ────────────────────────────────────────────────────────────
 
 test.describe("Manejo de errores de red", () => {

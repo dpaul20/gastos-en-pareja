@@ -4,9 +4,17 @@ import { useState, useMemo } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import type { UseFormRegisterReturn } from "react-hook-form";
+import type { Control, FieldPath } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Switch } from "@/components/ui/switch";
 import { ResponsiveModal } from "@/components/shared/responsive-modal";
 import { CategoryPicker } from "@/components/shared/category-picker";
@@ -125,63 +133,68 @@ const SAVE_LABEL: Record<Tab, string> = {
 function MoneyField({
   label,
   id,
-  registration,
-  error,
+  name,
+  control,
 }: Readonly<{
   label: string;
   id: string;
-  registration: UseFormRegisterReturn;
-  error?: string;
+  name: FieldPath<Fields>;
+  control: Control<Fields>;
 }>) {
   return (
-    <div style={{ marginBottom: 14 }}>
-      <label htmlFor={id} style={labelCss}>
-        {label}
-      </label>
-      <div
-        className="focus-within:ring-2 focus-within:ring-(--accent)"
-        style={{
-          display: "flex",
-          alignItems: "center",
-          background: "var(--bg-sunken)",
-          borderRadius: 10,
-          border: "1.5px solid var(--border-default)",
-          overflow: "hidden",
-        }}
-      >
-        <span
-          aria-hidden
-          style={{
-            padding: "10px 6px 10px 12px",
-            fontSize: 16,
-            fontWeight: 600,
-            color: "var(--fg-3)",
-            fontFamily: "var(--font-mono)",
-          }}
-        >
-          $
-        </span>
-        <Input
-          id={id}
-          {...registration}
-          inputMode="decimal"
-          placeholder=""
-          className={cn(
-            "flex-1 border-none bg-transparent shadow-none outline-none focus-visible:ring-0",
-            "font-mono text-base font-semibold",
-          )}
-          style={{
-            padding: "10px 12px 10px 4px",
-            color: "var(--fg-1)",
-          }}
-        />
-      </div>
-      {error && (
-        <div role="alert" style={errorCss}>
-          {error}
-        </div>
+    <FormField
+      control={control}
+      name={name}
+      render={({ field }) => (
+        <FormItem className="block" style={{ marginBottom: 14 }}>
+          <FormLabel htmlFor={id} style={labelCss}>
+            {label}
+          </FormLabel>
+          <div
+            className="focus-within:ring-2 focus-within:ring-(--accent)"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              background: "var(--bg-sunken)",
+              borderRadius: 10,
+              border: "1.5px solid var(--border-default)",
+              overflow: "hidden",
+            }}
+          >
+            <span
+              aria-hidden
+              style={{
+                padding: "10px 6px 10px 12px",
+                fontSize: 16,
+                fontWeight: 600,
+                color: "var(--fg-3)",
+                fontFamily: "var(--font-mono)",
+              }}
+            >
+              $
+            </span>
+            <FormControl>
+              <Input
+                {...field}
+                value={field.value ?? ""}
+                id={id}
+                inputMode="decimal"
+                placeholder=""
+                className={cn(
+                  "flex-1 border-none bg-transparent shadow-none outline-none focus-visible:ring-0",
+                  "font-mono text-base font-semibold",
+                )}
+                style={{
+                  padding: "10px 12px 10px 4px",
+                  color: "var(--fg-1)",
+                }}
+              />
+            </FormControl>
+          </div>
+          <FormMessage role="alert" style={errorCss} />
+        </FormItem>
       )}
-    </div>
+    />
   );
 }
 
@@ -189,8 +202,8 @@ function MoneyField({
 function InputField({
   label,
   id,
-  registration,
-  error,
+  name,
+  control,
   type = "text",
   inputMode,
   mono = false,
@@ -198,40 +211,45 @@ function InputField({
 }: Readonly<{
   label: string;
   id: string;
-  registration: UseFormRegisterReturn;
-  error?: string;
+  name: FieldPath<Fields>;
+  control: Control<Fields>;
   type?: string;
   inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
   mono?: boolean;
   placeholder?: string;
 }>) {
   return (
-    <div style={{ marginBottom: 14 }}>
-      <label htmlFor={id} style={labelCss}>
-        {label}
-      </label>
-      <Input
-        id={id}
-        {...registration}
-        type={type}
-        inputMode={inputMode}
-        placeholder={placeholder}
-        className={cn(
-          "w-full rounded-xl px-3.5 py-3 text-[15px]",
-          mono && "font-mono font-semibold",
-        )}
-        style={{
-          border: "1.5px solid var(--border-default)",
-          background: "var(--bg-elevated)",
-          color: "var(--fg-1)",
-        }}
-      />
-      {error && (
-        <div role="alert" style={errorCss}>
-          {error}
-        </div>
+    <FormField
+      control={control}
+      name={name}
+      render={({ field }) => (
+        <FormItem className="block" style={{ marginBottom: 14 }}>
+          <FormLabel htmlFor={id} style={labelCss}>
+            {label}
+          </FormLabel>
+          <FormControl>
+            <Input
+              {...field}
+              value={field.value ?? ""}
+              id={id}
+              type={type}
+              inputMode={inputMode}
+              placeholder={placeholder}
+              className={cn(
+                "w-full rounded-xl px-3.5 py-3 text-[15px]",
+                mono && "font-mono font-semibold",
+              )}
+              style={{
+                border: "1.5px solid var(--border-default)",
+                background: "var(--bg-elevated)",
+                color: "var(--fg-1)",
+              }}
+            />
+          </FormControl>
+          <FormMessage role="alert" style={errorCss} />
+        </FormItem>
       )}
-    </div>
+    />
   );
 }
 
@@ -281,6 +299,12 @@ export function AddSheet({
     editingCuota?.card_id ?? null,
   );
 
+  // Blank defaults per tab — required so an untouched FormField/Controller-
+  // bound input submits "" (not `undefined`) on save, matching the original
+  // register()-based (uncontrolled) inputs which always read the DOM's
+  // native "" at submit time. Without this, Zod's base string type check
+  // fails on `undefined` with its English "Required" fallback instead of
+  // the schema's custom Spanish `.min(1, "Requerido")` message.
   const defaultValues: Fields = editingCuota
     ? {
         description: editingCuota.description,
@@ -293,18 +317,24 @@ export function AddSheet({
           amount: String(editingVariable.amount),
           date: editingVariable.date,
         }
-      : {};
+      : (
+          {
+            cuotas: {
+              description: "",
+              total_amount: "",
+              installments: "",
+              first_payment_date: "",
+            },
+            fijos: { description: "", amount: "", due_day: "" },
+            variables: { description: "", amount: "", date: "" },
+          } satisfies Record<Tab, Fields>
+        )[tab];
 
-  const {
-    register,
-    control,
-    setValue,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<Fields>({
+  const form = useForm<Fields>({
     resolver: zodResolver(schemas[tab]),
     defaultValues,
   });
+  const { control, setValue, handleSubmit } = form;
 
   // Selected due day (fijos tab) — drives the grid picker highlight
   const dueDayRaw = useWatch({ control, name: "due_day" });
@@ -348,296 +378,306 @@ export function AddSheet({
       }
       data-testid="add-sheet-dialog"
     >
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <InputField
-          label="Descripción"
-          id="field-description"
-          registration={register("description")}
-          error={errors.description?.message}
-        />
-
-        {tab === "cuotas" && (
-          <>
-            <MoneyField
-              label="Monto total"
-              id="field-total-amount"
-              registration={register("total_amount")}
-              error={errors.total_amount?.message}
-            />
-            <InputField
-              label="Cuotas"
-              id="field-installments"
-              registration={register("installments")}
-              error={errors.installments?.message}
-              inputMode="numeric"
-              placeholder="ej: 12"
-              mono
-            />
-            {monthlyAmount !== null && (
-              <div
-                style={{
-                  fontSize: 12,
-                  color: "var(--fg-2)",
-                  marginTop: -10,
-                  marginBottom: 14,
-                  fontFamily: "var(--font-sans)",
-                }}
-              >
-                ≈ {formatARS(monthlyAmount)} / mes
-              </div>
-            )}
-            <div style={{ marginBottom: 14 }}>
-              <div style={{ ...labelCss, marginBottom: 8 }}>
-                Tarjeta (opcional)
-              </div>
-              <CardPicker
-                coupleId={coupleId ?? null}
-                value={cardId}
-                onChange={setCardId}
-              />
-            </div>
-            {/* Commit 6: editing never moves first_payment_date — changing it
-                would shift isInstallmentActiveInMonth's gating window, which
-                is out of scope for an "error correction" edit (R3-C/design
-                decision A only covers amount/installments recalc-all). */}
-            {!isEditing && (
-              <InputField
-                label="Fecha del primer pago"
-                id="field-first-payment-date"
-                registration={register("first_payment_date")}
-                error={errors.first_payment_date?.message}
-                type="date"
-              />
-            )}
-          </>
-        )}
-
-        {(tab === "fijos" || tab === "variables") && (
-          <MoneyField
-            label="Monto"
-            id="field-amount"
-            registration={register("amount")}
-            error={errors.amount?.message}
-          />
-        )}
-
-        {tab === "fijos" && (
-          <div style={{ marginBottom: 14 }}>
-            <label htmlFor="field-due-day" style={labelCss}>
-              Día de vencimiento (1-31)
-            </label>
-            {/* Visually-hidden native input keeps the field addressable/fillable
-                for a11y + e2e while the grid is the visual control. */}
-            <input
-              id="field-due-day"
-              data-testid="field-due-day"
-              type="text"
-              inputMode="numeric"
-              className="sr-only"
-              {...register("due_day")}
-            />
-            <DueDayPicker
-              value={dueDayValue}
-              onChange={(day) =>
-                setValue("due_day", String(day), {
-                  shouldValidate: true,
-                  shouldDirty: true,
-                })
-              }
-            />
-            {errors.due_day?.message && (
-              <div role="alert" style={errorCss}>
-                {errors.due_day.message}
-              </div>
-            )}
-          </div>
-        )}
-
-        {tab === "variables" && (
+      <Form {...form}>
+        <form onSubmit={handleSubmit(onSubmit)}>
           <InputField
-            label="Fecha (AAAA-MM-DD)"
-            id="field-date"
-            registration={register("date")}
-            error={errors.date?.message}
-            type="date"
+            label="Descripción"
+            id="field-description"
+            name="description"
+            control={control}
           />
-        )}
 
-        {(tab === "variables" || tab === "fijos") && (
-          <div
-            style={{
-              marginBottom: 14,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              minHeight: 44,
-            }}
-          >
-            <div>
-              <div
-                style={{
-                  fontSize: 13,
-                  fontWeight: 500,
-                  color: "var(--fg-2)",
-                  fontFamily: "var(--font-sans)",
-                }}
-              >
-                {isShared ? "Gasto compartido" : "Gasto personal"}
+          {tab === "cuotas" && (
+            <>
+              <MoneyField
+                label="Monto total"
+                id="field-total-amount"
+                name="total_amount"
+                control={control}
+              />
+              <InputField
+                label="Cuotas"
+                id="field-installments"
+                name="installments"
+                control={control}
+                inputMode="numeric"
+                placeholder="ej: 12"
+                mono
+              />
+              {monthlyAmount !== null && (
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: "var(--fg-2)",
+                    marginTop: -10,
+                    marginBottom: 14,
+                    fontFamily: "var(--font-sans)",
+                  }}
+                >
+                  ≈ {formatARS(monthlyAmount)} / mes
+                </div>
+              )}
+              <div style={{ marginBottom: 14 }}>
+                <div style={{ ...labelCss, marginBottom: 8 }}>
+                  Tarjeta (opcional)
+                </div>
+                <CardPicker
+                  coupleId={coupleId ?? null}
+                  value={cardId}
+                  onChange={setCardId}
+                />
               </div>
-              <div
-                style={{
-                  fontSize: 11,
-                  color: "var(--fg-3)",
-                  fontFamily: "var(--font-sans)",
-                  marginTop: 2,
-                }}
-              >
-                {isShared
-                  ? "Entra en el balance proporcional"
-                  : "No afecta el balance entre los dos"}
-              </div>
-            </div>
-            <Switch
-              checked={isShared}
-              onCheckedChange={setIsShared}
-              data-testid="toggle-is-shared"
-              aria-label="Gasto compartido"
+              {/* Commit 6: editing never moves first_payment_date — changing it
+                  would shift isInstallmentActiveInMonth's gating window, which
+                  is out of scope for an "error correction" edit (R3-C/design
+                  decision A only covers amount/installments recalc-all). */}
+              {!isEditing && (
+                <InputField
+                  label="Fecha del primer pago"
+                  id="field-first-payment-date"
+                  name="first_payment_date"
+                  control={control}
+                  type="date"
+                />
+              )}
+            </>
+          )}
+
+          {(tab === "fijos" || tab === "variables") && (
+            <MoneyField
+              label="Monto"
+              id="field-amount"
+              name="amount"
+              control={control}
             />
-          </div>
-        )}
+          )}
 
-        {categories && categories.length > 0 && (
-          <div style={{ marginBottom: 14 }}>
-            <div style={{ ...labelCss, marginBottom: 8 }}>Categoría</div>
-            <CategoryPicker
-              categories={categories}
-              value={categoryId}
-              onChange={setCategoryId}
+          {tab === "fijos" && (
+            <FormField
+              control={control}
+              name="due_day"
+              render={({ field }) => (
+                <FormItem className="block" style={{ marginBottom: 14 }}>
+                  <FormLabel htmlFor="field-due-day" style={labelCss}>
+                    Día de vencimiento (1-31)
+                  </FormLabel>
+                  {/* Visually-hidden native input keeps the field addressable/
+                      fillable for a11y + e2e while the grid is the visual
+                      control. */}
+                  <FormControl>
+                    <input
+                      {...field}
+                      value={field.value ?? ""}
+                      id="field-due-day"
+                      data-testid="field-due-day"
+                      type="text"
+                      inputMode="numeric"
+                      className="sr-only"
+                    />
+                  </FormControl>
+                  <DueDayPicker
+                    value={dueDayValue}
+                    onChange={(day) =>
+                      setValue("due_day", String(day), {
+                        shouldValidate: true,
+                        shouldDirty: true,
+                      })
+                    }
+                  />
+                  <FormMessage role="alert" style={errorCss} />
+                </FormItem>
+              )}
             />
-          </div>
-        )}
+          )}
 
-        {(tab === "cuotas" || (tab === "fijos" && !isShared)) &&
-          members &&
-          members.length >= 2 && (
-            <div style={{ marginBottom: 14 }}>
-              <div style={{ ...labelCss, marginBottom: 8 }}>¿Quién paga?</div>
-              <div
-                data-testid="payer-selector"
-                style={{ display: "flex", gap: 8 }}
-              >
-                {members.map((m, idx) => {
-                  const person: "a" | "b" = idx === 0 ? "a" : "b";
-                  const isSelected = payerId === m.user_id;
-                  return (
-                    <button
-                      key={m.user_id}
-                      type="button"
-                      data-testid={`payer-option-${m.user_id}`}
-                      onClick={() => setPayerId(m.user_id)}
-                      aria-pressed={isSelected}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 8,
-                        flex: 1,
-                        padding: "8px 12px",
-                        borderRadius: 10,
-                        border: isSelected
-                          ? "2px solid var(--accent)"
-                          : "1.5px solid var(--border-default)",
-                        background: isSelected
-                          ? "color-mix(in srgb, var(--accent) 10%, transparent)"
-                          : "var(--bg-sunken)",
-                        cursor: "pointer",
-                        transition: "border 150ms, background 150ms",
-                      }}
-                    >
-                      <PersonAvatar
-                        initials={getInitials(m.full_name)}
-                        person={person}
-                        size="sm"
-                      />
-                      <span
-                        style={{
-                          fontSize: 13,
-                          fontWeight: isSelected ? 600 : 400,
-                          color: isSelected ? "var(--accent)" : "var(--fg-1)",
-                          fontFamily: "var(--font-sans)",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {m.full_name.split(" ")[0]}
-                      </span>
-                    </button>
-                  );
-                })}
+          {tab === "variables" && (
+            <InputField
+              label="Fecha (AAAA-MM-DD)"
+              id="field-date"
+              name="date"
+              control={control}
+              type="date"
+            />
+          )}
+
+          {(tab === "variables" || tab === "fijos") && (
+            <div
+              style={{
+                marginBottom: 14,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                minHeight: 44,
+              }}
+            >
+              <div>
+                <div
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 500,
+                    color: "var(--fg-2)",
+                    fontFamily: "var(--font-sans)",
+                  }}
+                >
+                  {isShared ? "Gasto compartido" : "Gasto personal"}
+                </div>
+                <div
+                  style={{
+                    fontSize: 11,
+                    color: "var(--fg-3)",
+                    fontFamily: "var(--font-sans)",
+                    marginTop: 2,
+                  }}
+                >
+                  {isShared
+                    ? "Entra en el balance proporcional"
+                    : "No afecta el balance entre los dos"}
+                </div>
               </div>
+              <Switch
+                checked={isShared}
+                onCheckedChange={setIsShared}
+                data-testid="toggle-is-shared"
+                aria-label="Gasto compartido"
+              />
             </div>
           )}
 
-        {tab === "cuotas" && (
-          <div
-            style={{
-              marginBottom: 14,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              minHeight: 44,
-            }}
-          >
-            <span style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              <span
-                style={{
-                  fontSize: 13,
-                  fontWeight: 500,
-                  color: "var(--fg-2)",
-                  fontFamily: "var(--font-sans)",
-                }}
-              >
-                Renovar automáticamente
-              </span>
-              <span
-                style={{
-                  fontSize: 11,
-                  color: "var(--fg-3)",
-                  fontFamily: "var(--font-sans)",
-                }}
-              >
-                Las cuotas se reinician al terminar
-              </span>
-            </span>
-            <Switch
-              checked={autoRenew}
-              onCheckedChange={setAutoRenew}
-              aria-label="Renovación automática"
-            />
-          </div>
-        )}
+          {categories && categories.length > 0 && (
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ ...labelCss, marginBottom: 8 }}>Categoría</div>
+              <CategoryPicker
+                categories={categories}
+                value={categoryId}
+                onChange={setCategoryId}
+              />
+            </div>
+          )}
 
-        {saveError && (
-          <div
-            role="alert"
-            style={{
-              ...errorCss,
-              marginBottom: 12,
-              padding: "8px 12px",
-              background:
-                "color-mix(in srgb, var(--status-danger) 10%, transparent)",
-              borderRadius: 8,
-              border: "1px solid var(--status-danger-text)",
-            }}
-          >
-            {saveError}
-          </div>
-        )}
+          {(tab === "cuotas" || (tab === "fijos" && !isShared)) &&
+            members &&
+            members.length >= 2 && (
+              <div style={{ marginBottom: 14 }}>
+                <div style={{ ...labelCss, marginBottom: 8 }}>¿Quién paga?</div>
+                <div
+                  data-testid="payer-selector"
+                  style={{ display: "flex", gap: 8 }}
+                >
+                  {members.map((m, idx) => {
+                    const person: "a" | "b" = idx === 0 ? "a" : "b";
+                    const isSelected = payerId === m.user_id;
+                    return (
+                      <button
+                        key={m.user_id}
+                        type="button"
+                        data-testid={`payer-option-${m.user_id}`}
+                        onClick={() => setPayerId(m.user_id)}
+                        aria-pressed={isSelected}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 8,
+                          flex: 1,
+                          padding: "8px 12px",
+                          borderRadius: 10,
+                          border: isSelected
+                            ? "2px solid var(--accent)"
+                            : "1.5px solid var(--border-default)",
+                          background: isSelected
+                            ? "color-mix(in srgb, var(--accent) 10%, transparent)"
+                            : "var(--bg-sunken)",
+                          cursor: "pointer",
+                          transition: "border 150ms, background 150ms",
+                        }}
+                      >
+                        <PersonAvatar
+                          initials={getInitials(m.full_name)}
+                          person={person}
+                          size="sm"
+                        />
+                        <span
+                          style={{
+                            fontSize: 13,
+                            fontWeight: isSelected ? 600 : 400,
+                            color: isSelected ? "var(--accent)" : "var(--fg-1)",
+                            fontFamily: "var(--font-sans)",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {m.full_name.split(" ")[0]}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
-        <Button type="submit" style={{ width: "100%" }}>
-          {isEditing ? "Guardar cambios" : SAVE_LABEL[tab]}
-        </Button>
-      </form>
+          {tab === "cuotas" && (
+            <div
+              style={{
+                marginBottom: 14,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                minHeight: 44,
+              }}
+            >
+              <span
+                style={{ display: "flex", flexDirection: "column", gap: 2 }}
+              >
+                <span
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 500,
+                    color: "var(--fg-2)",
+                    fontFamily: "var(--font-sans)",
+                  }}
+                >
+                  Renovar automáticamente
+                </span>
+                <span
+                  style={{
+                    fontSize: 11,
+                    color: "var(--fg-3)",
+                    fontFamily: "var(--font-sans)",
+                  }}
+                >
+                  Las cuotas se reinician al terminar
+                </span>
+              </span>
+              <Switch
+                checked={autoRenew}
+                onCheckedChange={setAutoRenew}
+                aria-label="Renovación automática"
+              />
+            </div>
+          )}
+
+          {saveError && (
+            <div
+              role="alert"
+              style={{
+                ...errorCss,
+                marginBottom: 12,
+                padding: "8px 12px",
+                background:
+                  "color-mix(in srgb, var(--status-danger) 10%, transparent)",
+                borderRadius: 8,
+                border: "1px solid var(--status-danger-text)",
+              }}
+            >
+              {saveError}
+            </div>
+          )}
+
+          <Button type="submit" style={{ width: "100%" }}>
+            {isEditing ? "Guardar cambios" : SAVE_LABEL[tab]}
+          </Button>
+        </form>
+      </Form>
     </ResponsiveModal>
   );
 }

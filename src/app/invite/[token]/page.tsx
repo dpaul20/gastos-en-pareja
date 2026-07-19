@@ -30,56 +30,16 @@ export default async function InvitePage({ params }: Readonly<Props>) {
   }
 
   return (
-    <div
-      style={{
-        minHeight: "100dvh",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "var(--bg-base)",
-        padding: "32px",
-        fontFamily: "var(--font-sans)",
-      }}
-    >
-      <div
-        style={{
-          background: "var(--bg-elevated)",
-          borderRadius: 20,
-          padding: "32px 24px",
-          border: "1px solid var(--border-subtle)",
-          boxShadow: "var(--shadow-md)",
-          textAlign: "center",
-          maxWidth: 360,
-          width: "100%",
-        }}
-      >
-        <div style={{ fontSize: 40, marginBottom: 16 }}>⚠️</div>
-        <div
-          style={{
-            fontSize: 18,
-            fontWeight: 700,
-            color: "var(--fg-1)",
-            marginBottom: 8,
-          }}
-        >
+    <div className="flex min-h-dvh flex-col items-center justify-center [background-color:var(--bg-base)] p-8 [font-family:var(--font-sans)]">
+      <div className="w-full max-w-[360px] rounded-[var(--radius-xl)] border [border-color:var(--border-subtle)] [background-color:var(--bg-elevated)] px-6 py-8 text-center shadow-[var(--shadow-md)]">
+        <div className="mb-4 text-[40px]">⚠️</div>
+        <div className="mb-2 text-lg font-bold [color:var(--fg-1)]">
           Invitación inválida
         </div>
-        <div style={{ fontSize: 14, color: "var(--fg-2)", marginBottom: 24 }}>
-          {error}
-        </div>
+        <div className="mb-6 text-sm [color:var(--fg-2)]">{error}</div>
         <a
           href="/dashboard"
-          style={{
-            display: "inline-block",
-            background: "var(--accent)",
-            color: "white",
-            borderRadius: 12,
-            padding: "12px 24px",
-            fontSize: 14,
-            fontWeight: 600,
-            textDecoration: "none",
-          }}
+          className="inline-block rounded-[var(--radius-md)] [background-color:var(--accent)] px-6 py-3 text-sm font-semibold text-white no-underline"
         >
           Ir al inicio
         </a>

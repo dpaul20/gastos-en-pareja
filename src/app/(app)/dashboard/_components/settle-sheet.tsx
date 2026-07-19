@@ -176,10 +176,7 @@ export function SettleSheet({
     });
   }
 
-  const labelStyle = {
-    color: "var(--fg-2)",
-    fontFamily: "var(--font-sans)",
-  } as const;
+  const labelClassName = "[color:var(--fg-2)] [font-family:var(--font-sans)]";
 
   return (
     <ResponsiveModal
@@ -189,39 +186,28 @@ export function SettleSheet({
       data-testid="settle-sheet"
     >
       <form onSubmit={handleSubmit(onValid)}>
-        <div className="mb-3.5 text-xs" style={labelStyle}>
+        <div className={`mb-3.5 text-xs ${labelClassName}`}>
           Un pago real entre ustedes. No es un gasto.
         </div>
 
         {/* Direction — who paid whom */}
         <div className="mb-3.5">
           <span
-            className="mb-1.5 block text-[13px] font-medium"
-            style={labelStyle}
+            className={`mb-1.5 block text-[13px] font-medium ${labelClassName}`}
           >
             Quién le pagó a quién
           </span>
           <div
             data-testid="settle-direction"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              padding: "10px 12px",
-              borderRadius: 10,
-              background: "var(--bg-sunken)",
-              border: "1.5px solid var(--border-default)",
-            }}
+            className="flex items-center gap-2 rounded-[10px] border-[1.5px] [border-color:var(--border-default)] [background-color:var(--bg-sunken)] px-3 py-2.5"
           >
             <PersonAvatar
               initials={initialsOf(fromId)}
               person={personOf(fromId)}
               size="sm"
             />
-            <span style={{ fontSize: 13, fontWeight: 600 }}>
-              {nameOf(fromId)}
-            </span>
-            <span aria-hidden style={{ color: "var(--fg-3)" }}>
+            <span className="text-[13px] font-semibold">{nameOf(fromId)}</span>
+            <span aria-hidden className="[color:var(--fg-3)]">
               →
             </span>
             <PersonAvatar
@@ -229,24 +215,12 @@ export function SettleSheet({
               person={personOf(toId)}
               size="sm"
             />
-            <span style={{ fontSize: 13, fontWeight: 600 }}>
-              {nameOf(toId)}
-            </span>
+            <span className="text-[13px] font-semibold">{nameOf(toId)}</span>
             <button
               type="button"
               data-testid="settle-invert"
               onClick={invert}
-              style={{
-                marginLeft: "auto",
-                background: "none",
-                border: "none",
-                color: "var(--accent)",
-                fontSize: 11,
-                fontWeight: 700,
-                cursor: "pointer",
-                fontFamily: "var(--font-sans)",
-                padding: 4,
-              }}
+              className="ml-auto cursor-pointer border-none bg-transparent p-1 [font-family:var(--font-sans)] text-[11px] font-bold [color:var(--accent)]"
             >
               Invertir
             </button>
@@ -257,27 +231,14 @@ export function SettleSheet({
         <div className="mb-3.5">
           <label
             htmlFor="settle-amount"
-            className="mb-1.5 block text-[13px] font-medium"
-            style={labelStyle}
+            className={`mb-1.5 block text-[13px] font-medium ${labelClassName}`}
           >
             Monto
           </label>
-          <div
-            className="flex items-center overflow-hidden focus-within:ring-2 focus-within:ring-(--accent)"
-            style={{
-              background: "var(--bg-sunken)",
-              borderRadius: 10,
-              border: "1.5px solid var(--accent)",
-            }}
-          >
+          <div className="flex items-center overflow-hidden rounded-[10px] border-[1.5px] [border-color:var(--accent)] [background-color:var(--bg-sunken)] focus-within:ring-2 focus-within:ring-(--accent)">
             <span
               aria-hidden
-              className="text-base font-semibold"
-              style={{
-                padding: "10px 6px 10px 12px",
-                color: "var(--fg-3)",
-                fontFamily: "var(--font-mono)",
-              }}
+              className="ds-amount py-2.5 pr-1.5 pl-3 text-base font-semibold [color:var(--fg-3)]"
             >
               $
             </span>
@@ -287,34 +248,19 @@ export function SettleSheet({
               type="text"
               inputMode="decimal"
               autoFocus
-              className="flex-1 text-base font-semibold"
-              style={{
-                border: "none",
-                background: "transparent",
-                padding: "10px 12px 10px 4px",
-                fontFamily: "var(--font-mono)",
-                outline: "none",
-                color: "var(--fg-1)",
-              }}
+              className="ds-amount flex-1 border-none bg-transparent py-2.5 pr-3 pl-1 text-base font-semibold [color:var(--fg-1)] outline-none"
               {...register("amount")}
             />
           </div>
           {!isEditing && defaultAmount > 0 && (
-            <div
-              className="mt-1.5 text-xs"
-              style={{ color: "var(--fg-2)", fontFamily: "var(--font-sans)" }}
-            >
+            <div className="mt-1.5 [font-family:var(--font-sans)] text-xs [color:var(--fg-2)]">
               Lo que falta: {formatARS(defaultAmount)}
             </div>
           )}
           {errors.amount && (
             <div
               role="alert"
-              className="mt-1 text-xs"
-              style={{
-                color: "var(--status-danger-text)",
-                fontFamily: "var(--font-sans)",
-              }}
+              className="mt-1 [font-family:var(--font-sans)] text-xs [color:var(--status-danger-text)]"
             >
               {errors.amount.message}
             </div>
@@ -325,8 +271,7 @@ export function SettleSheet({
         <div className="mb-3.5">
           <label
             htmlFor="settle-paid-on"
-            className="mb-1.5 block text-[13px] font-medium"
-            style={labelStyle}
+            className={`mb-1.5 block text-[13px] font-medium ${labelClassName}`}
           >
             Fecha
           </label>
@@ -334,26 +279,13 @@ export function SettleSheet({
             id="settle-paid-on"
             data-testid="settle-paid-on"
             type="date"
-            className="w-full text-sm"
-            style={{
-              background: "var(--bg-sunken)",
-              border: "1.5px solid var(--border-default)",
-              borderRadius: 10,
-              padding: "10px 12px",
-              fontFamily: "var(--font-sans)",
-              color: "var(--fg-1)",
-              outline: "none",
-            }}
+            className="w-full rounded-[10px] border-[1.5px] [border-color:var(--border-default)] [background-color:var(--bg-sunken)] px-3 py-2.5 [font-family:var(--font-sans)] text-sm [color:var(--fg-1)] outline-none"
             {...register("paid_on")}
           />
           {errors.paid_on && (
             <div
               role="alert"
-              className="mt-1 text-xs"
-              style={{
-                color: "var(--status-danger-text)",
-                fontFamily: "var(--font-sans)",
-              }}
+              className="mt-1 [font-family:var(--font-sans)] text-xs [color:var(--status-danger-text)]"
             >
               {errors.paid_on.message}
             </div>
@@ -364,8 +296,7 @@ export function SettleSheet({
         <div className="mb-3.5">
           <label
             htmlFor="settle-note"
-            className="mb-1.5 block text-[13px] font-medium"
-            style={labelStyle}
+            className={`mb-1.5 block text-[13px] font-medium ${labelClassName}`}
           >
             Nota (opcional)
           </label>
@@ -374,16 +305,7 @@ export function SettleSheet({
             data-testid="settle-note"
             type="text"
             placeholder="Transferencia, efectivo…"
-            className="w-full text-sm"
-            style={{
-              background: "var(--bg-sunken)",
-              border: "1.5px solid var(--border-default)",
-              borderRadius: 10,
-              padding: "10px 12px",
-              fontFamily: "var(--font-sans)",
-              color: "var(--fg-1)",
-              outline: "none",
-            }}
+            className="w-full rounded-[10px] border-[1.5px] [border-color:var(--border-default)] [background-color:var(--bg-sunken)] px-3 py-2.5 [font-family:var(--font-sans)] text-sm [color:var(--fg-1)] outline-none"
             {...register("note")}
           />
         </div>
@@ -391,11 +313,7 @@ export function SettleSheet({
         {submitError && (
           <div
             role="alert"
-            className="mb-2 text-xs"
-            style={{
-              color: "var(--status-danger-text)",
-              fontFamily: "var(--font-sans)",
-            }}
+            className="mb-2 [font-family:var(--font-sans)] text-xs [color:var(--status-danger-text)]"
           >
             {submitError}
           </div>
@@ -405,8 +323,7 @@ export function SettleSheet({
           type="submit"
           data-testid="settle-submit"
           disabled={isBusy}
-          className="w-full"
-          style={{ opacity: isBusy ? 0.7 : 1 }}
+          className={`w-full ${isBusy ? "opacity-70" : ""}`}
         >
           {isEditing ? "Guardar cambios" : "Registrar pago"}
         </Button>
@@ -414,19 +331,7 @@ export function SettleSheet({
           type="button"
           onClick={onClose}
           disabled={isBusy}
-          className="mt-2.5 w-full"
-          style={{
-            background: "var(--bg-sunken)",
-            border: "none",
-            borderRadius: 10,
-            cursor: "pointer",
-            padding: "10px 4px",
-            color: "var(--fg-1)",
-            fontSize: 13,
-            fontWeight: 600,
-            fontFamily: "var(--font-sans)",
-            opacity: isBusy ? 0.5 : 1,
-          }}
+          className={`mt-2.5 w-full cursor-pointer rounded-[10px] border-none [background-color:var(--bg-sunken)] px-1 py-2.5 [font-family:var(--font-sans)] text-[13px] font-semibold [color:var(--fg-1)] ${isBusy ? "opacity-50" : ""}`}
         >
           Cancelar
         </button>
@@ -437,18 +342,7 @@ export function SettleSheet({
             data-testid="settle-delete"
             onClick={() => setConfirmDelete(true)}
             disabled={isBusy}
-            className="mt-2 w-full"
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              padding: "8px 4px",
-              color: "var(--status-danger-text)",
-              fontSize: 13,
-              fontWeight: 600,
-              fontFamily: "var(--font-sans)",
-              opacity: isBusy ? 0.5 : 1,
-            }}
+            className={`mt-2 w-full cursor-pointer border-none bg-transparent px-1 py-2 [font-family:var(--font-sans)] text-[13px] font-semibold [color:var(--status-danger-text)] ${isBusy ? "opacity-50" : ""}`}
           >
             Eliminar pago
           </button>

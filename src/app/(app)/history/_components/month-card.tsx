@@ -1,3 +1,4 @@
+import { ChevronRight } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatARS, formatMonth } from "@/lib/utils";
 import { calculateMonthlyBalance } from "@/lib/utils/balance";
@@ -18,21 +19,10 @@ export function MonthCard({
 }) {
   if (isLoading) {
     return (
-      <div
-        style={{
-          background: "var(--bg-elevated)",
-          borderRadius: 14,
-          padding: "16px",
-          border: "1px solid var(--border-subtle)",
-          boxShadow: "var(--shadow-sm)",
-          display: "flex",
-          flexDirection: "column",
-          gap: 10,
-        }}
-      >
-        <Skeleton style={{ height: 20, width: "40%" }} />
-        <Skeleton style={{ height: 16, width: "60%" }} />
-        <Skeleton style={{ height: 4, borderRadius: 99 }} />
+      <div className="flex flex-col gap-2.5 rounded-[14px] border [border-color:var(--border-subtle)] [background-color:var(--bg-elevated)] p-4 shadow-[var(--shadow-sm)]">
+        <Skeleton className="h-5 w-[40%]" />
+        <Skeleton className="h-4 w-[60%]" />
+        <Skeleton className="h-1 rounded-full" />
       </div>
     );
   }
@@ -55,34 +45,11 @@ export function MonthCard({
 
   if (!balance || balance.totalExpenses === 0) {
     return (
-      <div
-        style={{
-          background: "var(--bg-elevated)",
-          borderRadius: 14,
-          padding: "16px",
-          border: "1px solid var(--border-subtle)",
-          boxShadow: "var(--shadow-sm)",
-          opacity: 0.6,
-        }}
-      >
-        <div
-          style={{
-            fontSize: 15,
-            fontWeight: 600,
-            color: "var(--fg-1)",
-            fontFamily: "var(--font-sans)",
-          }}
-        >
+      <div className="rounded-[14px] border [border-color:var(--border-subtle)] [background-color:var(--bg-elevated)] p-4 opacity-60 shadow-[var(--shadow-sm)]">
+        <div className="[font-family:var(--font-sans)] text-[15px] font-semibold [color:var(--fg-1)]">
           {formatMonth(month)}
         </div>
-        <div
-          style={{
-            fontSize: 13,
-            color: "var(--fg-3)",
-            marginTop: 4,
-            fontFamily: "var(--font-sans)",
-          }}
-        >
+        <div className="mt-1 [font-family:var(--font-sans)] text-[13px] [color:var(--fg-3)]">
           Sin datos
         </div>
       </div>
@@ -93,70 +60,27 @@ export function MonthCard({
     <button
       data-testid="month-card"
       onClick={onClick}
-      style={{
-        background: "var(--bg-elevated)",
-        borderRadius: 14,
-        padding: "16px",
-        border: "1px solid var(--border-subtle)",
-        boxShadow: "var(--shadow-sm)",
-        textAlign: "left",
-        cursor: "pointer",
-        width: "100%",
-      }}
+      className="w-full cursor-pointer rounded-[14px] border [border-color:var(--border-subtle)] [background-color:var(--bg-elevated)] p-4 text-left shadow-[var(--shadow-sm)]"
     >
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-start",
-          marginBottom: 10,
-        }}
-      >
-        <div
-          style={{
-            fontSize: 15,
-            fontWeight: 600,
-            color: "var(--fg-1)",
-            fontFamily: "var(--font-sans)",
-          }}
-        >
+      <div className="mb-2.5 flex items-start justify-between">
+        <div className="[font-family:var(--font-sans)] text-[15px] font-semibold [color:var(--fg-1)]">
           {formatMonth(month)}
         </div>
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="var(--fg-3)"
-          strokeWidth="2"
-        >
-          <polyline points="9 18 15 12 9 6" />
-        </svg>
+        <ChevronRight
+          size={16}
+          strokeWidth={2}
+          className="[color:var(--fg-3)]"
+        />
       </div>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: 8,
-        }}
-      >
-        <span
-          style={{
-            fontSize: 12,
-            color: "var(--fg-2)",
-            fontFamily: "var(--font-sans)",
-          }}
-        >
+      <div className="mb-2 flex items-center justify-between">
+        <span className="[font-family:var(--font-sans)] text-xs [color:var(--fg-2)]">
           {balance.debtAmount > 0
             ? `Diferencia: ${formatARS(balance.debtAmount)}`
             : "Equilibrado"}
         </span>
         <span
+          className="ds-amount text-base font-bold"
           style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 16,
-            fontWeight: 700,
             color:
               balance.debtAmount > 0
                 ? "var(--status-danger-text)"
@@ -166,17 +90,9 @@ export function MonthCard({
           {formatARS(balance.totalExpenses)}
         </span>
       </div>
-      <div
-        style={{
-          background: "var(--border-default)",
-          borderRadius: 99,
-          height: 4,
-          display: "flex",
-          overflow: "hidden",
-        }}
-      >
+      <div className="flex h-1 overflow-hidden rounded-full [background-color:var(--border-default)]">
         <div style={{ width: `${myPct}%`, background: "var(--person-a)" }} />
-        <div style={{ flex: 1, background: "var(--person-b)" }} />
+        <div className="flex-1" style={{ background: "var(--person-b)" }} />
       </div>
     </button>
   );

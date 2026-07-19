@@ -10,16 +10,9 @@ export function PendingInvitationsCard({
   if (invitations.length === 0) return null;
 
   return (
-    <Card style={{ background: "var(--bg-sunken)" }}>
+    <Card className="bg-[var(--bg-sunken)]">
       <CardContent className="flex flex-col gap-2 p-3">
-        <div
-          style={{
-            fontSize: 13,
-            fontWeight: 600,
-            color: "var(--fg-1)",
-            fontFamily: "var(--font-sans)",
-          }}
-        >
+        <div className="[font-family:var(--font-sans)] text-[13px] font-semibold [color:var(--fg-1)]">
           Tenés invitaciones pendientes
         </div>
 
@@ -27,21 +20,7 @@ export function PendingInvitationsCard({
           <a
             key={invitation.token}
             href={`/invite/${invitation.token}`}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: 8,
-              textDecoration: "none",
-              color: "var(--accent)",
-              fontSize: 13,
-              fontWeight: 600,
-              fontFamily: "var(--font-sans)",
-              background: "var(--bg-elevated)",
-              border: "1px solid var(--border-subtle)",
-              borderRadius: 8,
-              padding: "8px 10px",
-            }}
+            className="inline-flex items-center justify-between gap-2 rounded-[var(--radius-sm)] border [border-color:var(--border-subtle)] bg-[var(--bg-elevated)] px-2.5 py-2 [font-family:var(--font-sans)] text-[13px] font-semibold [color:var(--accent)] no-underline"
           >
             <span>Aceptar invitación</span>
             <span aria-hidden="true">→</span>

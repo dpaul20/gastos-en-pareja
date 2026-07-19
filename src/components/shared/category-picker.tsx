@@ -2,6 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { getCategoryIcon } from "@/lib/category-icons";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import type { Database } from "@/types/database";
 
 type Category = Database["public"]["Tables"]["expense_categories"]["Row"];
@@ -12,87 +13,76 @@ interface CategoryPickerProps {
   onChange: (id: string | null) => void;
 }
 
+// Radix ToggleGroup requires string values; `null` (no category) is modeled
+// as this sentinel and translated back to `null` in onValueChange.
+const NONE_VALUE = "__none__";
+
+// Re-skin shared by every chip — matches the original hand-rolled 12px/5x10
+// pill metrics exactly. Colors are applied per data-state below since the
+// shadcn Toggle base classes bake in their own (mismatched) bg/hover tokens.
+// min-h-[46px] (not the declared 32px floor): the original fieldset never
+// set align-items, so its default `stretch` made every chip in the row
+// match the tallest sibling's natural content height (~46px, driven by the
+// inherited line-height at 12px), overriding the 32px floor for all of
+// them uniformly — reproduced here as a fixed floor since shadcn's Toggle
+// base classes force their own coupled text-size/line-height that no
+// longer produces that same 46px naturally.
+const chipClassName = cn(
+  "h-auto min-h-[46px] gap-1 rounded-full border-none px-2.5 py-[5px]",
+  "text-xs font-medium whitespace-nowrap [font-family:var(--font-sans)]",
+  "data-[state=off]:[background-color:var(--bg-sunken)] data-[state=off]:[color:var(--fg-2)]",
+  "data-[state=off]:hover:[background-color:var(--bg-sunken)] data-[state=off]:hover:[color:var(--fg-2)]",
+  "data-[state=on]:text-white data-[state=on]:hover:text-white",
+);
+
 export function CategoryPicker({
   categories,
   value,
   onChange,
 }: Readonly<CategoryPickerProps>) {
   return (
-    <fieldset
+    <ToggleGroup
+      type="single"
+      spacing={1}
+      value={value ?? NONE_VALUE}
+      onValueChange={(next) => {
+        // Radix fires "" when re-clicking the already-active item (deselect).
+        // The original chips have no deselect affordance — clicking the
+        // active chip was a no-op — so ignore empty values here.
+        if (!next) return;
+        onChange(next === NONE_VALUE ? null : next);
+      }}
+      aria-label="Categoría del gasto"
       className={cn(
-        "flex flex-nowrap overflow-x-auto lg:flex-wrap lg:overflow-x-visible",
+        "flex w-full flex-nowrap items-center gap-1.5 overflow-x-auto rounded-none border-0 bg-transparent p-0",
+        "lg:flex-wrap lg:overflow-x-visible",
         "[scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
       )}
-      style={{
-        gap: 6,
-        margin: 0,
-        padding: 0,
-        border: "none",
-        minInlineSize: 0,
-      }}
     >
-      <legend
-        style={{
-          position: "absolute",
-          width: 1,
-          height: 1,
-          padding: 0,
-          margin: -1,
-          overflow: "hidden",
-          clip: "rect(0, 0, 0, 0)",
-          whiteSpace: "nowrap",
-          border: 0,
-        }}
-      >
-        Categoría del gasto
-      </legend>
-      <button
-        type="button"
-        onClick={() => onChange(null)}
-        aria-pressed={value === null}
-        style={{
-          padding: "5px 10px",
-          borderRadius: 99,
-          border: "none",
-          cursor: "pointer",
-          background: value === null ? "var(--accent)" : "var(--bg-sunken)",
-          color: value === null ? "white" : "var(--fg-2)",
-          fontSize: 12,
-          fontWeight: 500,
-          fontFamily: "var(--font-sans)",
-          minHeight: 32,
-        }}
+      <ToggleGroupItem
+        value={NONE_VALUE}
+        className={chipClassName}
+        style={
+          value === null ? { backgroundColor: "var(--accent)" } : undefined
+        }
       >
         Sin categoría
-      </button>
+      </ToggleGroupItem>
       {categories.map((cat) => {
         const Icon = getCategoryIcon(cat.name);
+        const selected = value === cat.id;
         return (
-          <button
+          <ToggleGroupItem
             key={cat.id}
-            type="button"
-            onClick={() => onChange(cat.id)}
-            aria-pressed={value === cat.id}
-            style={{
-              padding: "5px 10px",
-              borderRadius: 99,
-              border: "none",
-              cursor: "pointer",
-              background: value === cat.id ? cat.color : "var(--bg-sunken)",
-              color: value === cat.id ? "white" : "var(--fg-2)",
-              fontSize: 12,
-              fontWeight: 500,
-              fontFamily: "var(--font-sans)",
-              minHeight: 32,
-              display: "flex",
-              alignItems: "center",
-              gap: 4,
-            }}
+            value={cat.id}
+            className={chipClassName}
+            style={selected ? { backgroundColor: cat.color } : undefined}
           >
-            <Icon size={14} aria-hidden="true" /> {cat.name}
-          </button>
+            <Icon size={14} className="size-3.5" aria-hidden="true" />{" "}
+            {cat.name}
+          </ToggleGroupItem>
         );
       })}
-    </fieldset>
+    </ToggleGroup>
   );
 }

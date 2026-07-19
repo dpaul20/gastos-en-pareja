@@ -13,51 +13,23 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
   }, [error]);
 
   return (
-    <div
-      style={{
-        minHeight: "100dvh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "24px",
-        background: "var(--bg-base)",
-      }}
-    >
-      <div
-        style={{
-          maxWidth: 460,
-          width: "100%",
-          border: "1px solid var(--border-subtle)",
-          borderRadius: 16,
-          background: "var(--bg-elevated)",
-          boxShadow: "var(--shadow-sm)",
-          padding: "20px",
-          fontFamily: "var(--font-sans)",
-        }}
-      >
-        <h2 style={{ margin: 0, marginBottom: 10, color: "var(--fg-1)" }}>
+    <div className="flex min-h-dvh items-center justify-center [background-color:var(--bg-base)] p-6">
+      <div className="w-full max-w-[460px] rounded-[var(--radius-lg)] border [border-color:var(--border-subtle)] [background-color:var(--bg-elevated)] p-5 [font-family:var(--font-sans)] shadow-[var(--shadow-sm)]">
+        <h2 className="m-0 mb-2.5 [color:var(--fg-1)]">
           Ocurrió un error al cargar esta pantalla
         </h2>
-        <p style={{ marginTop: 0, marginBottom: 12, color: "var(--fg-2)" }}>
+        <p className="mt-0 mb-3 [color:var(--fg-2)]">
           Si el problema persiste, compartí el código de diagnóstico con
           soporte.
         </p>
-        <p style={{ marginTop: 0, marginBottom: 16, color: "var(--fg-3)" }}>
+        <p className="mt-0 mb-4 [color:var(--fg-3)]">
           Digest: {error.digest ?? "no-disponible"}
         </p>
 
         <button
           type="button"
           onClick={() => reset()}
-          style={{
-            background: "var(--accent)",
-            color: "white",
-            border: "none",
-            borderRadius: 10,
-            padding: "10px 14px",
-            fontWeight: 600,
-            cursor: "pointer",
-          }}
+          className="cursor-pointer rounded-[10px] border-none [background-color:var(--accent)] px-3.5 py-2.5 font-semibold text-white"
         >
           Reintentar
         </button>

@@ -297,4 +297,149 @@ test.describe("UX audit — add expense form", () => {
       expect(overflow, `Horizontal overflow at ${vp.name}`).toBe(false);
     });
   }
+
+  // ── SLICE 3: ToggleGroup single-select pickers ───────────────
+  test.describe("pickers — single-select behavior (ToggleGroup adoption)", () => {
+    test("card picker — only one chip pressed at a time, no deselect-to-empty on reclick", async ({
+      authenticatedPage: page,
+    }) => {
+      await openForm(page, "cuota");
+      const dialog = page.locator('[role="dialog"]');
+      const group = dialog.getByRole("group", { name: "Tarjeta" });
+      const sinTarjeta = group.getByRole("radio", { name: "Sin tarjeta" });
+
+      await expect(sinTarjeta).toHaveAttribute("aria-checked", "true");
+
+      // Re-clicking the already-pressed chip must stay pressed (no deselect).
+      await sinTarjeta.click();
+      await expect(sinTarjeta).toHaveAttribute("aria-checked", "true");
+
+      const otherCard = group
+        .getByRole("radio")
+        .filter({ hasNotText: "Sin tarjeta" })
+        .first();
+      if (await otherCard.count()) {
+        await otherCard.click();
+        await expect(otherCard).toHaveAttribute("aria-checked", "true");
+        await expect(sinTarjeta).toHaveAttribute("aria-checked", "false");
+
+        // Re-clicking the now-active chip must not deselect it either.
+        await otherCard.click();
+        await expect(otherCard).toHaveAttribute("aria-checked", "true");
+      }
+    });
+
+    test("category picker — only one chip pressed at a time, keyboard arrow navigation moves selection", async ({
+      authenticatedPage: page,
+    }) => {
+      await openForm(page, "cuota");
+      const dialog = page.locator('[role="dialog"]');
+      const group = dialog.getByRole("group", {
+        name: "Categoría del gasto",
+      });
+
+      if ((await group.count()) === 0) test.skip();
+
+      const sinCategoria = group.getByRole("radio", { name: "Sin categoría" });
+      await expect(sinCategoria).toHaveAttribute("aria-checked", "true");
+
+      // Roving-focus arrow nav: ArrowRight moves DOM focus to the next chip
+      // but does NOT change the pressed/checked chip by itself (matching the
+      // shadcn/Radix ToggleGroup toolbar pattern) — activation requires an
+      // explicit Space/Enter/click, same as the original plain <button> row.
+      await sinCategoria.focus();
+      await page.keyboard.press("ArrowRight");
+      await expect(sinCategoria).toHaveAttribute("aria-checked", "true");
+
+      // Radix moves roving focus asynchronously — wait for it to actually
+      // land on the next chip before activating, or Space can race the
+      // focus move and land back on "Sin categoría" (flaky no-op).
+      await expect
+        .poll(() =>
+          page.evaluate(
+            () =>
+              document.activeElement?.getAttribute("aria-label") ??
+              document.activeElement?.textContent,
+          ),
+        )
+        .not.toBe("Sin categoría");
+
+      await page.keyboard.press(" ");
+      const checkedAfterActivate = group.getByRole("radio", { checked: true });
+      await expect(checkedAfterActivate).not.toHaveAccessibleName(
+        "Sin categoría",
+      );
+
+      const allChecked = await group
+        .getByRole("radio", { checked: true })
+        .count();
+      expect(allChecked, "exactly one chip pressed at a time").toBe(1);
+    });
+
+    test("due-day picker — selecting a day keeps exactly one cell pressed, reclick does not deselect", async ({
+      authenticatedPage: page,
+    }) => {
+      await openForm(page, "servicio");
+      const dialog = page.locator('[role="dialog"]');
+      const day10 = dialog.getByRole("radio", { name: "Día 10" });
+
+      await expect(day10).toHaveAttribute("aria-checked", "false");
+      await day10.click();
+      await expect(day10).toHaveAttribute("aria-checked", "true");
+
+      // Reclicking the active day must not deselect it (no "no day" state
+      // exists in this control once a day has been chosen).
+      await day10.click();
+      await expect(day10).toHaveAttribute("aria-checked", "true");
+
+      const day15 = dialog.getByRole("radio", { name: "Día 15" });
+      await day15.click();
+      await expect(day15).toHaveAttribute("aria-checked", "true");
+      await expect(day10).toHaveAttribute("aria-checked", "false");
+    });
+  });
+
+  // ── SLICE 4a: shadcn Form adoption (card-picker + add-sheet) ─────
+  test.describe("Form adoption — labelCss/errorCss migrated to shadcn Form primitives", () => {
+    test("new card mini-form — label stays associated with its input and empty submit shows a visible error", async ({
+      authenticatedPage: page,
+    }) => {
+      await openForm(page, "cuota");
+      await page.getByTestId("new-card-trigger").click();
+
+      const nameInput = page.getByLabel("Nombre de la tarjeta");
+      await expect(nameInput).toBeVisible();
+
+      await page.getByRole("button", { name: "Crear tarjeta" }).click();
+
+      const error = page
+        .getByTestId("new-card-form")
+        .getByRole("alert")
+        .filter({ hasText: "Requerido" });
+      await expect(error.first()).toBeVisible();
+    });
+
+    test("add-sheet fields — labels stay associated with their inputs via FormField/FormControl", async ({
+      authenticatedPage: page,
+    }) => {
+      await openForm(page, "cuota");
+
+      await expect(
+        page.getByLabel("Descripción", { exact: true }),
+      ).toBeVisible();
+      await expect(
+        page.getByLabel("Monto total", { exact: true }),
+      ).toBeVisible();
+      await expect(page.getByLabel("Cuotas", { exact: true })).toBeVisible();
+
+      // Empty submit still surfaces errors via FormMessage, matching the
+      // original errorCss div's role="alert" + visible text contract.
+      await page.getByRole("button", { name: "Guardar" }).click();
+      const descriptionError = page
+        .locator('[role="dialog"]')
+        .getByRole("alert")
+        .filter({ hasText: "Requerido" });
+      await expect(descriptionError.first()).toBeVisible();
+    });
+  });
 });

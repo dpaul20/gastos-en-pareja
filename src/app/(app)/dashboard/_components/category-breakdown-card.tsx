@@ -50,7 +50,7 @@ function CategoryBarShape({
       role={clickable ? "button" : undefined}
       tabIndex={clickable ? 0 : undefined}
       aria-label={clickable ? `Ver gastos de ${name}` : undefined}
-      style={{ cursor: clickable ? "pointer" : "default" }}
+      className={clickable ? "cursor-pointer" : "cursor-default"}
     />
   );
 }
@@ -100,7 +100,7 @@ function CategoryYAxisTick({
       tabIndex={clickable ? 0 : undefined}
       role={clickable ? "button" : undefined}
       aria-label={clickable ? `Ver gastos de ${label}` : undefined}
-      style={{ cursor: clickable ? "pointer" : "default", outline: "none" }}
+      className={`outline-none ${clickable ? "cursor-pointer" : "cursor-default"}`}
     >
       <text
         x={clickable ? -20 : -6}
@@ -135,18 +135,7 @@ interface CategoryTooltipProps {
 function CategoryTooltip({ active, payload }: CategoryTooltipProps) {
   if (!active || !payload?.length) return null;
   return (
-    <div
-      style={{
-        background: "var(--bg-elevated)",
-        border: "1px solid var(--border-subtle)",
-        borderRadius: 8,
-        padding: "6px 10px",
-        fontSize: 13,
-        fontFamily: "var(--font-mono)",
-        fontWeight: 600,
-        color: "var(--fg-1)",
-      }}
-    >
+    <div className="ds-amount rounded-[8px] border [border-color:var(--border-subtle)] [background-color:var(--bg-elevated)] px-2.5 py-1.5 text-[13px] font-semibold [color:var(--fg-1)]">
       {formatARS(payload[0].value)}
     </div>
   );
@@ -180,31 +169,9 @@ export function CategoryBreakdownCard({
   const chartHeight = breakdown.length * rowHeight + 16;
 
   return (
-    <div
-      style={{
-        background: "var(--bg-elevated)",
-        borderRadius: 16,
-        border: "1px solid var(--border-subtle)",
-        boxShadow: "var(--shadow-sm)",
-        overflow: "hidden",
-      }}
-    >
-      <div
-        style={{
-          padding: "14px 16px",
-          borderBottom: "1px solid var(--border-subtle)",
-        }}
-      >
-        <div
-          style={{
-            fontSize: 11,
-            fontWeight: 600,
-            color: "var(--fg-3)",
-            textTransform: "uppercase",
-            letterSpacing: "0.05em",
-            fontFamily: "var(--font-sans)",
-          }}
-        >
+    <div className="overflow-hidden rounded-[var(--radius-lg)] border [border-color:var(--border-subtle)] [background-color:var(--bg-elevated)] shadow-[var(--shadow-sm)]">
+      <div className="border-b [border-color:var(--border-subtle)] px-4 py-3.5">
+        <div className="[font-family:var(--font-sans)] text-[11px] font-semibold tracking-[0.05em] [color:var(--fg-3)] uppercase">
           Por categoría
         </div>
       </div>
@@ -213,7 +180,7 @@ export function CategoryBreakdownCard({
       <div
         role="group"
         aria-label="Distribución de gastos por categoría"
-        style={{ padding: "12px 8px 12px 0" }}
+        className="py-3 pr-2 pl-0"
       >
         <ResponsiveContainer width="100%" height={chartHeight}>
           <BarChart

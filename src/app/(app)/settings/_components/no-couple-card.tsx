@@ -1,4 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { PendingInvitationsCard } from "./pending-invitations-card";
 
 type PendingInvitationItem = { token: string };
@@ -17,44 +18,23 @@ export function NoCoupleCard({
   return (
     <Card>
       <CardContent className="flex flex-col gap-3 p-5">
-        <div
-          style={{
-            fontSize: 14,
-            color: "var(--fg-2)",
-            fontFamily: "var(--font-sans)",
-          }}
-        >
+        <div className="[font-family:var(--font-sans)] text-sm [color:var(--fg-2)]">
           No tenés una pareja configurada todavía.
         </div>
 
         <PendingInvitationsCard invitations={pendingInvitations} />
 
-        <button
+        <Button
           onClick={onCreateCouple}
           disabled={isPending || pendingInvitations.length > 0}
-          style={{
-            background: "var(--accent)",
-            color: "white",
-            border: "none",
-            borderRadius: 10,
-            padding: "10px 16px",
-            fontSize: 14,
-            fontWeight: 600,
-            cursor: "pointer",
-            fontFamily: "var(--font-sans)",
-            opacity: isPending || pendingInvitations.length > 0 ? 0.7 : 1,
-          }}
+          className="h-auto w-full rounded-[10px] py-2.5 [font-family:var(--font-sans)] font-semibold disabled:opacity-70"
         >
           Crear pareja
-        </button>
+        </Button>
         {coupleMessage && (
           <div
             aria-live="polite"
-            style={{
-              fontSize: 12,
-              color: "var(--status-danger-text)",
-              fontFamily: "var(--font-sans)",
-            }}
+            className="[font-family:var(--font-sans)] text-xs [color:var(--status-danger-text)]"
           >
             {coupleMessage}
           </div>
