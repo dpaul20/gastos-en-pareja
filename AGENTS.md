@@ -95,7 +95,7 @@ Next.js 16 (App Router) · React 19 · TypeScript · Supabase · TanStack Query 
 
 ## 11. Database migrations
 
-- `.github/workflows/release-please.yml` runs `supabase db push` against **production** automatically whenever a release is created. A migration merged to `master` reaches prod unattended — there is no window to intervene and nobody is prompted.
+- `.github/workflows/migrations.yml` runs `supabase db push` against **production** automatically on every push to `master`. A migration merged to `master` reaches prod unattended — there is no window to intervene and nobody is prompted. (The app itself deploys to prod via Vercel's native Git integration on the same `master` push.)
 - Therefore a header comment like "take a snapshot before applying this" is **not** a safeguard. It is documentation, and it cannot stop the pipeline. Never rely on one.
 - Any migration that DELETEs or DROPs data MUST be recoverable **by construction**: copy every affected row into a backup table inside the same transaction, and document the restore statement in the migration header.
 - Backup tables go in a `backup` schema. `supabase/config.toml` exposes only `public` and `graphql_public`, so a `backup` schema stays off the PostgREST API; also `revoke all ... from anon, authenticated` as defense-in-depth.
