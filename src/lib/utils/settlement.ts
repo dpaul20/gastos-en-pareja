@@ -33,9 +33,44 @@ export interface SettlementSummary {
   /** `debtAmount - settledTotal`. Never clamped to zero — see spec
    * "Remaining Debt May Go Negative". */
   remainingDebt: number;
+  /** The CURRENT net position after settlements, as a POSITIVE amount owed in
+   * a direction that FLIPS when an overpayment reverses the roles
+   * (`remainingDebt < 0` — e.g. the debtor paid, then a later shared expense
+   * tipped the balance the other way). `null` when nothing is owed either way
+   * (`remainingDebt === 0`, or no debtor and no settlements). Distinct from
+   * `direction`, which pins to the ORIGINAL expense-debt side and never flips:
+   * `net` is the "X le debe a Y" the UI renders, reversals included. */
+  net: { debtor: string; creditor: string; amount: number } | null;
   /** Every settlement passed in, unmodified — the ledger renders each
    * entry, never a net (design D3 / mockup contract). */
   entries: Settlement[];
+}
+
+/**
+ * Turns a signed remaining debt into a positive amount + the direction it is
+ * owed in. A negative remaining means the base debtor overpaid, so the roles
+ * swap. Zero means settled — nobody owes.
+ */
+function deriveNet(
+  baseDebtor: string,
+  baseCreditor: string,
+  remainingDebt: number,
+): SettlementSummary["net"] {
+  if (remainingDebt > 0) {
+    return {
+      debtor: baseDebtor,
+      creditor: baseCreditor,
+      amount: remainingDebt,
+    };
+  }
+  if (remainingDebt < 0) {
+    return {
+      debtor: baseCreditor,
+      creditor: baseDebtor,
+      amount: -remainingDebt,
+    };
+  }
+  return null;
 }
 
 /**
@@ -57,10 +92,13 @@ export function summarizeSettlements(params: {
   const { debtor, creditor, debtAmount, settlements } = params;
 
   if (settlements.length === 0) {
+    const remainingDebt = debtor ? debtAmount : 0;
     return {
       direction: debtor && creditor ? { debtor, creditor } : null,
       settledTotal: 0,
-      remainingDebt: debtor ? debtAmount : 0,
+      remainingDebt,
+      net:
+        debtor && creditor ? deriveNet(debtor, creditor, remainingDebt) : null,
       entries: [],
     };
   }
@@ -92,10 +130,13 @@ export function summarizeSettlements(params: {
     return sum + Number(s.amount);
   }, 0);
 
+  const remainingDebt = debtAmount - settledTotal;
+
   return {
     direction: { debtor: resolvedDebtor, creditor: resolvedCreditor },
     settledTotal,
-    remainingDebt: debtAmount - settledTotal,
+    remainingDebt,
+    net: deriveNet(resolvedDebtor, resolvedCreditor, remainingDebt),
     entries: settlements,
   };
 }

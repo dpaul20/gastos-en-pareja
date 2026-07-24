@@ -24,6 +24,7 @@ describe("summarizeSettlements", () => {
       direction: null,
       settledTotal: 0,
       remainingDebt: 0,
+      net: null,
       entries: [],
     });
   });
@@ -98,6 +99,73 @@ describe("summarizeSettlements", () => {
       settlements,
     });
     expect(result.remainingDebt).toBe(-10_051);
+  });
+
+  // ── net (the settlement-aware, direction-flipping position) ───────────────
+
+  it("net mirrors direction when the debtor still owes (remainingDebt > 0)", () => {
+    const result = summarizeSettlements({
+      debtor: ANNIE_ID,
+      creditor: DEIVY_ID,
+      debtAmount: 59_949,
+      settlements: [
+        { from_user_id: ANNIE_ID, to_user_id: DEIVY_ID, amount: 20_000 },
+      ],
+    });
+    // still Annie -> Deivy, for the amount that remains
+    expect(result.net).toEqual({
+      debtor: ANNIE_ID,
+      creditor: DEIVY_ID,
+      amount: 39_949,
+    });
+  });
+
+  it("net FLIPS direction on overpayment: the creditor now owes the surplus (the prod bug)", () => {
+    // Annie owed 195_083 and paid 197_160 — she overpaid, so now DEIVY owes
+    // HER the difference. `direction` stays Annie -> Deivy (the expense side),
+    // but `net` reverses to Deivy -> Annie.
+    const result = summarizeSettlements({
+      debtor: ANNIE_ID,
+      creditor: DEIVY_ID,
+      debtAmount: 195_083,
+      settlements: [
+        { from_user_id: ANNIE_ID, to_user_id: DEIVY_ID, amount: 197_160 },
+      ],
+    });
+    expect(result.remainingDebt).toBe(-2_077);
+    expect(result.direction).toEqual({ debtor: ANNIE_ID, creditor: DEIVY_ID });
+    expect(result.net).toEqual({
+      debtor: DEIVY_ID,
+      creditor: ANNIE_ID,
+      amount: 2_077,
+    });
+  });
+
+  it("net is null when the debt is settled exactly (remainingDebt === 0)", () => {
+    const result = summarizeSettlements({
+      debtor: ANNIE_ID,
+      creditor: DEIVY_ID,
+      debtAmount: 59_949,
+      settlements: [
+        { from_user_id: ANNIE_ID, to_user_id: DEIVY_ID, amount: 59_949 },
+      ],
+    });
+    expect(result.remainingDebt).toBe(0);
+    expect(result.net).toBeNull();
+  });
+
+  it("net carries the full debt when a debtor exists and no settlements were recorded", () => {
+    const result = summarizeSettlements({
+      debtor: ANNIE_ID,
+      creditor: DEIVY_ID,
+      debtAmount: 59_949,
+      settlements: [],
+    });
+    expect(result.net).toEqual({
+      debtor: ANNIE_ID,
+      creditor: DEIVY_ID,
+      amount: 59_949,
+    });
   });
 
   it("no debtor (balanced month) + a settlement recorded anyway: direction comes from the FIRST entry, remainingDebt goes negative by that amount", () => {
