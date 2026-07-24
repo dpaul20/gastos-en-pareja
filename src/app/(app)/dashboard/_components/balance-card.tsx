@@ -137,20 +137,20 @@ export function BalanceCard({
   );
   const myPct = Math.round((myBalance?.percentage ?? 0.5) * 100);
 
-  // Headline keys off the settlement-aware remaining debt, not the raw
-  // expense debt — a fully-paid month reads $0 even though expenses created a
-  // debt (design D3: settlements pay down, never rewrite, the balance).
-  const remainingDebt = summary.remainingDebt;
-  const hasDebt = remainingDebt > 0;
+  // Headline keys off the settlement-aware NET position, not the raw expense
+  // debt — a fully-paid month reads $0 even though expenses created a debt,
+  // and an OVERpaid month flips direction ("le debe" swaps) instead of hiding
+  // the reversed debt behind $0 (design D3: settlements pay down, never
+  // rewrite, the balance; `net` carries the flip — see settlement.ts).
+  const net = summary.net;
+  // Guard on the ROUNDED amount so a sub-peso residue (which formatARS would
+  // render as "$0") reads as settled, not as a "$0 le debe" artifact.
+  const hasDebt = net !== null && Math.round(net.amount) > 0;
   const isSettled = !hasDebt && summary.entries.length > 0;
   const debtorName =
-    summary.direction?.debtor === myProfile?.user_id
-      ? myFirstName
-      : partnerFirstName;
+    net?.debtor === myProfile?.user_id ? myFirstName : partnerFirstName;
   const creditorName =
-    summary.direction?.creditor === myProfile?.user_id
-      ? myFirstName
-      : partnerFirstName;
+    net?.creditor === myProfile?.user_id ? myFirstName : partnerFirstName;
   const awaitingNote =
     awaitingBillCount === 1
       ? "Falta 1 factura. Cuando llegue puede aparecer una diferencia."
@@ -174,7 +174,7 @@ export function BalanceCard({
               data-testid="balance-debt-amount"
               className="ds-amount text-[38px] leading-[1.1] font-bold [letter-spacing:-0.02em] [color:var(--status-danger-text)]"
             >
-              {formatARS(remainingDebt)}
+              {formatARS(net?.amount ?? 0)}
             </div>
             <div className="mt-[5px] [font-family:var(--font-sans)] text-[14px] [color:var(--fg-2)]">
               {debtorName} le debe a {creditorName}

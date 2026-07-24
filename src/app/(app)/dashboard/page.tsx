@@ -380,7 +380,7 @@ function DashboardView() {
 
       {coupleId &&
         settlementSummary &&
-        (editingSettlement || (settleOpen && settlementSummary.direction)) && (
+        (editingSettlement || (settleOpen && settlementSummary.net)) && (
           <SettleSheet
             coupleId={coupleId}
             month={month}
@@ -390,9 +390,9 @@ function DashboardView() {
                 full_name: string;
               }[]
             }
-            defaultFromUserId={settlementSummary.direction?.debtor ?? ""}
-            defaultToUserId={settlementSummary.direction?.creditor ?? ""}
-            defaultAmount={settlementSummary.remainingDebt}
+            defaultFromUserId={settlementSummary.net?.debtor ?? ""}
+            defaultToUserId={settlementSummary.net?.creditor ?? ""}
+            defaultAmount={settlementSummary.net?.amount ?? 0}
             editing={editingSettlement ?? undefined}
             onClose={() => {
               setSettleOpen(false);
