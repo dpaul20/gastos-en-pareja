@@ -348,6 +348,7 @@ describe("previewBillImpact", () => {
       settlements: [],
       instanceId: "fi-awaiting",
       amount: 30_000,
+      payerId: DEIVY_ID,
     });
     expect(result).toBeNull();
   });
@@ -373,6 +374,7 @@ describe("previewBillImpact", () => {
       settlements: [],
       instanceId: "fi-awaiting",
       amount: 0,
+      payerId: DEIVY_ID,
     });
     expect(result).toBeNull();
   });
@@ -380,6 +382,7 @@ describe("previewBillImpact", () => {
   it("warns with the exact difference when loading a bill reopens a saldado month", () => {
     // Deivy 100k, Annie 50k income; a 30k shared variable expense paid by
     // Deivy creates a 10k debt Annie owes Deivy — settled by one settlement.
+    // Loading a 6k bill Deivy also fronts pushes Annie 2k back into debt.
     const incomes = [
       {
         id: "1",
@@ -433,12 +436,75 @@ describe("previewBillImpact", () => {
       settlements,
       instanceId: "fi-awaiting",
       amount: 6_000,
+      payerId: DEIVY_ID,
     });
 
     expect(result).not.toBeNull();
     expect(result?.currentRemainingDebt).toBe(0);
     expect(result?.projectedRemainingDebt).toBe(2_000);
     expect(result?.difference).toBe(2_000);
+  });
+
+  it("returns null when the bill has no payer — an uncredited expense moves no debt between people", () => {
+    // Same setup as the test above, but nobody is attributed the bill. Since
+    // `settlementNet` only ever moves on money that actually left a pocket,
+    // an unattributed bill cannot reopen a settled month.
+    const incomes = [
+      {
+        id: "1",
+        couple_id: "c1",
+        user_id: DEIVY_ID,
+        amount: 100_000,
+        month: "2026-08-01",
+        created_at: "",
+      },
+      {
+        id: "2",
+        couple_id: "c1",
+        user_id: ANNIE_ID,
+        amount: 50_000,
+        month: "2026-08-01",
+        created_at: "",
+      },
+    ];
+    const variables: Parameters<
+      typeof calculateMonthlyBalance
+    >[0]["variableExpenses"] = [
+      {
+        id: "v1",
+        couple_id: "c1",
+        user_id: DEIVY_ID,
+        description: "Super",
+        amount: 30_000,
+        date: "2026-08-05",
+        category_id: null,
+        is_shared: true,
+        created_at: "",
+      },
+    ];
+    const awaitingInstance = {
+      ...baseFixedInstances[0],
+      id: "fi-awaiting",
+      paid: false,
+      paid_by_user_id: null,
+      amount_override: null,
+      status: "AWAITING_BILL",
+    };
+
+    const result = previewBillImpact({
+      incomes,
+      installmentPurchases: baseInstallments,
+      fixedExpenseInstances: [awaitingInstance],
+      variableExpenses: variables,
+      settlements: [
+        { from_user_id: ANNIE_ID, to_user_id: DEIVY_ID, amount: 10_000 },
+      ],
+      instanceId: "fi-awaiting",
+      amount: 6_000,
+      payerId: null,
+    });
+
+    expect(result).toBeNull();
   });
 });
 

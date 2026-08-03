@@ -867,6 +867,209 @@ describe("calculateMonthlyBalance — payer attribution (payer-attribution)", ()
   });
 });
 
+describe("calculateMonthlyBalance — la deuda solo cubre plata realmente pagada", () => {
+  const template = {
+    id: "t-unpaid",
+    couple_id: "c1",
+    category_id: null,
+    description: "Servicio",
+    amount: 100_000,
+    due_day: 10,
+    active: true,
+    requires_monthly_review: false,
+    awaits_bill: false,
+    is_shared: true,
+    owner_user_id: null,
+    created_at: "",
+  };
+
+  function makeFixed(
+    id: string,
+    amount: number,
+    paid_by_user_id: string | null,
+  ) {
+    return {
+      id,
+      template_id: "t-unpaid",
+      couple_id: "c1",
+      month: "2026-08-01",
+      paid: paid_by_user_id !== null,
+      paid_by_user_id,
+      created_at: "",
+      status: "CONFIRMED" as string,
+      amount_override: null as number | null,
+      billed_at: null as string | null,
+      due_day: null as number | null,
+      fixed_expense_templates: { ...template, amount },
+    };
+  }
+
+  const evenIncomes = [
+    {
+      id: "i1",
+      couple_id: "c1",
+      user_id: DEIVY_ID,
+      amount: 1_000_000,
+      month: "2026-08-01",
+      created_at: "",
+    },
+    {
+      id: "i2",
+      couple_id: "c1",
+      user_id: ANNIE_ID,
+      amount: 1_000_000,
+      month: "2026-08-01",
+      created_at: "",
+    },
+  ];
+
+  it("no inventa deudor cuando ningún gasto compartido tiene pagador", () => {
+    const result = calculateMonthlyBalance({
+      incomes: evenIncomes,
+      installmentPurchases: [],
+      fixedExpenseInstances: [makeFixed("f1", 100_000, null)],
+      variableExpenses: [],
+    });
+
+    // Ambos quedan cortos contra su obligación, pero nadie le adelantó plata
+    // al otro: no hay transferencia posible.
+    for (const b of result.balances) {
+      expect(b.netBalance).toBeLessThan(0);
+    }
+    expect(result.debtor).toBeNull();
+    expect(result.creditor).toBeNull();
+    expect(result.debtAmount).toBe(0);
+  });
+
+  it("cobra solo la mitad del gasto que el otro sí adelantó, no el pozo entero", () => {
+    const result = calculateMonthlyBalance({
+      incomes: evenIncomes,
+      installmentPurchases: [],
+      fixedExpenseInstances: [
+        makeFixed("f2a", 100_000, ANNIE_ID),
+        makeFixed("f2b", 100_000, null),
+      ],
+      variableExpenses: [],
+    });
+
+    expect(result.debtor).toBe(DEIVY_ID);
+    expect(result.creditor).toBe(ANNIE_ID);
+    expect(result.debtAmount).toBeCloseTo(50_000, 2);
+  });
+
+  it("no cambia el resultado cuando todo gasto compartido tiene pagador", () => {
+    const result = calculateMonthlyBalance({
+      incomes: evenIncomes,
+      installmentPurchases: [],
+      fixedExpenseInstances: [
+        makeFixed("f3a", 100_000, ANNIE_ID),
+        makeFixed("f3b", 40_000, DEIVY_ID),
+      ],
+      variableExpenses: [],
+    });
+
+    // Los netBalance ya suman cero, así que settlementNet los deja intactos.
+    for (const b of result.balances) {
+      expect(b.settlementNet).toBeCloseTo(b.netBalance, 6);
+    }
+    expect(result.debtor).toBe(DEIVY_ID);
+    expect(result.debtAmount).toBeCloseTo(30_000, 2);
+  });
+
+  it("regresión prod agosto 2026: 6 de 7 fijos sin pagador no inflan la deuda", () => {
+    const incomes = [
+      {
+        id: "i1",
+        couple_id: "c1",
+        user_id: DEIVY_ID,
+        amount: 3_640_000,
+        month: "2026-08-01",
+        created_at: "",
+      },
+      {
+        id: "i2",
+        couple_id: "c1",
+        user_id: ANNIE_ID,
+        amount: 1_970_000,
+        month: "2026-08-01",
+        created_at: "",
+      },
+    ];
+    const fixedExpenseInstances = [
+      makeFixed("aguas", 31_373.17, null),
+      makeFixed("cable", 43_774.55, null),
+      makeFixed("epec", 192_943.5, ANNIE_ID),
+      makeFixed("expensas", 26_292, null),
+      makeFixed("guardia", 48_000, null),
+      makeFixed("seguros", 96_991, null),
+      makeFixed("seguros-otro", 84_034, null),
+    ];
+    const installmentPurchases = [
+      {
+        id: "p1",
+        couple_id: "c1",
+        category_id: null,
+        credit_card: null,
+        card_id: null,
+        auto_renew: false,
+        description: "Aire Acondicionado",
+        total_amount: 1_320_004,
+        installments: 24,
+        paid_installments: 22,
+        first_payment_date: "2025-09-01",
+        created_at: "",
+        paid_by_user_id: DEIVY_ID as string | null,
+      },
+      {
+        id: "p2",
+        couple_id: "c1",
+        category_id: null,
+        credit_card: null,
+        card_id: null,
+        auto_renew: false,
+        description: "Ventiladores",
+        total_amount: 500_475,
+        installments: 9,
+        paid_installments: 5,
+        first_payment_date: "2026-01-01",
+        created_at: "",
+        paid_by_user_id: DEIVY_ID as string | null,
+      },
+    ];
+    const variableExpenses = [
+      {
+        id: "v1",
+        couple_id: "c1",
+        category_id: null,
+        user_id: DEIVY_ID,
+        description: "Fiambreria",
+        amount: 30_750,
+        is_shared: true,
+        date: "2026-08-01",
+        created_at: "",
+      },
+    ];
+
+    const result = calculateMonthlyBalance({
+      incomes,
+      installmentPurchases,
+      fixedExpenseInstances,
+      variableExpenses,
+    });
+
+    // Las tarjetas por persona siguen midiendo contra el total del mes.
+    expect(
+      result.balances.find((b) => b.userId === DEIVY_ID)!.obligation,
+    ).toBeCloseTo(431_327.81, 1);
+
+    // La deuda, en cambio, se mide contra los $334.301,50 que sí se pagaron:
+    // el bug reportado mostraba $289.970.
+    expect(result.debtor).toBe(DEIVY_ID);
+    expect(result.creditor).toBe(ANNIE_ID);
+    expect(result.debtAmount).toBeCloseTo(75_550.64, 1);
+  });
+});
+
 describe("billedFixedAmount", () => {
   const baseTemplate = {
     id: "t1",
