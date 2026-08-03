@@ -106,7 +106,7 @@ test.describe("PR6a: registrar pago entre dos miembros reales", () => {
     // Sheet opens with the amount pre-filled to exactly what's owed.
     const sheet = page.getByTestId("settle-sheet");
     await expect(sheet).toBeVisible();
-    await expect(page.getByTestId("settle-amount")).toHaveValue("20000");
+    await expect(page.getByTestId("settle-amount")).toHaveValue("20.000");
 
     await page.getByTestId("settle-submit").click();
 
@@ -169,7 +169,7 @@ test.describe("PR6a: registrar pago entre dos miembros reales", () => {
     // Tap the ledger row → edit sheet, pre-filled with the recorded amount.
     await page.getByTestId(`settlement-row-${seeded.id}`).click();
     await expect(page.getByTestId("settle-sheet")).toBeVisible();
-    await expect(page.getByTestId("settle-amount")).toHaveValue("20000");
+    await expect(page.getByTestId("settle-amount")).toHaveValue("20.000");
 
     // Halve the payment → $10.000 of the debt reappears.
     await page.getByTestId("settle-amount").fill("10000");
@@ -245,5 +245,50 @@ test.describe("PR6a: registrar pago entre dos miembros reales", () => {
         return (data ?? []).length;
       })
       .toBe(0);
+  });
+
+  /**
+   * The guard PR #155 shipped without. That bug lived in `balance-card.tsx`,
+   * which Vitest excludes by design (`src/components/**`), so the unit suite
+   * could not have caught it: `summarizeSettlements` returned the correct
+   * negative `remainingDebt` the whole time while the card floored it to
+   * "$0 / Saldado" and hid a real debt owed the other way. Only a rendered
+   * assertion closes that gap, and no e2e drove an OVERpayment until now —
+   * every existing one settles exactly or partially.
+   */
+  test("un sobrepago invierte la deuda en la tarjeta, no la esconde detrás de $0", async ({
+    authenticatedPage: page,
+    adminClient,
+    coupleId,
+    testUserId,
+  }) => {
+    test.slow();
+    // The partner owes $20.000 but pays $30.000 — $10.000 too much, so the
+    // test user now owes the surplus BACK to the partner.
+    const { error } = await adminClient.from("settlements").insert({
+      couple_id: coupleId,
+      month: currentMonth(),
+      from_user_id: partnerId,
+      to_user_id: testUserId,
+      amount: 30_000,
+      paid_on: dateInMonth(10),
+      created_by: testUserId,
+    });
+    if (error) throw new Error(`Settlement seed failed: ${error.message}`);
+
+    await page.goto("/dashboard");
+
+    // The surplus is shown as a real debt...
+    await expect(page.getByTestId("balance-debt-amount")).toContainText(
+      "$10.000",
+      { timeout: 12_000 },
+    );
+    // ...and NOT swallowed by the saldado branch. This is the exact assertion
+    // whose absence let #155 reach production.
+    await expect(page.getByTestId("balance-zero")).toBeHidden();
+
+    // Direction flipped: the partner ("Annie Partner") was the debtor from the
+    // shared expense, and is now the one being owed.
+    await expect(page.getByText(/le debe a Annie/)).toBeVisible();
   });
 });

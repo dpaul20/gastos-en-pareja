@@ -99,6 +99,14 @@ describe("summarizeSettlements", () => {
       settlements,
     });
     expect(result.remainingDebt).toBe(-10_051);
+    // `remainingDebt` is the signed ledger figure; `net` is what the balance
+    // card actually renders. Asserting only the former is how PR #155 shipped
+    // — the pure math was right while the card floored it to "$0 / Saldado".
+    expect(result.net).toEqual({
+      debtor: DEIVY_ID,
+      creditor: ANNIE_ID,
+      amount: 10_051,
+    });
   });
 
   // ── net (the settlement-aware, direction-flipping position) ───────────────
@@ -181,6 +189,14 @@ describe("summarizeSettlements", () => {
     expect(result.direction).toEqual({ debtor: ANNIE_ID, creditor: DEIVY_ID });
     expect(result.settledTotal).toBe(25_000);
     expect(result.remainingDebt).toBe(-25_000);
+    // Annie paid on a month she owed nothing for, so the card must show Deivy
+    // owing it back — NOT "Saldado". Pinned because a balanced month is
+    // exactly where a floor-at-zero regression would look harmless.
+    expect(result.net).toEqual({
+      debtor: DEIVY_ID,
+      creditor: ANNIE_ID,
+      amount: 25_000,
+    });
   });
 
   it("no debtor + multiple settlements: first entry's direction still governs later entries, including reverse ones", () => {
@@ -196,6 +212,13 @@ describe("summarizeSettlements", () => {
     });
     expect(result.settledTotal).toBe(15_000);
     expect(result.remainingDebt).toBe(-15_000);
+    // The reverse entry nets against the first, and what remains is still
+    // owed back to Annie — the direction the card renders.
+    expect(result.net).toEqual({
+      debtor: DEIVY_ID,
+      creditor: ANNIE_ID,
+      amount: 15_000,
+    });
   });
 
   it("defensive: a settlement between unexpected parties is ADDED, never silently dropped (settlement.ts:89-92)", () => {
