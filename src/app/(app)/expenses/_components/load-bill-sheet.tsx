@@ -6,7 +6,11 @@ import { Button } from "@/components/ui/button";
 import { PersonAvatar } from "@/components/shared/avatar";
 import { ResponsiveModal } from "@/components/shared/responsive-modal";
 import { formatARS, getInitials } from "@/lib/utils";
-import { parseAmount } from "@/lib/utils/amount";
+import {
+  parseAmount,
+  formatAmountInput,
+  formatStoredAmount,
+} from "@/lib/utils/amount";
 import { isValidBillAmount, MAX_BILL_AMOUNT } from "@/lib/utils/bill-amount";
 import { previewBillImpact } from "@/lib/utils/settlement";
 import { loadFixedExpenseBill } from "@/lib/actions/expenses";
@@ -60,9 +64,7 @@ export function LoadBillSheet({
   onClose,
 }: LoadBillSheetProps) {
   const queryClient = useQueryClient();
-  const [draft, setDraft] = useState(
-    referenceAmount != null ? String(referenceAmount) : "",
-  );
+  const [draft, setDraft] = useState(formatStoredAmount(referenceAmount));
   const [payerId, setPayerId] = useState<string | null>(
     currentUserId ?? members[0]?.user_id ?? null,
   );
@@ -142,7 +144,7 @@ export function LoadBillSheet({
           >
             Monto de la factura
           </label>
-          <div className="flex items-center overflow-hidden rounded-[10px] border-[1.5px] [border-color:var(--accent)] [background-color:var(--bg-sunken)] focus-within:ring-2 focus-within:ring-(--accent)">
+          <div className="ds-field flex items-center overflow-hidden rounded-md border-[1.5px] [border-color:var(--accent)] [background-color:var(--bg-sunken)] focus-within:ring-2 focus-within:ring-(--accent)">
             <span
               aria-hidden
               className="ds-amount py-2.5 pr-1.5 pl-3 text-base font-semibold [color:var(--fg-3)]"
@@ -157,7 +159,7 @@ export function LoadBillSheet({
               autoFocus
               value={draft}
               onChange={(e) => {
-                setDraft(e.target.value);
+                setDraft(formatAmountInput(e.target.value));
                 setFieldError(null);
               }}
               className="ds-amount flex-1 border-none bg-transparent py-2.5 pr-3 pl-1 text-base font-semibold [color:var(--fg-1)] outline-none"
@@ -204,7 +206,7 @@ export function LoadBillSheet({
                     data-testid={`load-bill-payer-${m.user_id}`}
                     onClick={() => setPayerId(m.user_id)}
                     aria-pressed={isSelected}
-                    className={`flex flex-1 cursor-pointer items-center gap-2 rounded-[10px] px-3 py-2 transition-[border,background-color] duration-150 ${
+                    className={`flex flex-1 cursor-pointer items-center gap-2 rounded-md px-3 py-2 transition-[border,background-color] duration-150 ${
                       isSelected
                         ? "border-2 [border-color:var(--accent)] [background-color:color-mix(in_srgb,var(--accent)_10%,transparent)]"
                         : "border-[1.5px] [border-color:var(--border-default)] [background-color:var(--bg-sunken)]"
@@ -243,7 +245,7 @@ export function LoadBillSheet({
           type="button"
           onClick={onClose}
           disabled={mutation.isPending}
-          className={`mt-2.5 w-full cursor-pointer rounded-[10px] border-none [background-color:var(--bg-sunken)] px-1 py-2.5 [font-family:var(--font-sans)] text-[13px] font-semibold [color:var(--fg-1)] ${
+          className={`mt-2.5 w-full cursor-pointer rounded-md border-none [background-color:var(--bg-sunken)] px-1 py-2.5 [font-family:var(--font-sans)] text-[13px] font-semibold [color:var(--fg-1)] ${
             mutation.isPending ? "opacity-50" : ""
           }`}
         >

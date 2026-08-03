@@ -17,7 +17,11 @@ import { FAB as Fab } from "@/components/shared/fab";
 import { getCategoryIcon } from "@/lib/category-icons";
 import { formatARS, getMonthDate, getInitials } from "@/lib/utils";
 import { isBilled, billedFixedAmount } from "@/lib/utils/balance";
-import { parseAmount } from "@/lib/utils/amount";
+import {
+  parseAmount,
+  formatAmountInput,
+  formatStoredAmount,
+} from "@/lib/utils/amount";
 import {
   useCoupleMember,
   useMonthlyData,
@@ -454,7 +458,7 @@ function EditServiceSheet({
   const currentAmount = isBilled(instance) ? billedFixedAmount(instance) : 0;
   const currentDueDay =
     instance.due_day ?? instance.fixed_expense_templates.due_day;
-  const [draft, setDraft] = useState(String(currentAmount));
+  const [draft, setDraft] = useState(formatStoredAmount(currentAmount));
   const [fieldError, setFieldError] = useState<string | null>(null);
   const [awaitsBill, setAwaitsBill] = useState(
     instance.fixed_expense_templates.awaits_bill,
@@ -671,10 +675,10 @@ function EditServiceSheet({
               Monto este mes
             </label>
             <div
-              className="flex items-center overflow-hidden focus-within:ring-2 focus-within:ring-(--accent)"
+              className="ds-field flex items-center overflow-hidden focus-within:ring-2 focus-within:ring-(--accent)"
               style={{
                 background: "var(--bg-sunken)",
-                borderRadius: 10,
+                borderRadius: "var(--radius-md)",
                 border: "1.5px solid var(--border-default)",
               }}
             >
@@ -694,7 +698,7 @@ function EditServiceSheet({
                 type="text"
                 value={draft}
                 onChange={(e) => {
-                  setDraft(e.target.value);
+                  setDraft(formatAmountInput(e.target.value));
                   setFieldError(null);
                 }}
                 inputMode="decimal"
@@ -848,7 +852,7 @@ function EditServiceSheet({
             style={{
               background: "var(--bg-sunken)",
               border: "1px dashed var(--status-pending)",
-              borderRadius: 10,
+              borderRadius: "var(--radius-md)",
               cursor: "pointer",
               padding: "9px 4px",
               color: "var(--status-pending)",

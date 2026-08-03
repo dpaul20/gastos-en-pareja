@@ -206,8 +206,9 @@ test.describe("Expenses — creación de gasto variable", () => {
         DESCRIPCION_TEST,
       );
 
+      // Grouped on the way in; parseAmount strips the separator on submit.
       await expenses.dialogField("Monto").fill("1500");
-      await expect(expenses.dialogField("Monto")).toHaveValue("1500");
+      await expect(expenses.dialogField("Monto")).toHaveValue("1.500");
     });
 
     await test.step("guardar y verificar que aparece en la lista", async () => {

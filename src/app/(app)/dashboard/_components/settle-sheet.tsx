@@ -9,7 +9,11 @@ import { PersonAvatar } from "@/components/shared/avatar";
 import { ResponsiveModal } from "@/components/shared/responsive-modal";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { formatARS, getInitials, getTodayBADate } from "@/lib/utils";
-import { parseAmount } from "@/lib/utils/amount";
+import {
+  parseAmount,
+  formatAmountInput,
+  formatStoredAmount,
+} from "@/lib/utils/amount";
 import {
   useCreateSettlement,
   useUpdateSettlement,
@@ -95,14 +99,15 @@ export function SettleSheet({
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<SettlementForm>({
     resolver: zodResolver(settlementSchema),
     defaultValues: {
       amount: editing
-        ? String(editing.amount)
+        ? formatStoredAmount(editing.amount)
         : defaultAmount > 0
-          ? String(defaultAmount)
+          ? formatStoredAmount(defaultAmount)
           : "",
       paid_on: editing?.paid_on ?? getTodayBADate(),
       note: editing?.note ?? "",
@@ -199,7 +204,7 @@ export function SettleSheet({
           </span>
           <div
             data-testid="settle-direction"
-            className="flex items-center gap-2 rounded-[10px] border-[1.5px] [border-color:var(--border-default)] [background-color:var(--bg-sunken)] px-3 py-2.5"
+            className="flex items-center gap-2 rounded-md border-[1.5px] [border-color:var(--border-default)] [background-color:var(--bg-sunken)] px-3 py-2.5"
           >
             <PersonAvatar
               initials={initialsOf(fromId)}
@@ -235,7 +240,7 @@ export function SettleSheet({
           >
             Monto
           </label>
-          <div className="flex items-center overflow-hidden rounded-[10px] border-[1.5px] [border-color:var(--accent)] [background-color:var(--bg-sunken)] focus-within:ring-2 focus-within:ring-(--accent)">
+          <div className="ds-field flex items-center overflow-hidden rounded-md border-[1.5px] [border-color:var(--accent)] [background-color:var(--bg-sunken)] focus-within:ring-2 focus-within:ring-(--accent)">
             <span
               aria-hidden
               className="ds-amount py-2.5 pr-1.5 pl-3 text-base font-semibold [color:var(--fg-3)]"
@@ -249,7 +254,10 @@ export function SettleSheet({
               inputMode="decimal"
               autoFocus
               className="ds-amount flex-1 border-none bg-transparent py-2.5 pr-3 pl-1 text-base font-semibold [color:var(--fg-1)] outline-none"
-              {...register("amount")}
+              {...register("amount", {
+                onChange: (e) =>
+                  setValue("amount", formatAmountInput(e.target.value)),
+              })}
             />
           </div>
           {!isEditing && defaultAmount > 0 && (
@@ -279,7 +287,7 @@ export function SettleSheet({
             id="settle-paid-on"
             data-testid="settle-paid-on"
             type="date"
-            className="w-full rounded-[10px] border-[1.5px] [border-color:var(--border-default)] [background-color:var(--bg-sunken)] px-3 py-2.5 [font-family:var(--font-sans)] text-sm [color:var(--fg-1)] outline-none"
+            className="w-full rounded-md border-[1.5px] [border-color:var(--border-default)] [background-color:var(--bg-sunken)] px-3 py-2.5 [font-family:var(--font-sans)] text-sm [color:var(--fg-1)] outline-none"
             {...register("paid_on")}
           />
           {errors.paid_on && (
@@ -305,7 +313,7 @@ export function SettleSheet({
             data-testid="settle-note"
             type="text"
             placeholder="Transferencia, efectivo…"
-            className="w-full rounded-[10px] border-[1.5px] [border-color:var(--border-default)] [background-color:var(--bg-sunken)] px-3 py-2.5 [font-family:var(--font-sans)] text-sm [color:var(--fg-1)] outline-none"
+            className="w-full rounded-md border-[1.5px] [border-color:var(--border-default)] [background-color:var(--bg-sunken)] px-3 py-2.5 [font-family:var(--font-sans)] text-sm [color:var(--fg-1)] outline-none"
             {...register("note")}
           />
         </div>
@@ -331,7 +339,7 @@ export function SettleSheet({
           type="button"
           onClick={onClose}
           disabled={isBusy}
-          className={`mt-2.5 w-full cursor-pointer rounded-[10px] border-none [background-color:var(--bg-sunken)] px-1 py-2.5 [font-family:var(--font-sans)] text-[13px] font-semibold [color:var(--fg-1)] ${isBusy ? "opacity-50" : ""}`}
+          className={`mt-2.5 w-full cursor-pointer rounded-md border-none [background-color:var(--bg-sunken)] px-1 py-2.5 [font-family:var(--font-sans)] text-[13px] font-semibold [color:var(--fg-1)] ${isBusy ? "opacity-50" : ""}`}
         >
           Cancelar
         </button>
