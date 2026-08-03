@@ -70,10 +70,13 @@ export function LoadBillSheet({
 
   const name = instance.fixed_expense_templates.description;
 
-  // Live reopen-warning preview (PR5) — recomputed on every keystroke, null
-  // unless the typed amount is a validly-shaped number AND actually reopens
-  // an already-settled month. previewBillImpact is pure/cheap, so no
-  // debounce is needed for a single-instance recompute.
+  // Live reopen-warning preview (PR5) — recomputed on every keystroke and on
+  // every payer switch, null unless the typed amount is a validly-shaped
+  // number AND actually reopens an already-settled month. The payer belongs
+  // in here because who fronts the bill decides which way the debt moves —
+  // the same amount can reopen the month or leave it settled depending on it.
+  // previewBillImpact is pure/cheap, so no debounce is needed for a
+  // single-instance recompute.
   const parsedDraft = parseAmount(draft);
   const impactPreview = useMemo(() => {
     if (!Number.isFinite(parsedDraft) || parsedDraft <= 0) return null;
@@ -85,8 +88,9 @@ export function LoadBillSheet({
       settlements: monthlyData.settlements,
       instanceId: instance.id,
       amount: parsedDraft,
+      payerId,
     });
-  }, [monthlyData, instance.id, parsedDraft]);
+  }, [monthlyData, instance.id, parsedDraft, payerId]);
 
   const mutation = useMutation({
     mutationFn: ({ amount, payer }: { amount: number; payer: string | null }) =>

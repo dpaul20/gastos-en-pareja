@@ -89,12 +89,27 @@ export function billedFixedAmount(instance: BilledInstance): number {
   );
 }
 
+/**
+ * A net below this (in pesos) is floating-point noise, not a debt. Percentages
+ * are irrational-ish ratios (364/561 and friends), so `settlementNet` lands on
+ * ±1e-11 instead of exactly 0 on a perfectly balanced month — without a floor,
+ * that noise would name a debtor for a fraction of a centavo.
+ */
+const SETTLEMENT_EPSILON = 0.005;
+
 export interface PersonBalance {
   userId: string;
   percentage: number;
   obligation: number;
   actualPaid: number;
   netBalance: number; // positive = overpaid, negative = owes
+  /**
+   * `netBalance` re-baselined so the couple's nets sum to zero — the only
+   * figure a person-to-person settlement may be derived from. See the block
+   * comment above the `settlementNet` computation for why the raw
+   * `netBalance` cannot serve that role.
+   */
+  settlementNet: number;
 }
 
 export interface MonthlyBalance {
@@ -185,7 +200,7 @@ export function calculateMonthlyBalance(params: {
     installmentTotal + fixedSharedTotal + variableSharedTotal;
   const savingsCapacity = totalIncome - totalExpenses;
 
-  const balances: PersonBalance[] = incomes.map((income) => {
+  const rawBalances = incomes.map((income) => {
     const percentage =
       totalIncome > 0 ? Number(income.amount) / totalIncome : 0;
     const obligation = percentage * sharedExpensesTotal;
@@ -224,11 +239,41 @@ export function calculateMonthlyBalance(params: {
     };
   });
 
+  // `obligation` — and therefore `netBalance` — measures each person against
+  // the month's FULL shared total, unpaid bills included. That is the right
+  // number for "cuánto me toca este mes", but it is NOT a debt between two
+  // people: when a shared expense has no payer, nobody fronted it, so the
+  // netBalances stop summing to zero and BOTH partners can come out negative.
+  // Settling off the raw netBalance then bills the higher earner for their
+  // share of the unpaid pot as if the partner had covered it (prod bug,
+  // 2026-08: "Deivy le debe a Annie $289.970" while Annie was $40.494 short
+  // herself).
+  //
+  // A transfer can only ever be about money that ACTUALLY left a pocket, so
+  // re-baseline each net against the shared shortfall:
+  //
+  //   settlementNet_i = netBalance_i - percentage_i * totalNet
+  //                   = actualPaid_i - percentage_i * totalActuallyPaid
+  //
+  // These sum to zero by construction. When every shared expense has a payer
+  // `totalNet` is 0, so `settlementNet === netBalance` and the pre-existing
+  // behaviour is untouched.
+  const totalNet = rawBalances.reduce((sum, b) => sum + b.netBalance, 0);
+  const balances: PersonBalance[] = rawBalances.map((b) => ({
+    ...b,
+    settlementNet: b.netBalance - b.percentage * totalNet,
+  }));
+
   // Who owes whom
-  const sorted = [...balances].sort((a, b) => a.netBalance - b.netBalance);
-  const debtor = sorted[0]?.netBalance < 0 ? sorted[0].userId : null;
+  const sorted = [...balances].sort(
+    (a, b) => a.settlementNet - b.settlementNet,
+  );
+  const debtor =
+    sorted[0] && sorted[0].settlementNet < -SETTLEMENT_EPSILON
+      ? sorted[0].userId
+      : null;
   const creditor = debtor ? sorted.at(-1)!.userId : null;
-  const debtAmount = debtor ? Math.abs(sorted[0].netBalance) : 0;
+  const debtAmount = debtor ? Math.abs(sorted[0].settlementNet) : 0;
 
   return {
     totalIncome,

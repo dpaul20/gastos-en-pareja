@@ -586,11 +586,17 @@ export async function markFixedExpenseInstanceAwaitingBill(
 }
 
 // "Cargar factura" — atomically prices an AWAITING_BILL instance and flips
-// it back to counted. Sets amount_override, paid_by_user_id, status=
+// it back to counted. Sets amount_override, paid, paid_by_user_id, status=
 // 'CONFIRMED', and billed_at=now() (source of truth for the "nuevo" pill,
 // PR3). Scoped to AWAITING_BILL so it can't silently reprice an
 // already-billed instance through this path — use
 // updateFixedExpenseInstanceAmount for that.
+//
+// `paid: true` is NOT redundant with `paid_by_user_id`. `actualPaidFixed`
+// (balance.ts) credits a payer only when BOTH are set, so writing the payer
+// alone recorded who the sheet calls "Quién la pagó" — past tense — while
+// never crediting them, leaving the debt overstated. Marking it paid here is
+// what makes that label true.
 //
 // PR3: the approved "Cargar factura" sheet lets the user pick WHO paid
 // (mirrors createInstallmentPurchase's payerId resolution) — PR2 hardcoded
@@ -625,6 +631,7 @@ export async function loadFixedExpenseBill(
     .from("fixed_expense_instances")
     .update({
       amount_override: amount,
+      paid: true,
       paid_by_user_id: resolvedPayerId,
       status: "CONFIRMED",
       billed_at: new Date().toISOString(),

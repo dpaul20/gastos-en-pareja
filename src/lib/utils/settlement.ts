@@ -182,6 +182,14 @@ export interface BillImpactPreview {
  * Recomputes Debt" — the reopen warning is specifically for a month that
  * WAS at or below zero), or loading the bill doesn't actually reopen it
  * (`projectedRemainingDebt === 0`).
+ *
+ * `payerId` is REQUIRED (nullable, not optional) because the hypothetical
+ * must mirror every column `loadFixedExpenseBill` writes — `amount_override`,
+ * `status`, `paid`, AND `paid_by_user_id`. Projecting the amount without the
+ * payer would preview an expense nobody paid, and since `settlementNet` only
+ * moves on money that actually left a pocket, that preview is always "no
+ * change" — the warning would silently never fire. A `null` payer models
+ * exactly that uncredited case rather than hiding it.
  */
 export function previewBillImpact(params: {
   incomes: Income[];
@@ -191,6 +199,7 @@ export function previewBillImpact(params: {
   settlements: Settlement[];
   instanceId: string;
   amount: number;
+  payerId: string | null;
 }): BillImpactPreview | null {
   const {
     incomes,
@@ -200,6 +209,7 @@ export function previewBillImpact(params: {
     settlements,
     instanceId,
     amount,
+    payerId,
   } = params;
 
   const currentBalance = calculateMonthlyBalance({
@@ -219,7 +229,13 @@ export function previewBillImpact(params: {
 
   const hypotheticalInstances = fixedExpenseInstances.map((instance) =>
     instance.id === instanceId
-      ? { ...instance, status: "CONFIRMED", amount_override: amount }
+      ? {
+          ...instance,
+          status: "CONFIRMED",
+          amount_override: amount,
+          paid: payerId !== null,
+          paid_by_user_id: payerId,
+        }
       : instance,
   );
   const projectedBalance = calculateMonthlyBalance({

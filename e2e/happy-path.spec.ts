@@ -467,10 +467,12 @@ test.describe("Dashboard — balance proporcional", () => {
       await page.getByTestId("open-load-bill").click();
       await page.getByTestId("load-bill-sheet").waitFor({ state: "visible" });
 
-      // A $6.000 bill on a shared, fully-unpaid instance shifts the
-      // proportional split enough to flip the debtor and reopen a 2.000
-      // difference — see the matching Vitest fixture in settlement.test.ts
-      // for the worked math.
+      // A $6.000 bill the logged-in user fronts (the payer selector defaults
+      // to them) puts 6.000 more of shared spending on their side, so the
+      // partner owes 2.000 past what they already settled. The bill has to
+      // be ATTRIBUTED for this: an unattributed bill moves no money between
+      // the two and would leave the month settled. See the matching Vitest
+      // fixture in settlement.test.ts for the worked math.
       await page.getByTestId("load-bill-amount").fill("6000");
 
       const warning = page.getByTestId("load-bill-impact-warning");
