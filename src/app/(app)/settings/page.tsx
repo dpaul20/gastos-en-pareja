@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { PersonAvatar as Avatar } from "@/components/shared/avatar";
 import {
   useCoupleMember,
@@ -14,14 +14,21 @@ import {
   useIncomeWithCarry,
   useMyPendingInvitations,
 } from "@/lib/queries/settings";
-import { upsertIncome } from "@/lib/actions/expenses";
+import {
+  upsertIncome,
+  ensureIncomeCarriedForward,
+} from "@/lib/actions/expenses";
 import {
   sendInvitation,
   createCouple,
   createInvitationLink,
 } from "@/lib/actions/couple";
 import { getMonthDate, getInitials, formatARS } from "@/lib/utils";
-import { parseAmount } from "@/lib/utils/amount";
+import {
+  parseAmount,
+  formatAmountInput,
+  formatStoredAmount,
+} from "@/lib/utils/amount";
 import { createClient } from "@/lib/supabase/client";
 import { NoCoupleCard } from "./_components/no-couple-card";
 import { ModeToggle } from "@/components/shared/mode-toggle";
@@ -56,7 +63,35 @@ export default function SettingsPage() {
   const [linkError, setLinkError] = useState("");
   const [copied, setCopied] = useState(false);
   const [myIncome, setMyIncome] = useState("");
-  const displayIncome = myIncome || String(currentIncome?.amount ?? "");
+
+  // Carry the income forward here too, not only on /dashboard (page.tsx:177).
+  // Landing on Configuración first in a new month — which is exactly what you
+  // do when you come to check your sueldo — left the field empty and demanded
+  // a manual re-entry, even though the amount was already known. The action is
+  // idempotent (it only fills members with no row for the month), so running
+  // it from both screens is safe.
+  const coupleId = member?.couple_id ?? null;
+  const { mutate: ensureIncomeCarry, isPending: isCarryPending } = useMutation({
+    mutationFn: (vars: { coupleId: string; month: string }) =>
+      ensureIncomeCarriedForward(vars.coupleId, vars.month),
+    onSuccess: ({ created }) => {
+      if (created > 0) {
+        queryClient.invalidateQueries({ queryKey: ["income-with-carry"] });
+        queryClient.invalidateQueries({ queryKey: ["monthly-data"] });
+      }
+    },
+  });
+
+  useEffect(() => {
+    if (coupleId) ensureIncomeCarry({ coupleId, month: getMonthDate() });
+    // ensureIncomeCarry is stable (useMutation)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [coupleId]);
+
+  // The saved amount needs the same grouping the keystroke handler applies —
+  // otherwise the field opens reading "3640000" and only starts looking right
+  // once the user types.
+  const displayIncome = myIncome || formatStoredAmount(currentIncome?.amount);
   const parsedIncome = parseAmount(displayIncome);
   const inviteUrl = activeLinkInvitation?.token
     ? typeof window !== "undefined"
@@ -222,7 +257,7 @@ export default function SettingsPage() {
                       new Date(inviteExpiresAt) > new Date() ? (
                         <div
                           aria-live="polite"
-                          className="rounded-[10px] border [border-color:var(--border-subtle)] bg-[var(--bg-sunken)] px-3 py-2.5 [font-family:var(--font-sans)] text-[13px] [color:var(--fg-2)]"
+                          className="rounded-md border [border-color:var(--border-subtle)] bg-[var(--bg-sunken)] px-3 py-2.5 [font-family:var(--font-sans)] text-[13px] [color:var(--fg-2)]"
                         >
                           ⏳ Invitación pendiente hasta el{" "}
                           <strong>
@@ -363,7 +398,7 @@ export default function SettingsPage() {
             </h2>
             <Card className="overflow-hidden rounded-[var(--radius-lg)] border-[var(--border-subtle)] p-0 shadow-[var(--shadow-sm)]">
               <div className="px-4 py-3.5">
-                <div className="flex items-center overflow-hidden rounded-[10px] border-[1.5px] border-[var(--border-default)] bg-[var(--bg-sunken)] focus-within:ring-2 focus-within:ring-(--accent)">
+                <div className="ds-field flex items-center overflow-hidden rounded-md border-[1.5px] border-[var(--border-default)] bg-[var(--bg-sunken)] focus-within:ring-2 focus-within:ring-(--accent)">
                   <span className="py-2.5 pr-1.5 pl-3 [font-family:var(--font-mono)] text-base font-semibold [color:var(--fg-3)]">
                     $
                   </span>
@@ -371,21 +406,31 @@ export default function SettingsPage() {
                     id="income-input"
                     aria-label="Mi ingreso este mes"
                     value={displayIncome}
-                    onChange={(e) => setMyIncome(e.target.value)}
+                    onChange={(e) =>
+                      setMyIncome(formatAmountInput(e.target.value))
+                    }
                     inputMode="decimal"
                     placeholder="0"
                     className="ds-amount flex-1 border-none bg-transparent py-2.5 pr-3 pl-1 text-base font-semibold [color:var(--fg-1)] outline-none"
                   />
                 </div>
               </div>
+              {/* Fallback only. The carry above normally fills the month
+                  before this can render; without the isCarryPending guard the
+                  banner flashes on every load while that request is in flight.
+                  It still has a job when the carry cannot help — e.g. the row
+                  was deliberately deleted. */}
               {previousIncome !== null &&
                 currentIncome === null &&
+                !isCarryPending &&
                 !myIncome && (
                   <div className="px-4 pb-2.5">
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => setMyIncome(String(previousIncome.amount))}
+                      onClick={() =>
+                        setMyIncome(formatStoredAmount(previousIncome.amount))
+                      }
                       className="w-full justify-start border-[var(--border-subtle)] bg-[var(--accent-subtle)] [font-family:var(--font-sans)] [color:var(--accent)]"
                     >
                       Igual al mes pasado — {formatARS(previousIncome.amount)}
