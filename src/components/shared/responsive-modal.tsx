@@ -37,7 +37,12 @@ export function ResponsiveModal({
           showCloseButton={false}
           aria-describedby={undefined}
           data-testid={testId}
-          className="pb-safe-mobile mx-auto w-full max-w-120 rounded-t-[20px]"
+          // `dvh`, not `vh`: with the keyboard up the viewport shrinks (see
+          // `interactiveWidget` in layout.tsx) and `vh` would keep measuring
+          // the full screen, letting a tall sheet run under the keyboard with
+          // no way to reach the rest. The scroll is the escape hatch when the
+          // remaining space is smaller than the form.
+          className="pb-safe-mobile mx-auto max-h-[90dvh] w-full max-w-120 overflow-y-auto rounded-t-[20px]"
           style={{
             background: "var(--bg-elevated)",
             border: "none",
