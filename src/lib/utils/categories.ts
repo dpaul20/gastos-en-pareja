@@ -34,11 +34,38 @@ export function groupByCategory(
 }
 
 /**
- * Builds the `/expenses?cat={id}` href for a category breakdown row (Commit 7
- * — category navigation). Returns `null` for "Sin categoría" (`categoryId ===
- * null`), which per design MUST NOT navigate — callers use this to decide
- * whether a row is clickable at all, not just where it points.
+ * URL value standing for "only the expenses with NO category".
+ *
+ * `filterCategory === null` already means "sin filtro, mostrame todo", so the
+ * uncategorized state had no way to be requested — which is why the biggest
+ * bar in the breakdown used to be dead. A sentinel gives it a name. It is a
+ * plain word on purpose: `expense_categories.id` is a uuid, so the two can
+ * never collide (pinned by a test).
  */
-export function categoryExpensesHref(categoryId: string | null): string | null {
-  return categoryId ? `/expenses?cat=${categoryId}` : null;
+export const UNCATEGORIZED_FILTER = "sin-categoria";
+
+/**
+ * Builds the `/expenses?cat={id}` href for a category breakdown row. "Sin
+ * categoría" points at the sentinel rather than nowhere: not being able to
+ * reach those rows meant not being able to categorise them.
+ */
+export function categoryExpensesHref(categoryId: string | null): string {
+  return `/expenses?cat=${categoryId ?? UNCATEGORIZED_FILTER}`;
+}
+
+/**
+ * Whether an expense belongs in the currently filtered list.
+ *
+ * `undefined` is treated as "no category", not as a separate case: a fijo
+ * reads its category through `fixed_expense_templates?.category_id`, so a
+ * missing template yields `undefined` where a variable would yield `null`.
+ * Both mean the same thing to the person looking at the screen.
+ */
+export function matchesCategoryFilter(
+  categoryId: string | null | undefined,
+  filter: string | null,
+): boolean {
+  if (filter === null) return true;
+  if (filter === UNCATEGORIZED_FILTER) return categoryId == null;
+  return categoryId === filter;
 }

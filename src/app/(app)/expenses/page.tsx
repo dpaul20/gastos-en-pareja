@@ -23,6 +23,10 @@ import {
   formatStoredAmount,
 } from "@/lib/utils/amount";
 import {
+  matchesCategoryFilter,
+  UNCATEGORIZED_FILTER,
+} from "@/lib/utils/categories";
+import {
   useCoupleMember,
   useMonthlyData,
   useCoupleMemberProfiles,
@@ -183,6 +187,30 @@ function CategoryFilterSheet({
           }}
         >
           Todos
+        </button>
+        <button
+          onClick={() =>
+            onSelect(
+              filterCategory === UNCATEGORIZED_FILTER
+                ? null
+                : UNCATEGORIZED_FILTER,
+            )
+          }
+          data-testid="filter-uncategorized"
+          className="cursor-pointer rounded-[20px] text-xs font-semibold"
+          style={{
+            padding: "6px 14px",
+            border: "1px solid var(--border-subtle)",
+            background:
+              filterCategory === UNCATEGORIZED_FILTER
+                ? "var(--accent)"
+                : "var(--bg-sunken)",
+            color:
+              filterCategory === UNCATEGORIZED_FILTER ? "#fff" : "var(--fg-2)",
+            fontFamily: "var(--font-sans)",
+          }}
+        >
+          Sin categoría
         </button>
         {categories.map((cat) => {
           const Icon = getCategoryIcon(cat.name);
@@ -1027,17 +1055,21 @@ function ExpensesView() {
   const allFijos = data?.fixedExpenseInstances ?? [];
   const allVariables = data?.variableExpenses ?? [];
 
-  const cuotas = filterCategory
-    ? allCuotas.filter((c) => c.category_id === filterCategory)
-    : allCuotas;
-  const fijos = filterCategory
-    ? allFijos.filter(
-        (fi) => fi.fixed_expense_templates?.category_id === filterCategory,
-      )
-    : allFijos;
-  const variables = filterCategory
-    ? allVariables.filter((v) => v.category_id === filterCategory)
-    : allVariables;
+  // Routed through matchesCategoryFilter so the "sin categoría" sentinel is
+  // handled in ONE place: a plain `=== filterCategory` cannot express it,
+  // which is what left those expenses unreachable.
+  const cuotas = allCuotas.filter((c) =>
+    matchesCategoryFilter(c.category_id, filterCategory),
+  );
+  const fijos = allFijos.filter((fi) =>
+    matchesCategoryFilter(
+      fi.fixed_expense_templates?.category_id,
+      filterCategory,
+    ),
+  );
+  const variables = allVariables.filter((v) =>
+    matchesCategoryFilter(v.category_id, filterCategory),
+  );
 
   // "N sin factura — no están contados" + the per-row reference line both
   // key off the currently VISIBLE (filtered) fijos — a hidden category's

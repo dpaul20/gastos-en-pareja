@@ -47,6 +47,17 @@ test.describe("Dashboard — categoría clickeable navega a /expenses filtrado",
       .like("description", "E2E-cat-nav-%");
   });
 
+  test("el sheet de filtros ofrece 'Sin categoría' como opción", async ({
+    authenticatedPage: page,
+  }) => {
+    await page.goto("/expenses");
+    await page.waitForLoadState("networkidle", { timeout: 12_000 });
+    await page.getByTestId("expenses-filters-button").click();
+    await expect(page.getByTestId("category-filter-sheet")).toBeVisible();
+    await page.getByTestId("filter-uncategorized").click();
+    await expect(page).toHaveURL(/cat=sin-categoria/);
+  });
+
   test("click en una categoría real navega a /expenses?cat={id} y filtra la lista", async ({
     authenticatedPage: page,
   }) => {
@@ -76,18 +87,46 @@ test.describe("Dashboard — categoría clickeable navega a /expenses filtrado",
     });
   });
 
-  test("'Sin categoría' no es clickeable (no renderiza como botón)", async ({
+  // Used to assert the OPPOSITE — that "Sin categoría" rendered as inert
+  // text. It is usually the biggest bar, and being unable to open it meant
+  // being unable to reach those expenses to categorise them at all. The whole
+  // point of the row is to be the way in, so the trip is asserted end to end:
+  // bar → filtered list → the uncategorised expense actually on screen.
+  test("'Sin categoría' abre la lista filtrada de gastos sin categoría", async ({
     authenticatedPage: page,
+    adminClient,
+    coupleId,
   }) => {
+    test.slow();
+    const uncategorised = `E2E-cat-nav-sin-cat-${Date.now()}`;
+    await adminClient.from("variable_expenses").insert({
+      couple_id: coupleId,
+      user_id: (await adminClient.auth.admin.listUsers()).data.users[0].id,
+      description: uncategorised,
+      amount: 998_000,
+      date: new Date().toISOString().split("T")[0],
+      is_shared: true,
+      category_id: null,
+    });
+
     await page.goto("/dashboard");
     await page.waitForLoadState("networkidle", { timeout: 12_000 });
     await expect(page.getByText("Por categoría")).toBeVisible({
       timeout: 10_000,
     });
 
-    const sinCategoriaRow = page.getByRole("button", {
-      name: "Ver gastos de Sin categoría",
+    const sinCategoriaRow = page
+      .getByRole("button", { name: "Ver gastos de Sin categoría" })
+      .first();
+    await expect(sinCategoriaRow).toBeVisible({ timeout: 10_000 });
+    await sinCategoriaRow.click();
+
+    await expect(page).toHaveURL(/\/expenses\?cat=sin-categoria/);
+    await expect(page.getByText(uncategorised)).toBeVisible({
+      timeout: 10_000,
     });
-    await expect(sinCategoriaRow).toHaveCount(0);
+    // The filter is real, not just a URL: the categorised expense seeded in
+    // beforeEach must be filtered OUT.
+    await expect(page.getByText(DESCRIPCION)).toHaveCount(0);
   });
 });
