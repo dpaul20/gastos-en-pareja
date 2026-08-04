@@ -348,21 +348,31 @@
 
 /* ── FOCUS VISIBLE ────────────────────────────────────────── */
 
+/* The ring only. The DS ships a `border-radius: var(--radius-sm)` here, but
+   applying it makes every field CHANGE SHAPE the moment you touch it — a text
+   input specced at 12px snapped to 8px on focus, and the same rule squared off
+   the money wrapper differently from the field beside it. Focus is a state, not
+   a restyle: whatever radius an element has, it keeps. Deliberate deviation
+   from colors_and_type.css:357-368. */
 :focus-visible {
   outline: none;
   box-shadow: var(--focus-ring);
-  border-radius: var(--radius-sm);
-}
-
-button:focus-visible,
-[role="button"]:focus-visible,
-a:focus-visible,
-select:focus-visible {
-  border-radius: var(--radius-md);
 }
 
 :focus:not(:focus-visible) {
   outline: none;
+  box-shadow: none;
+}
+
+/* A field wrapper (`.ds-field`) already draws the focus ring itself via
+   `focus-within:ring-*`, so the input nested inside it must NOT draw a second
+   one — that is what produced the double violet border on the income and
+   amount fields.
+   This rule has to live UNLAYERED, right here: the `:focus-visible` block
+   above is unlayered too, and unlayered CSS beats anything in
+   `@layer utilities` regardless of specificity. A Tailwind
+   `focus-visible:shadow-none` on the input would lose to it silently. */
+.ds-field :focus-visible {
   box-shadow: none;
 }
 

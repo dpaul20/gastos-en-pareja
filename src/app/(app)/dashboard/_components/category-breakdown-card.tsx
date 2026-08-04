@@ -21,12 +21,13 @@ interface CategoryBarShapeProps {
   readonly color?: string;
   readonly categoryId?: string | null;
   readonly name?: string;
-  readonly onSelect?: (categoryId: string) => void;
+  readonly onSelect?: (categoryId: string | null) => void;
 }
 
-// Commit 7 — category navigation: the bar itself is clickable when it has a
-// real categoryId; "Sin categoría" (categoryId null) MUST NOT navigate, so it
-// stays a plain non-interactive rect (no cursor, no role, no handler).
+// Every row navigates, "Sin categoría" included: it is usually the biggest
+// bar, and leaving it dead meant there was no way to reach those expenses to
+// give them a category. `null` is a legitimate destination now — it maps to
+// the UNCATEGORIZED_FILTER sentinel in categoryExpensesHref.
 function CategoryBarShape({
   x = 0,
   y = 0,
@@ -37,7 +38,7 @@ function CategoryBarShape({
   name,
   onSelect,
 }: CategoryBarShapeProps) {
-  const clickable = !!categoryId && !!onSelect;
+  const clickable = !!onSelect;
   return (
     <rect
       x={x}
@@ -46,7 +47,7 @@ function CategoryBarShape({
       height={height}
       fill={color}
       rx={4}
-      onClick={clickable ? () => onSelect!(categoryId!) : undefined}
+      onClick={clickable ? () => onSelect!(categoryId) : undefined}
       role={clickable ? "button" : undefined}
       tabIndex={clickable ? 0 : undefined}
       aria-label={clickable ? `Ver gastos de ${name}` : undefined}
@@ -61,12 +62,12 @@ interface CategoryYAxisTickProps {
   readonly payload?: { value: string };
   readonly index?: number;
   readonly rows: ReadonlyArray<{ name: string; categoryId: string | null }>;
-  readonly onSelect: (categoryId: string) => void;
+  readonly onSelect: (categoryId: string | null) => void;
 }
 
-// Commit 7 — the axis label is the second (larger) tap target for the same
-// navigation. Real categories get a trailing chevron (arrow affordance);
-// "Sin categoría" renders as plain text, no chevron, not interactive.
+// The axis label is the second (larger) tap target for the same navigation.
+// Every row gets the chevron now — the affordance has to match the behaviour,
+// and a bar you can tap with no arrow reads as broken.
 function CategoryYAxisTick({
   x = 0,
   y = 0,
@@ -76,11 +77,11 @@ function CategoryYAxisTick({
   onSelect,
 }: CategoryYAxisTickProps) {
   const row = rows[index];
-  const clickable = !!row?.categoryId;
+  const clickable = !!row;
   const label = payload?.value ?? row?.name ?? "";
 
   function activate() {
-    if (row?.categoryId) onSelect(row.categoryId);
+    if (row) onSelect(row.categoryId);
   }
 
   return (
@@ -157,12 +158,9 @@ export function CategoryBreakdownCard({
     categoryId: g.category?.id ?? null,
   }));
 
-  // Commit 7 — category navigation: real categories navigate to the
-  // pre-filtered expenses list; "Sin categoría" (categoryId null) never
-  // reaches here because both interactive targets below gate on it first.
-  function handleSelect(categoryId: string) {
-    const href = categoryExpensesHref(categoryId);
-    if (href) router.push(href);
+  // `null` means "Sin categoría" and is a real destination, not an absence.
+  function handleSelect(categoryId: string | null) {
+    router.push(categoryExpensesHref(categoryId));
   }
 
   const rowHeight = 36;

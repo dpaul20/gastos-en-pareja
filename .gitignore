@@ -52,6 +52,10 @@ next-env.d.ts
 .gga
 
 # Claude Code / AI agent artifacts
+# settings.json IS tracked — it is the shared project config. Only the
+# .local override is per-machine: absolute paths, tool-result UUIDs, and a
+# permission allowlist that means nothing on anyone else's box.
+.claude/settings.local.json
 .claude/worktrees/
 .claude/scheduled_tasks.lock
 .playwright-mcp/

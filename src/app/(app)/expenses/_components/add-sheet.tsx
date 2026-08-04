@@ -26,7 +26,11 @@ import { DueDayPicker } from "./due-day-picker";
 import { CardPicker } from "./card-picker";
 import { computeMonthlyInstallment } from "@/lib/utils/installments";
 import { cn, formatARS, getInitials } from "@/lib/utils";
-import { parseAmount } from "@/lib/utils/amount";
+import {
+  parseAmount,
+  formatAmountInput,
+  formatStoredAmount,
+} from "@/lib/utils/amount";
 
 // ── SCHEMAS ───────────────────────────────────────────────────────────────────
 
@@ -151,12 +155,12 @@ function MoneyField({
             {label}
           </FormLabel>
           <div
-            className="focus-within:ring-2 focus-within:ring-(--accent)"
+            className="ds-field focus-within:ring-2 focus-within:ring-(--accent)"
             style={{
               display: "flex",
               alignItems: "center",
               background: "var(--bg-sunken)",
-              borderRadius: 10,
+              borderRadius: "var(--radius-md)",
               border: "1.5px solid var(--border-default)",
               overflow: "hidden",
             }}
@@ -177,6 +181,13 @@ function MoneyField({
               <Input
                 {...field}
                 value={field.value ?? ""}
+                // Must come AFTER the spread: `field.onChange` would otherwise
+                // win and store the raw keystroke. The stored value stays
+                // parseable — `positiveMoneyString` validates through
+                // parseAmount, which strips the grouping this adds.
+                onChange={(e) =>
+                  field.onChange(formatAmountInput(e.target.value))
+                }
                 id={id}
                 inputMode="decimal"
                 placeholder=""
@@ -236,7 +247,11 @@ function InputField({
               inputMode={inputMode}
               placeholder={placeholder}
               className={cn(
-                "w-full rounded-xl px-3.5 py-3 text-[15px]",
+                // rounded-md, not rounded-xl: the project redefines the radius
+                // scale in :root (8/12/16/20), so `rounded-xl` resolves to 20px
+                // here — the DS spec for a text field is 12px
+                // (`.input` in preview/components-add-form.html).
+                "w-full rounded-md px-3.5 py-3 text-[15px]",
                 mono && "font-mono font-semibold",
               )}
               style={{
@@ -308,13 +323,13 @@ export function AddSheet({
   const defaultValues: Fields = editingCuota
     ? {
         description: editingCuota.description,
-        total_amount: String(editingCuota.total_amount),
+        total_amount: formatStoredAmount(editingCuota.total_amount),
         installments: String(editingCuota.installments),
       }
     : editingVariable
       ? {
           description: editingVariable.description,
-          amount: String(editingVariable.amount),
+          amount: formatStoredAmount(editingVariable.amount),
           date: editingVariable.date,
         }
       : (
@@ -579,7 +594,7 @@ export function AddSheet({
                           gap: 8,
                           flex: 1,
                           padding: "8px 12px",
-                          borderRadius: 10,
+                          borderRadius: "var(--radius-md)",
                           border: isSelected
                             ? "2px solid var(--accent)"
                             : "1.5px solid var(--border-default)",

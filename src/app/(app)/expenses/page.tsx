@@ -17,7 +17,15 @@ import { FAB as Fab } from "@/components/shared/fab";
 import { getCategoryIcon } from "@/lib/category-icons";
 import { formatARS, getMonthDate, getInitials } from "@/lib/utils";
 import { isBilled, billedFixedAmount } from "@/lib/utils/balance";
-import { parseAmount } from "@/lib/utils/amount";
+import {
+  parseAmount,
+  formatAmountInput,
+  formatStoredAmount,
+} from "@/lib/utils/amount";
+import {
+  matchesCategoryFilter,
+  UNCATEGORIZED_FILTER,
+} from "@/lib/utils/categories";
 import {
   useCoupleMember,
   useMonthlyData,
@@ -179,6 +187,30 @@ function CategoryFilterSheet({
           }}
         >
           Todos
+        </button>
+        <button
+          onClick={() =>
+            onSelect(
+              filterCategory === UNCATEGORIZED_FILTER
+                ? null
+                : UNCATEGORIZED_FILTER,
+            )
+          }
+          data-testid="filter-uncategorized"
+          className="cursor-pointer rounded-[20px] text-xs font-semibold"
+          style={{
+            padding: "6px 14px",
+            border: "1px solid var(--border-subtle)",
+            background:
+              filterCategory === UNCATEGORIZED_FILTER
+                ? "var(--accent)"
+                : "var(--bg-sunken)",
+            color:
+              filterCategory === UNCATEGORIZED_FILTER ? "#fff" : "var(--fg-2)",
+            fontFamily: "var(--font-sans)",
+          }}
+        >
+          Sin categoría
         </button>
         {categories.map((cat) => {
           const Icon = getCategoryIcon(cat.name);
@@ -454,7 +486,7 @@ function EditServiceSheet({
   const currentAmount = isBilled(instance) ? billedFixedAmount(instance) : 0;
   const currentDueDay =
     instance.due_day ?? instance.fixed_expense_templates.due_day;
-  const [draft, setDraft] = useState(String(currentAmount));
+  const [draft, setDraft] = useState(formatStoredAmount(currentAmount));
   const [fieldError, setFieldError] = useState<string | null>(null);
   const [awaitsBill, setAwaitsBill] = useState(
     instance.fixed_expense_templates.awaits_bill,
@@ -671,10 +703,10 @@ function EditServiceSheet({
               Monto este mes
             </label>
             <div
-              className="flex items-center overflow-hidden focus-within:ring-2 focus-within:ring-(--accent)"
+              className="ds-field flex items-center overflow-hidden focus-within:ring-2 focus-within:ring-(--accent)"
               style={{
                 background: "var(--bg-sunken)",
-                borderRadius: 10,
+                borderRadius: "var(--radius-md)",
                 border: "1.5px solid var(--border-default)",
               }}
             >
@@ -694,7 +726,7 @@ function EditServiceSheet({
                 type="text"
                 value={draft}
                 onChange={(e) => {
-                  setDraft(e.target.value);
+                  setDraft(formatAmountInput(e.target.value));
                   setFieldError(null);
                 }}
                 inputMode="decimal"
@@ -848,7 +880,7 @@ function EditServiceSheet({
             style={{
               background: "var(--bg-sunken)",
               border: "1px dashed var(--status-pending)",
-              borderRadius: 10,
+              borderRadius: "var(--radius-md)",
               cursor: "pointer",
               padding: "9px 4px",
               color: "var(--status-pending)",
@@ -1023,17 +1055,21 @@ function ExpensesView() {
   const allFijos = data?.fixedExpenseInstances ?? [];
   const allVariables = data?.variableExpenses ?? [];
 
-  const cuotas = filterCategory
-    ? allCuotas.filter((c) => c.category_id === filterCategory)
-    : allCuotas;
-  const fijos = filterCategory
-    ? allFijos.filter(
-        (fi) => fi.fixed_expense_templates?.category_id === filterCategory,
-      )
-    : allFijos;
-  const variables = filterCategory
-    ? allVariables.filter((v) => v.category_id === filterCategory)
-    : allVariables;
+  // Routed through matchesCategoryFilter so the "sin categoría" sentinel is
+  // handled in ONE place: a plain `=== filterCategory` cannot express it,
+  // which is what left those expenses unreachable.
+  const cuotas = allCuotas.filter((c) =>
+    matchesCategoryFilter(c.category_id, filterCategory),
+  );
+  const fijos = allFijos.filter((fi) =>
+    matchesCategoryFilter(
+      fi.fixed_expense_templates?.category_id,
+      filterCategory,
+    ),
+  );
+  const variables = allVariables.filter((v) =>
+    matchesCategoryFilter(v.category_id, filterCategory),
+  );
 
   // "N sin factura — no están contados" + the per-row reference line both
   // key off the currently VISIBLE (filtered) fijos — a hidden category's

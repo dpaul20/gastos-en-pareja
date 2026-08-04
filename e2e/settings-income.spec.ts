@@ -55,32 +55,15 @@ test.describe("Income carry-over — sugerencia del mes anterior", () => {
       .in("month", [currentMonth, previousMonth]);
   });
 
-  test("muestra el banner cuando hay ingreso anterior pero no del mes actual", async ({
-    authenticatedPage: page,
-  }) => {
-    await page.goto("/settings");
-    await page.waitForLoadState("networkidle", { timeout: 12_000 });
+  // These three used to assert the MANUAL flow: land on Configuración with no
+  // income for the month, get a "Igual al mes pasado" banner, click it, save.
+  // `ensureIncomeCarriedForward` already existed for exactly this but ran only
+  // on /dashboard, so arriving at Configuración first — which is what you do
+  // when you come to check your sueldo — still demanded the manual re-entry.
+  // Settings now runs the same carry, so the banner is a fallback the happy
+  // path never reaches.
 
-    await expect(page.getByText(/Igual al mes pasado/i)).toBeVisible({
-      timeout: 8_000,
-    });
-  });
-
-  test("el banner rellena el input al hacer click", async ({
-    authenticatedPage: page,
-  }) => {
-    await page.goto("/settings");
-    await page.waitForLoadState("networkidle", { timeout: 12_000 });
-
-    // Click the carry-over suggestion button
-    await page.getByText(/Igual al mes pasado/i).click();
-
-    // The income input should now contain the previous month's amount
-    const incomeInput = page.getByPlaceholder("0");
-    await expect(incomeInput).toHaveValue(String(previousAmount));
-  });
-
-  test("el banner desaparece tras guardar el ingreso", async ({
+  test("arrastra el ingreso del mes anterior sin intervención al entrar", async ({
     authenticatedPage: page,
     adminClient,
     coupleId,
@@ -88,32 +71,45 @@ test.describe("Income carry-over — sugerencia del mes anterior", () => {
     await page.goto("/settings");
     await page.waitForLoadState("networkidle", { timeout: 12_000 });
 
-    // Accept the suggestion
-    await page.getByText(/Igual al mes pasado/i).click();
+    // The field is populated with the carried amount, already grouped.
+    const incomeInput = page.getByPlaceholder("0");
+    await expect(incomeInput).toHaveValue(
+      previousAmount.toLocaleString("es-AR"),
+      { timeout: 8_000 },
+    );
 
-    // Save the income
-    await page.getByRole("button", { name: "Guardar ingreso" }).click();
+    // And the row really exists for the current month — the carry persisted it,
+    // no "Guardar ingreso" click involved.
+    await expect
+      .poll(
+        async () => {
+          const { data } = await adminClient
+            .from("incomes")
+            .select("amount")
+            .eq("couple_id", coupleId)
+            .eq("user_id", testUserId)
+            .eq("month", currentMonth)
+            .maybeSingle();
+          return data ? Number(data.amount) : null;
+        },
+        { timeout: 8_000 },
+      )
+      .toBe(previousAmount);
+  });
 
-    // Wait for the Server Action to complete — button returns to non-loading state
-    await expect(
-      page.getByRole("button", { name: "Guardar ingreso" }),
-    ).toBeEnabled({ timeout: 8_000 });
+  test("no pide cargar el sueldo a mano cuando puede arrastrarlo", async ({
+    authenticatedPage: page,
+  }) => {
+    await page.goto("/settings");
+    await page.waitForLoadState("networkidle", { timeout: 12_000 });
 
-    // Banner should disappear now that current month has income
-    await expect(page.getByText(/Igual al mes pasado/i)).not.toBeVisible({
-      timeout: 8_000,
-    });
-
-    // Verify the record was created in the database
-    const { data } = await adminClient
-      .from("incomes")
-      .select("amount")
-      .eq("couple_id", coupleId)
-      .eq("user_id", testUserId)
-      .eq("month", currentMonth)
-      .single();
-
-    expect(data?.amount).toBe(previousAmount);
+    // Guard against regressing to the manual flow: once the carry lands there
+    // is nothing to suggest, so the banner must not be on screen.
+    await expect(page.getByPlaceholder("0")).toHaveValue(
+      previousAmount.toLocaleString("es-AR"),
+      { timeout: 8_000 },
+    );
+    await expect(page.getByText(/Igual al mes pasado/i)).toBeHidden();
   });
 
   test("no muestra el banner cuando ya existe ingreso del mes actual", async ({
@@ -222,12 +218,14 @@ test.describe("Income — validación de monto", () => {
     await page.goto("/settings");
     await page.waitForLoadState("networkidle", { timeout: 12_000 });
 
-    // Input should pre-fill with 100000
+    // Input should pre-fill with the saved amount, already grouped.
     const incomeInput = page.getByPlaceholder("0");
-    await expect(incomeInput).toHaveValue("100000", { timeout: 5_000 });
+    await expect(incomeInput).toHaveValue("100.000", { timeout: 5_000 });
 
-    // Change to 200000
+    // Typing a bare number gets grouped on the way in; what reaches the DB is
+    // still the plain 200000 (parseAmount strips the separators on submit).
     await incomeInput.fill("200000");
+    await expect(incomeInput).toHaveValue("200.000");
 
     const saveBtn = page.getByRole("button", { name: "Guardar ingreso" });
     await saveBtn.click();

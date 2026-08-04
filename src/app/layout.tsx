@@ -61,6 +61,11 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   themeColor: "#5849D1",
+  // Without this the virtual keyboard OVERLAYS the layout viewport instead of
+  // shrinking it, so a bottom-anchored sheet stays put and the field you just
+  // focused ends up behind the keyboard. `resizes-content` shrinks the layout
+  // viewport, which lifts the sheet above it.
+  interactiveWidget: "resizes-content",
 };
 
 export default function RootLayout({
