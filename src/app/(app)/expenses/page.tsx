@@ -60,6 +60,7 @@ import { DueDayPicker } from "./_components/due-day-picker";
 import { toast } from "sonner";
 import { ResponsiveModal } from "@/components/shared/responsive-modal";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import { CategoryPicker } from "@/components/shared/category-picker";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 
@@ -491,6 +492,10 @@ function EditServiceSheet({
   const [awaitsBill, setAwaitsBill] = useState(
     instance.fixed_expense_templates.awaits_bill,
   );
+  const { data: categories = [] } = useCategories(coupleId);
+  const [categoryId, setCategoryId] = useState<string | null>(
+    instance.fixed_expense_templates.category_id,
+  );
 
   const {
     register,
@@ -557,6 +562,29 @@ function EditServiceSheet({
     onError: () => {
       // Revert the optimistic local toggle on failure.
       setAwaitsBill((prev) => !prev);
+    },
+  });
+
+  // Category is template-level, like awaits_bill, so it saves on pick rather
+  // than riding the submit below — which an AWAITING_BILL instance never
+  // reaches, and those are exactly the ones most likely to need categorising.
+  // `updateFixedExpenseTemplate` already accepted `category_id`; only the UI
+  // to send it was missing, so a servicio could be categorised at creation
+  // and never again.
+  const categoryMutation = useMutation({
+    mutationFn: ({
+      templateId,
+      value,
+    }: {
+      templateId: string;
+      value: string | null;
+    }) => updateFixedExpenseTemplate(templateId, { category_id: value }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["monthly-data"] });
+    },
+    onError: () => {
+      // Revert the optimistic local pick, same as the awaits_bill toggle.
+      setCategoryId(instance.fixed_expense_templates.category_id);
     },
   });
 
@@ -643,6 +671,7 @@ function EditServiceSheet({
     dueDayMutation.isPending ||
     deleteMutation.isPending ||
     awaitsBillMutation.isPending ||
+    categoryMutation.isPending ||
     markAwaitingMutation.isPending;
   const name = instance.fixed_expense_templates.description;
 
@@ -763,6 +792,27 @@ function EditServiceSheet({
             )}
           </div>
         )}
+
+        {/* Category — template-level, saves on pick */}
+        <div className="mb-3.5" data-testid="edit-service-category">
+          <div
+            className="mb-1.5 block text-[13px] font-medium"
+            style={{ color: "var(--fg-2)", fontFamily: "var(--font-sans)" }}
+          >
+            Categoría
+          </div>
+          <CategoryPicker
+            categories={categories}
+            value={categoryId}
+            onChange={(id) => {
+              setCategoryId(id);
+              categoryMutation.mutate({
+                templateId: instance.template_id,
+                value: id,
+              });
+            }}
+          />
+        </div>
 
         {/* Due day edit */}
         <div className="mb-3.5">
