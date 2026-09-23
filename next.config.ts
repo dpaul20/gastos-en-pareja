@@ -12,14 +12,15 @@ const supabaseConnectSrc = isDev
 
 const ContentSecurityPolicy = `
   default-src 'self';
-  script-src 'self' 'unsafe-inline' 'unsafe-eval';
+  script-src 'self' 'unsafe-inline' 'unsafe-eval' https://va.vercel-scripts.com;
   style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
   font-src 'self' https://fonts.gstatic.com;
   img-src 'self' data: blob: https://*.googleusercontent.com;
   connect-src 'self'
     ${supabaseConnectSrc}
     https://api.resend.com
-    https://accounts.google.com;
+    https://accounts.google.com
+    https://va.vercel-scripts.com;
   frame-src https://accounts.google.com;
   object-src 'none';
   base-uri 'self';
