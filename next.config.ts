@@ -10,17 +10,20 @@ const supabaseConnectSrc = isDev
   ? `https://${supabaseHost} http://${supabaseHost} wss://${supabaseHost} ws://${supabaseHost}`
   : `https://${supabaseHost} wss://${supabaseHost}`;
 
+// Speed Insights serves its script same-origin (/_vercel/speed-insights/*) in
+// production; only the dev debug build loads from va.vercel-scripts.com.
+const speedInsightsScriptSrc = isDev ? "https://va.vercel-scripts.com" : "";
+
 const ContentSecurityPolicy = `
   default-src 'self';
-  script-src 'self' 'unsafe-inline' 'unsafe-eval' https://va.vercel-scripts.com;
+  script-src 'self' 'unsafe-inline' 'unsafe-eval' ${speedInsightsScriptSrc};
   style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
   font-src 'self' https://fonts.gstatic.com;
   img-src 'self' data: blob: https://*.googleusercontent.com;
   connect-src 'self'
     ${supabaseConnectSrc}
     https://api.resend.com
-    https://accounts.google.com
-    https://va.vercel-scripts.com;
+    https://accounts.google.com;
   frame-src https://accounts.google.com;
   object-src 'none';
   base-uri 'self';
