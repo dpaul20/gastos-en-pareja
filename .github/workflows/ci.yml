@@ -131,8 +131,13 @@ jobs:
           path: ~/.supabase
           key: supabase-${{ runner.os }}-${{ hashFiles('supabase/config.toml') }}
 
+      # setup-cli points the CLI at ghcr.io, whose pulls from shared runners get
+      # throttled (toomanyrequests) even when authenticated. Supabase publishes
+      # the same images to public.ecr.aws, so pull from there instead.
       - name: Start Supabase
         run: supabase start
+        env:
+          SUPABASE_INTERNAL_IMAGE_REGISTRY: public.ecr.aws
 
       - name: Export Supabase env vars
         run: |
@@ -206,8 +211,13 @@ jobs:
           path: ~/.supabase
           key: supabase-${{ runner.os }}-${{ hashFiles('supabase/config.toml') }}
 
+      # setup-cli points the CLI at ghcr.io, whose pulls from shared runners get
+      # throttled (toomanyrequests) even when authenticated. Supabase publishes
+      # the same images to public.ecr.aws, so pull from there instead.
       - name: Start Supabase
         run: supabase start
+        env:
+          SUPABASE_INTERNAL_IMAGE_REGISTRY: public.ecr.aws
 
       - name: Export Supabase env vars
         run: |
