@@ -7,10 +7,8 @@ import { resolveReferenceAmount } from "@/lib/utils/reference-amount";
 
 /**
  * Resolves the "El mes pasado pagaste $X" reference amount for every
- * template that currently has an AWAITING_BILL instance in `month`, keyed
- * by `template_id`. Only fires when there is at least one AWAITING_BILL row
- * to annotate (`awaitingCount > 0`) — the sin-factura row treatment is the
- * only consumer.
+ * template that has an instance in `month`, keyed by `template_id`. Only
+ * fires when there is at least one visible service row to annotate.
  *
  * The actual "is this a fact or a fabrication" call is made by
  * `resolveReferenceAmount` (pure, Vitest-covered): a template whose
@@ -20,11 +18,11 @@ import { resolveReferenceAmount } from "@/lib/utils/reference-amount";
 export function useLastBilledAmounts(
   coupleId: string | null,
   month: string,
-  awaitingCount: number,
+  visibleServiceCount: number,
 ) {
   return useQuery({
     queryKey: ["last-billed-amounts", coupleId, month],
-    enabled: !!coupleId && awaitingCount > 0,
+    enabled: !!coupleId && visibleServiceCount > 0,
     queryFn: async () => {
       if (!coupleId) return {};
 

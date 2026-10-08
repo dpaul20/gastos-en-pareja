@@ -3,6 +3,7 @@ import {
   computeMonthlyInstallment,
   isCardComputedInstallment,
   isInstallmentActiveInMonth,
+  isInstallmentFinished,
   isValidInstallmentsEdit,
   isValidOverrideInstallmentNumber,
   installmentNumberForMonth,
@@ -166,6 +167,23 @@ describe("isCardComputedInstallment", () => {
     const purchase = makePurchase({ card_id: "card1" });
     const card = makeCard({ payment_day: null });
     expect(isCardComputedInstallment(purchase, card)).toBe(false);
+  });
+});
+
+describe("isInstallmentFinished", () => {
+  it("marks a non-renewing purchase finished when its final installment is reached", () => {
+    const purchase = makePurchase({ installments: 6, auto_renew: false });
+
+    expect(isInstallmentFinished(purchase, 5)).toBe(false);
+    expect(isInstallmentFinished(purchase, 6)).toBe(true);
+    expect(isInstallmentFinished(purchase, 7)).toBe(true);
+  });
+
+  it("does not mark an auto-renewing purchase finished", () => {
+    const purchase = makePurchase({ installments: 6, auto_renew: true });
+
+    expect(isInstallmentFinished(purchase, 6)).toBe(false);
+    expect(isInstallmentFinished(purchase, 7)).toBe(false);
   });
 });
 

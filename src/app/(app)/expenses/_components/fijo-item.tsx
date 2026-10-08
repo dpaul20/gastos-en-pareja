@@ -42,10 +42,8 @@ export function FijoItem({
   /** Opens the "Cargar factura" sheet for this instance — only relevant
    * while `status === "AWAITING_BILL"`. */
   readonly onLoadBill?: (instanceId: string) => void;
-  /** "El mes pasado pagaste $X" — resolved by the caller via
-   * `useLastBilledAmounts` + `resolveReferenceAmount`, `null` when there is
-   * no honest fact to report (brand-new service or the previous month was
-   * itself AWAITING_BILL). Only rendered while `status === "AWAITING_BILL"`. */
+  /** Previous month's billed amount, or null when there is no prior billed
+   * instance to compare (brand-new service or previous month was AWAITING_BILL). */
   readonly referenceAmount?: number | null;
 }) {
   const [, startTransition] = useTransition();
@@ -327,9 +325,12 @@ export function FijoItem({
                 </span>
               </Button>
             </div>
-            {hasOverride && (
-              <span className="ds-amount text-[11px] [color:var(--fg-3)] line-through">
-                {formatARS(templateAmount)}
+            {referenceAmount != null && referenceAmount !== activeAmount && (
+              <span className="font-sans text-[10.5px] [color:var(--fg-3)]">
+                Mes pasado{" "}
+                <span className="ds-amount line-through">
+                  {formatARS(referenceAmount)}
+                </span>
               </span>
             )}
           </div>

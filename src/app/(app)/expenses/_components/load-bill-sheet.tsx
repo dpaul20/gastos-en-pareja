@@ -28,10 +28,8 @@ interface LoadBillSheetProps {
   readonly instance: FixedExpenseInstance;
   readonly coupleId: string;
   readonly month: string;
-  /** "El mes pasado pagaste $X" — same source as the row's reference line
-   * (`useLastBilledAmounts` + `resolveReferenceAmount`), used only as a
-   * convenience default for the amount field. `null` renders no hint and
-   * leaves the field blank. */
+  /** Previous month's billed amount from the row's shared resolver, used as
+   * a convenience default for the amount field. `null` leaves the field blank. */
   readonly referenceAmount: number | null;
   readonly members: readonly CoupleMemberProfile[];
   readonly currentUserId?: string | null;

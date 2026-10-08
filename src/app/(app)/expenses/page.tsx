@@ -27,6 +27,10 @@ import {
   UNCATEGORIZED_FILTER,
 } from "@/lib/utils/categories";
 import {
+  installmentNumberForMonth,
+  isInstallmentFinished,
+} from "@/lib/utils/installments";
+import {
   useCoupleMember,
   useMonthlyData,
   useCoupleMemberProfiles,
@@ -1104,13 +1108,31 @@ function ExpensesView() {
   const allCuotas = data?.installmentPurchases ?? [];
   const allFijos = data?.fixedExpenseInstances ?? [];
   const allVariables = data?.variableExpenses ?? [];
+  const cards = data?.cards ?? [];
+  const installmentOverrides = data?.installmentMonthOverrides ?? [];
+  const today = new Date();
 
   // Routed through matchesCategoryFilter so the "sin categoría" sentinel is
   // handled in ONE place: a plain `=== filterCategory` cannot express it,
   // which is what left those expenses unreachable.
-  const cuotas = allCuotas.filter((c) =>
-    matchesCategoryFilter(c.category_id, filterCategory),
-  );
+  const cuotas = allCuotas.filter((c) => {
+    if (!matchesCategoryFilter(c.category_id, filterCategory)) return false;
+
+    const card = c.card_id
+      ? (cards.find((candidate) => candidate.id === c.card_id) ?? null)
+      : null;
+    const override =
+      installmentOverrides.find((item) => item.purchase_id === c.id) ?? null;
+    const displayedNumber = installmentNumberForMonth(
+      c,
+      card,
+      month,
+      override,
+      today,
+    );
+
+    return !isInstallmentFinished(c, displayedNumber);
+  });
   const fijos = allFijos.filter((fi) =>
     matchesCategoryFilter(
       fi.fixed_expense_templates?.category_id,
@@ -1121,16 +1143,15 @@ function ExpensesView() {
     matchesCategoryFilter(v.category_id, filterCategory),
   );
 
-  // "N sin factura — no están contados" + the per-row reference line both
-  // key off the currently VISIBLE (filtered) fijos — a hidden category's
-  // awaiting rows don't need their reference amount fetched either.
+  // Both normal service rows and AWAITING_BILL rows show their last billed
+  // amount, so fetch it whenever at least one visible service exists.
   const awaitingFijosCount = fijos.filter(
     (fi) => fi.status === "AWAITING_BILL",
   ).length;
   const { data: lastBilledAmounts } = useLastBilledAmounts(
     coupleId,
     month,
-    awaitingFijosCount,
+    fijos.length,
   );
 
   const showTodo = filter === "todo";
@@ -1318,9 +1339,7 @@ function ExpensesView() {
                             setFlow({ step: "load-bill", instanceId: id })
                           }
                           referenceAmount={
-                            fi.status === "AWAITING_BILL"
-                              ? (lastBilledAmounts?.[fi.template_id] ?? null)
-                              : null
+                            lastBilledAmounts?.[fi.template_id] ?? null
                           }
                         />
                       </li>

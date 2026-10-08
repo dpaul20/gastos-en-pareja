@@ -521,26 +521,34 @@ test.describe("Cuota auto_renew — permanece en lista aunque esté pagada", () 
   });
 });
 
-// ── Cuota terminada (Commit 6 / task 6.6) ─────────────────────────────────────
-// A non-auto_renew cuota whose paid_installments reached installments stays
-// visible + deletable but is no longer "Pagado" — it's "Terminada" (distinct
-// badge; excluded from totals via isInstallmentActiveInMonth, already unit
-// tested in installments.test.ts).
-
-test.describe("Cuota terminada — visible, editable y eliminable, badge distinto", () => {
+// ── Cuota terminada — se oculta sin borrar el registro ─────────────────────────
+test.describe("Cuota terminada — se oculta y conserva el registro", () => {
   const DESCRIPCION = `E2E-cuota-terminada-${Date.now()}`;
+  const DESCRIPCION_ACTIVA = `${DESCRIPCION}-activa`;
 
   test.beforeEach(async ({ adminClient, coupleId }) => {
     const today = new Date().toISOString().split("T")[0];
-    await adminClient.from("installment_purchases").insert({
-      couple_id: coupleId,
-      description: DESCRIPCION,
-      total_amount: 12000,
-      installments: 3,
-      paid_installments: 3,
-      auto_renew: false,
-      first_payment_date: today,
-    });
+    const { error } = await adminClient.from("installment_purchases").insert([
+      {
+        couple_id: coupleId,
+        description: DESCRIPCION,
+        total_amount: 12000,
+        installments: 3,
+        paid_installments: 3,
+        auto_renew: false,
+        first_payment_date: today,
+      },
+      {
+        couple_id: coupleId,
+        description: DESCRIPCION_ACTIVA,
+        total_amount: 12000,
+        installments: 3,
+        paid_installments: 1,
+        auto_renew: false,
+        first_payment_date: today,
+      },
+    ]);
+    if (error) throw new Error(`Installment seed failed: ${error.message}`);
   });
 
   test.afterEach(async ({ adminClient, coupleId }) => {
@@ -551,38 +559,111 @@ test.describe("Cuota terminada — visible, editable y eliminable, badge distint
       .like("description", "E2E-cuota-terminada-%");
   });
 
-  test("muestra badge 'Terminada', permanece en la lista y se puede editar/eliminar", async ({
+  test("no aparece en la lista mensual ni se elimina de la base de datos", async ({
+    adminClient,
+    coupleId,
     authenticatedPage: page,
   }) => {
     test.slow();
     const expenses = new ExpensesPage(page);
     await expenses.goto();
 
+    await expect(page.getByText(DESCRIPCION_ACTIVA)).toBeVisible({
+      timeout: 15_000,
+    });
+    await expect(page.getByText(DESCRIPCION, { exact: true })).toHaveCount(0);
+
+    const { data, error } = await adminClient
+      .from("installment_purchases")
+      .select("id")
+      .eq("couple_id", coupleId)
+      .eq("description", DESCRIPCION);
+    expect(error).toBeNull();
+    expect(data).toHaveLength(1);
+  });
+});
+
+// ── Servicios — referencia de la última factura cargada ───────────────────────
+test.describe("Servicios — compara contra el monto facturado del mes anterior", () => {
+  const DESCRIPCION = `E2E-servicio-historico-${Date.now()}`;
+  let templateId: string;
+
+  test.beforeEach(async ({ adminClient, coupleId }) => {
+    const now = new Date();
+    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+    const previous = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const previousMonth = `${previous.getFullYear()}-${String(previous.getMonth() + 1).padStart(2, "0")}-01`;
+
+    const { data: template, error: templateError } = await adminClient
+      .from("fixed_expense_templates")
+      .insert({
+        couple_id: coupleId,
+        description: DESCRIPCION,
+        amount: 72_375,
+        due_day: 10,
+      })
+      .select("id")
+      .single();
+    if (templateError || !template) {
+      throw new Error(
+        `Service template seed failed: ${templateError?.message}`,
+      );
+    }
+    templateId = template.id;
+
+    const { error: instanceError } = await adminClient
+      .from("fixed_expense_instances")
+      .insert([
+        {
+          template_id: templateId,
+          couple_id: coupleId,
+          month: previousMonth,
+          paid: true,
+          status: "CONFIRMED",
+          amount_override: 145_000,
+          billed_at: now.toISOString(),
+        },
+        {
+          template_id: templateId,
+          couple_id: coupleId,
+          month: currentMonth,
+          paid: false,
+          status: "CONFIRMED",
+          amount_override: 72_375,
+        },
+      ]);
+    if (instanceError) {
+      throw new Error(`Service instance seed failed: ${instanceError.message}`);
+    }
+  });
+
+  test.afterEach(async ({ adminClient }) => {
+    if (!templateId) return;
+    await adminClient
+      .from("fixed_expense_instances")
+      .delete()
+      .eq("template_id", templateId);
+    await adminClient
+      .from("fixed_expense_templates")
+      .delete()
+      .eq("id", templateId);
+  });
+
+  test("muestra el importe real anterior y no el monto de la plantilla", async ({
+    authenticatedPage: page,
+  }) => {
+    test.slow();
+    const expenses = new ExpensesPage(page);
+    await expenses.goto();
+    await expenses.selectTab("Servicios");
+
     const item = page.locator("li", { hasText: DESCRIPCION }).first();
     await expect(item).toBeVisible({ timeout: 15_000 });
-
-    // Distinct "Terminada" badge — not the generic "Pagado" of an
-    // auto_renew cuota that just wrapped.
-    await expect(item.getByTestId("cuota-status-badge")).toHaveText(
-      "Terminada",
-    );
-
-    // Still editable: opens the AddSheet in edit mode, prefilled.
-    await item.getByRole("button", { name: "Editar cuota" }).click();
-    await expect(expenses.dialog()).toBeVisible({ timeout: 5_000 });
-    await expect(expenses.dialogField("Descripción")).toHaveValue(DESCRIPCION);
-    await page.keyboard.press("Escape");
-    await expect(expenses.dialog()).not.toBeVisible({ timeout: 3_000 });
-
-    // Still deletable via the existing confirm-dialog + undo pattern.
-    await item.getByRole("button", { name: "¿Eliminar cuota?" }).click();
-    await expect(page.getByText("Sí, eliminar")).toBeVisible({
-      timeout: 3_000,
-    });
-    await page.getByText("Sí, eliminar").click();
-    await expect(page.getByText("Cuota eliminada")).toBeVisible({
-      timeout: 10_000,
-    });
+    await expect(item.getByText("Mes pasado")).toContainText("$145.000");
+    await expect(item.locator(".line-through")).toHaveText("$145.000");
+    await expect(
+      item.getByRole("button", { name: "Editar monto" }),
+    ).toContainText("$72.375");
   });
 });
 

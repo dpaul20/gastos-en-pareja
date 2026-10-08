@@ -136,7 +136,10 @@ test.describe("Visual — expenses Cuotas tab (populated)", () => {
     await page.goto("/expenses");
     await waitForPage(page, "h1");
     await page.getByTestId("tab-cuotas").click();
-    await expect(page.getByText(DESC_DONE)).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText(DESC_PENDING)).toBeVisible({
+      timeout: 15_000,
+    });
+    await expect(page.getByText(DESC_DONE)).toHaveCount(0);
     await page.waitForLoadState("networkidle");
     await expect(page).toHaveScreenshot("expenses-cuotas-populated-mobile.png");
   });
