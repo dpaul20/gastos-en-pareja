@@ -101,7 +101,7 @@ describe("calculateMonthlyBalance", () => {
       expect(annie.obligation).toBeCloseTo(39_169, 0);
     });
 
-    it("excluye compras completamente pagadas del total mensual", () => {
+    it("incluye la última cuota pagada cuando la compra sigue activa en el mes", () => {
       const withPaidPurchase = [
         ...baseInstallments,
         {
@@ -112,21 +112,26 @@ describe("calculateMonthlyBalance", () => {
           card_id: null,
           auto_renew: false,
           description: "Calefon (pagado)",
-          total_amount: 578_000,
-          installments: 1,
-          paid_installments: 1,
-          first_payment_date: "2025-01-01",
+          total_amount: 120_000,
+          installments: 6,
+          paid_installments: 6,
+          first_payment_date: "2026-04-01",
           created_at: "",
           paid_by_user_id: null as string | null,
         },
       ];
       const result = calculateMonthlyBalance({
-        incomes: baseIncomes,
+        incomes: baseIncomes.map((income) => ({
+          ...income,
+          month: "2026-09-01",
+        })),
         installmentPurchases: withPaidPurchase,
         fixedExpenseInstances: [],
         variableExpenses: [],
       });
-      expect(result.installmentTotal).toBe(110_608);
+      // In September, p3 reaches its sixth (final) scheduled month, and the
+      // caller passes purchases active in the selected month.
+      expect(result.installmentTotal).toBe(130_608);
     });
   });
 
@@ -572,11 +577,13 @@ describe("calculateMonthlyBalance", () => {
       expect(result.installmentTotal).toBe(10_000);
     });
 
-    it("excluye cuotas sin auto_renew cuando están completamente pagadas", () => {
+    it("incluye la cuota final pagada si el llamador la entrega activa en el mes", () => {
       const paidPurchase = {
         ...autoRenewPurchase,
         id: "ar2",
         auto_renew: false,
+        total_amount: 600_000,
+        installments: 6,
       };
       const result = calculateMonthlyBalance({
         incomes: baseIncomes,
@@ -584,7 +591,7 @@ describe("calculateMonthlyBalance", () => {
         fixedExpenseInstances: [],
         variableExpenses: [],
       });
-      expect(result.installmentTotal).toBe(0);
+      expect(result.installmentTotal).toBe(100_000);
     });
 
     it("las cuotas auto_renew reducen la capacidad de ahorro mensualmente", () => {
@@ -820,6 +827,25 @@ describe("calculateMonthlyBalance — payer attribution (payer-attribution)", ()
     );
     expect(result.balances.find((b) => b.userId === DEIVY_ID)!.actualPaid).toBe(
       0,
+    );
+  });
+
+  it("SCEN-08: cuota final pagada no renovable sigue contando y acreditando en su mes", () => {
+    const p = makeInstallment("p-s8", ANNIE_ID, {
+      total_amount: 120_000,
+      installments: 6,
+      paid_installments: 6,
+    });
+    const result = calculateMonthlyBalance({
+      incomes: twoIncomes,
+      installmentPurchases: [p],
+      fixedExpenseInstances: [],
+      variableExpenses: [],
+    });
+
+    expect(result.installmentTotal).toBe(20_000);
+    expect(result.balances.find((b) => b.userId === ANNIE_ID)!.actualPaid).toBe(
+      20_000,
     );
   });
 

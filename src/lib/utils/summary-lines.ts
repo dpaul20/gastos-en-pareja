@@ -29,8 +29,8 @@ export interface MonthSummaryLines {
  * over data `useMonthlyData` already fetched — callers MUST NOT trigger a
  * new query to build this.
  *
- * Each row's line items are computed with the EXACT SAME filter/amount logic
- * `calculateMonthlyBalance` (balance.ts) uses for that row's total, so
+ * Each row's line items use the same month-gated purchases and amount logic
+ * as `calculateMonthlyBalance` (balance.ts), so
  * `lines.cuotas.reduce((s, l) => s + l.amount, 0) === balance.installmentTotal`
  * always holds (same for fijos/variables/ingresos) — callers should pass the
  * already-gated `activeInstallmentPurchases` list (see design R3-B), not the
@@ -62,15 +62,13 @@ export function buildMonthSummaryLines(params: {
       label: `Ingreso ${i + 1}`,
       amount: Number(income.amount),
     })),
-    // Mirrors balance.ts's installmentTotal filter exactly (auto_renew
-    // purchases are always active; others drop out once fully paid).
-    cuotas: installmentPurchases
-      .filter((p) => p.auto_renew || p.paid_installments < p.installments)
-      .map((p) => ({
-        id: p.id,
-        label: p.description,
-        amount: Math.round(Number(p.total_amount) / p.installments),
-      })),
+    // Callers pass the same month-gated purchases used by calculateMonthlyBalance.
+    // Keep the final scheduled installment visible in that month's expense lines.
+    cuotas: installmentPurchases.map((p) => ({
+      id: p.id,
+      label: p.description,
+      amount: Math.round(Number(p.total_amount) / p.installments),
+    })),
     fijos: billedFixedInstances.map((fi) => ({
       id: fi.id,
       label: fi.fixed_expense_templates.description,

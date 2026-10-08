@@ -242,15 +242,12 @@ function DashboardView() {
     if (!data || !balance || balance.totalExpenses === 0) return [];
     return groupByCategory(
       [
-        // Mirror balance.ts's installmentTotal count gate so the breakdown
-        // reconciles exactly (a fully-paid non-renewing purchase still
-        // schedule-active in the month is excluded from both).
-        ...data.activeInstallmentPurchases
-          .filter((p) => p.auto_renew || p.paid_installments < p.installments)
-          .map((p) => ({
-            amount: Math.round(p.total_amount / p.installments),
-            category_id: p.category_id,
-          })),
+        // This list is already gated by the selected month's installment
+        // schedule; the final installment counts even when marked paid.
+        ...data.activeInstallmentPurchases.map((p) => ({
+          amount: Math.round(p.total_amount / p.installments),
+          category_id: p.category_id,
+        })),
         ...data.fixedExpenseInstances.map((fi) => {
           const instance = fi as FixedInstance;
           return {

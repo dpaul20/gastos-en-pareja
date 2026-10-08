@@ -152,15 +152,14 @@ export function calculateMonthlyBalance(params: {
   const isSharedFixed = (instance: FixedExpenseInstance): boolean =>
     instance.fixed_expense_templates.is_shared ?? true;
 
-  // Monthly installment cost = round(total_amount / installments) per purchase
-  // Rounding per-purchase avoids accumulated floating point drift
-  // auto_renew purchases are always active regardless of paid_installments
-  const installmentTotal = installmentPurchases
-    .filter((p) => p.auto_renew || p.paid_installments < p.installments)
-    .reduce(
-      (sum, p) => sum + Math.round(Number(p.total_amount) / p.installments),
-      0,
-    );
+  // Callers pass only purchases active in the selected month. A completed
+  // installment still counts in its final scheduled month; paid_installments
+  // must not remove that month's expense.
+  // Rounding per purchase avoids accumulated floating point drift.
+  const installmentTotal = installmentPurchases.reduce(
+    (sum, p) => sum + Math.round(Number(p.total_amount) / p.installments),
+    0,
+  );
 
   // AWAITING_BILL instances ("sin factura") are excluded from every money
   // total below — their amount is unknown, not zero. Both partitions come
@@ -216,11 +215,7 @@ export function calculateMonthlyBalance(params: {
       .reduce((sum, fi) => sum + billedFixedAmount(fi), 0);
 
     const actualPaidInstallments = installmentPurchases
-      .filter(
-        (p) =>
-          p.paid_by_user_id === income.user_id &&
-          (p.auto_renew || p.paid_installments < p.installments),
-      )
+      .filter((p) => p.paid_by_user_id === income.user_id)
       .reduce(
         (sum, p) => sum + Math.round(Number(p.total_amount) / p.installments),
         0,
