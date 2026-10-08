@@ -74,10 +74,12 @@ export default function SettingsPage() {
   const { mutate: ensureIncomeCarry, isPending: isCarryPending } = useMutation({
     mutationFn: (vars: { coupleId: string; month: string }) =>
       ensureIncomeCarriedForward(vars.coupleId, vars.month),
-    onSuccess: ({ created }) => {
+    onSuccess: async ({ created }) => {
       if (created > 0) {
-        queryClient.invalidateQueries({ queryKey: ["income-with-carry"] });
-        queryClient.invalidateQueries({ queryKey: ["monthly-data"] });
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ["income-with-carry"] }),
+          queryClient.invalidateQueries({ queryKey: ["monthly-data"] }),
+        ]);
       }
     },
   });
@@ -109,8 +111,10 @@ export default function SettingsPage() {
     if (!amount || !member) return;
     startTransition(async () => {
       await upsertIncome(amount, getMonthDate());
-      queryClient.invalidateQueries({ queryKey: ["income-with-carry"] });
-      queryClient.invalidateQueries({ queryKey: ["monthly-data"] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["income-with-carry"] }),
+        queryClient.invalidateQueries({ queryKey: ["monthly-data"] }),
+      ]);
     });
   }
 

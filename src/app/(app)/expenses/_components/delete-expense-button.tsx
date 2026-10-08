@@ -36,14 +36,14 @@ export function DeleteExpenseButton({
   function runUndo(undo: () => Promise<void>) {
     startTransition(async () => {
       await undo();
-      queryClient.invalidateQueries({ queryKey: ["monthly-data"] });
+      await queryClient.invalidateQueries({ queryKey: ["monthly-data"] });
     });
   }
 
   function handleConfirm() {
     startTransition(async () => {
       const undo = await onConfirm();
-      queryClient.invalidateQueries({ queryKey: ["monthly-data"] });
+      await queryClient.invalidateQueries({ queryKey: ["monthly-data"] });
       toast.success(
         successMessage,
         undo

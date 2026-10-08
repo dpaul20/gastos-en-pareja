@@ -123,7 +123,7 @@ function NewCardForm({
         name: values.name.trim(),
         payment_day: paymentDay,
       });
-      queryClient.invalidateQueries({ queryKey: ["cards", coupleId] });
+      await queryClient.invalidateQueries({ queryKey: ["cards", coupleId] });
       onCreated(card);
     } catch (err) {
       setSaveError(
