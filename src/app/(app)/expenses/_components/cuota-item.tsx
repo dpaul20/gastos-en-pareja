@@ -104,7 +104,9 @@ function InstallmentNumberCorrection({
         onClick={() =>
           startTransition(async () => {
             await upsertInstallmentMonthOverride(purchaseId, month, draft);
-            queryClient.invalidateQueries({ queryKey: ["monthly-data"] });
+            await queryClient.invalidateQueries({
+              queryKey: ["monthly-data"],
+            });
             setOpen(false);
           })
         }
@@ -216,7 +218,7 @@ export function CuotaItem({
                   onClick={() =>
                     startTransition(async () => {
                       await incrementPaidInstallments(c.id);
-                      queryClient.invalidateQueries({
+                      await queryClient.invalidateQueries({
                         queryKey: ["monthly-data"],
                       });
                     })

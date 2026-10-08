@@ -521,31 +521,28 @@ function EditServiceSheet({
   const amountMutation = useMutation({
     mutationFn: ({ id, amount }: { id: string; amount: number | null }) =>
       updateFixedExpenseInstanceAmount(id, amount),
-    onSuccess: () => {
+    onSuccess: () =>
       queryClient.invalidateQueries({
         queryKey: ["monthly-data", coupleId, month],
-      });
-    },
+      }),
   });
 
   const dueDayMutation = useMutation({
     mutationFn: ({ id, dueDay }: { id: string; dueDay: number }) =>
       updateFixedExpenseInstanceDueDay(id, dueDay),
-    onSuccess: () => {
+    onSuccess: () =>
       queryClient.invalidateQueries({
         queryKey: ["monthly-data", coupleId, month],
-      });
-    },
+      }),
   });
 
   const toggleMutation = useMutation({
     mutationFn: ({ id, paid }: { id: string; paid: boolean }) =>
       toggleFixedExpenseInstance(id, paid),
-    onSuccess: () => {
+    onSuccess: () =>
       queryClient.invalidateQueries({
         queryKey: ["monthly-data", coupleId, month],
-      });
-    },
+      }),
   });
 
   // "Hay que esperar la factura" — template-level flag (394): the ONLY
@@ -560,9 +557,8 @@ function EditServiceSheet({
       templateId: string;
       value: boolean;
     }) => updateFixedExpenseTemplate(templateId, { awaits_bill: value }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["monthly-data"] });
-    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["monthly-data"] }),
     onError: () => {
       // Revert the optimistic local toggle on failure.
       setAwaitsBill((prev) => !prev);
@@ -583,9 +579,8 @@ function EditServiceSheet({
       templateId: string;
       value: string | null;
     }) => updateFixedExpenseTemplate(templateId, { category_id: value }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["monthly-data"] });
-    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["monthly-data"] }),
     onError: () => {
       // Revert the optimistic local pick, same as the awaits_bill toggle.
       setCategoryId(instance.fixed_expense_templates.category_id);
@@ -598,8 +593,8 @@ function EditServiceSheet({
   const markAwaitingMutation = useMutation({
     mutationFn: (instanceId: string) =>
       markFixedExpenseInstanceAwaitingBill(instanceId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["monthly-data"] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["monthly-data"] });
       onClose();
     },
     onError: (err: Error) => {
@@ -612,14 +607,16 @@ function EditServiceSheet({
   const deleteMutation = useMutation({
     mutationFn: (templateId: string) =>
       deactivateFixedExpenseTemplate(templateId),
-    onSuccess: (_data, templateId) => {
-      queryClient.invalidateQueries({ queryKey: ["monthly-data"] });
+    onSuccess: async (_data, templateId) => {
+      await queryClient.invalidateQueries({ queryKey: ["monthly-data"] });
       toast.success("Servicio eliminado", {
         action: {
           label: "Deshacer",
           onClick: async () => {
             await reactivateFixedExpenseTemplate(templateId);
-            queryClient.invalidateQueries({ queryKey: ["monthly-data"] });
+            await queryClient.invalidateQueries({
+              queryKey: ["monthly-data"],
+            });
           },
         },
       });

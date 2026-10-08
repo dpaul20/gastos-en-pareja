@@ -95,13 +95,15 @@ export function LoadBillSheet({
   const mutation = useMutation({
     mutationFn: ({ amount, payer }: { amount: number; payer: string | null }) =>
       loadFixedExpenseBill(instance.id, amount, payer ?? undefined),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["monthly-data", coupleId, month],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ["last-billed-amounts", coupleId, month],
-      });
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: ["monthly-data", coupleId, month],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["last-billed-amounts", coupleId, month],
+        }),
+      ]);
       onClose();
     },
     onError: (err: Error) => {

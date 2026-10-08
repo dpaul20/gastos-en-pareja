@@ -77,8 +77,8 @@ export function FijoItem({
       instanceId: string;
       amount: number | null;
     }) => updateFixedExpenseInstanceAmount(instanceId, amount),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["monthly-data"] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["monthly-data"] });
       setEditing(false);
       setMutationError(null);
     },
@@ -354,7 +354,9 @@ export function FijoItem({
           onCheckedChange={(checked) =>
             startTransition(async () => {
               await toggleFixedExpenseInstance(fi.id, checked);
-              queryClient.invalidateQueries({ queryKey: ["monthly-data"] });
+              await queryClient.invalidateQueries({
+                queryKey: ["monthly-data"],
+              });
             })
           }
           disabled={editing || amountMutation.isPending}
