@@ -121,8 +121,8 @@ export function UpcomingDuesWidget({
     isPending,
   } = useMutation({
     mutationFn: (id: string) => toggleFixedExpenseInstance(id, true),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
         queryKey: ["monthly-data", coupleId, month],
       });
     },

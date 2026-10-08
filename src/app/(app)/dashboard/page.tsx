@@ -157,10 +157,12 @@ function DashboardView() {
   const { mutate: ensureIncomeCarry } = useMutation({
     mutationFn: (vars: { coupleId: string; month: string }) =>
       ensureIncomeCarriedForward(vars.coupleId, vars.month),
-    onSuccess: ({ created }) => {
+    onSuccess: async ({ created }) => {
       if (created > 0) {
-        queryClient.invalidateQueries({ queryKey: ["monthly-data"] });
-        queryClient.invalidateQueries({ queryKey: ["income-with-carry"] });
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ["monthly-data"] }),
+          queryClient.invalidateQueries({ queryKey: ["income-with-carry"] }),
+        ]);
       }
     },
   });
