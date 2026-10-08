@@ -19,6 +19,7 @@ import { useMonthlyData } from "@/lib/queries/use-monthly-data";
 import {
   installmentNumberForMonth,
   isCardComputedInstallment,
+  isInstallmentFinished,
 } from "@/lib/utils/installments";
 import { DeleteExpenseButton } from "./delete-expense-button";
 
@@ -103,7 +104,9 @@ function InstallmentNumberCorrection({
         onClick={() =>
           startTransition(async () => {
             await upsertInstallmentMonthOverride(purchaseId, month, draft);
-            queryClient.invalidateQueries({ queryKey: ["monthly-data"] });
+            await queryClient.invalidateQueries({
+              queryKey: ["monthly-data"],
+            });
             setOpen(false);
           })
         }
@@ -151,13 +154,7 @@ export function CuotaItem({
     ? installmentNumberForMonth(c, card, month, override, today)
     : c.paid_installments;
   const isPaid = displayNumber >= c.installments;
-  // Commit 6: a non-auto_renew cuota that reached its last installment is
-  // DONE — distinct from "Pagado" (which auto_renew cuotas also briefly show
-  // right before wrapping to installment 1). Still visible + deletable
-  // (isInstallmentActiveInMonth already excludes it from totals once idx
-  // passes `installments`, see design R3-B) — no decorative emoji, teal
-  // "success" badge per the DS status tokens.
-  const isFinished = isPaid && !c.auto_renew;
+  const isFinished = isInstallmentFinished(c, displayNumber);
   const cuota = Math.round(c.total_amount / c.installments);
   return (
     <Card>
@@ -221,7 +218,7 @@ export function CuotaItem({
                   onClick={() =>
                     startTransition(async () => {
                       await incrementPaidInstallments(c.id);
-                      queryClient.invalidateQueries({
+                      await queryClient.invalidateQueries({
                         queryKey: ["monthly-data"],
                       });
                     })

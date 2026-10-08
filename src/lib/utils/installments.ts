@@ -63,6 +63,13 @@ export function isInstallmentActiveInMonth(
   return idx >= 0 && (purchase.auto_renew || idx < purchase.installments);
 }
 
+export function isInstallmentFinished(
+  purchase: Pick<InstallmentPurchaseRow, "installments" | "auto_renew">,
+  displayedNumber: number,
+): boolean {
+  return !purchase.auto_renew && displayedNumber >= purchase.installments;
+}
+
 /**
  * Gates whether a card+payment_day purchase's installment number is
  * COMPUTED (auto-advanced from `first_payment_date`) versus falling back to
