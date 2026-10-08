@@ -16,7 +16,7 @@
 
 - [ ] `sdd-verify` ran — see [qa-qacito-gate](.claude/skills/qa-qacito-gate/SKILL.md)
 - [ ] New/changed specs (if any) committed under `e2e/`
-- [ ] CI checks green: lint, unit, e2e, a11y
+- [ ] CI checks green: lint, typecheck, unit, e2e (includes a11y)
 - [ ] UX sign-off on visual/a11y changes (if applicable)
 
 ## Release / Deploy

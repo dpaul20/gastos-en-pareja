@@ -15,6 +15,8 @@ const eslintConfig = defineConfig([
     // Generated files — never lint these:
     "public/sw.js",
     "coverage/**",
+    // Local agent worktrees are Git-ignored and are not application source.
+    ".claude/worktrees/**",
     // Vendored Claude Design prototype bundle (reference only, not app source;
     // uses window-globals so it can't satisfy app lint rules).
     "docs/**",
