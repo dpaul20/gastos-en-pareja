@@ -25,23 +25,19 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 This repository enforces quality checks in GitHub Actions:
 
 - Lint
+- Typecheck
 - Unit tests with coverage
-- E2E tests
-- Accessibility checks (`npm run test:a11y`)
+- E2E tests, including accessibility (`e2e/a11y.spec.ts`)
 
 Optional integration:
 
-- SonarQube + Quality Gate (runs only when Sonar secrets are configured)
+- SonarQube + Quality Gate (runs with unit coverage when `SONAR_TOKEN` is configured)
 
-### Required SonarQube Secrets
+### SonarQube Secret
 
-For the SonarQube workflow to run, configure these repository secrets:
+Configure this repository secret to enable SonarQube analysis:
 
 - `SONAR_TOKEN`
-- `SONAR_HOST_URL`
-- `SONAR_PROJECT_KEY`
-
-If secrets are not configured, the SonarQube workflow is skipped.
 
 ## Learn More
 

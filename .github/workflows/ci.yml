@@ -24,14 +24,7 @@ jobs:
           node-version: 24
           cache: npm
 
-      - uses: actions/cache@v4
-        id: node-cache
-        with:
-          path: node_modules
-          key: node-modules-${{ runner.os }}-node24-${{ hashFiles('package-lock.json') }}
-
       - name: Install dependencies
-        if: steps.node-cache.outputs.cache-hit != 'true'
         run: npm ci
 
       - uses: actions/cache@v4
@@ -55,14 +48,7 @@ jobs:
           node-version: 24
           cache: npm
 
-      - uses: actions/cache@v4
-        id: node-cache
-        with:
-          path: node_modules
-          key: node-modules-${{ runner.os }}-node24-${{ hashFiles('package-lock.json') }}
-
       - name: Install dependencies
-        if: steps.node-cache.outputs.cache-hit != 'true'
         run: npm ci
 
       # Enforces the compile-time invariant guard in settlement.test.ts
@@ -75,28 +61,48 @@ jobs:
   unit:
     name: Unit
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
 
-      - uses: actions/cache@v4
-        id: node-cache
-        with:
-          path: node_modules
-          key: node-modules-${{ runner.os }}-node24-${{ hashFiles('package-lock.json') }}
-
       - name: Install dependencies
-        if: steps.node-cache.outputs.cache-hit != 'true'
         run: npm ci
 
       - name: Unit tests
         run: npm run test:coverage
+
+      - name: Detect Sonar configuration
+        id: sonar_config
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          if [ -n "$SONAR_TOKEN" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "SONAR_TOKEN not configured. Skipping SonarQube scan."
+          fi
+
+      - name: SonarQube scan
+        if: steps.sonar_config.outputs.enabled == 'true'
+        uses: SonarSource/sonarqube-scan-action@v6
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: https://sonarcloud.io
+        with:
+          args: >
+            -Dsonar.organization=dpaul20
+            -Dsonar.projectKey=dpaul20_gastos-en-pareja
+            -Dsonar.qualitygate.wait=true
+            -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
 
   e2e:
     name: E2E
@@ -112,14 +118,7 @@ jobs:
           node-version: 24
           cache: npm
 
-      - uses: actions/cache@v4
-        id: node-cache
-        with:
-          path: node_modules
-          key: node-modules-${{ runner.os }}-node24-${{ hashFiles('package-lock.json') }}
-
       - name: Install dependencies
-        if: steps.node-cache.outputs.cache-hit != 'true'
         run: npm ci
 
       - uses: supabase/setup-cli@v1
@@ -165,7 +164,7 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps chromium
 
-      - name: Run E2E tests
+      - name: Run E2E and accessibility tests
         run: npm run test:e2e
         env:
           NODE_ENV: development
@@ -175,85 +174,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
-          path: playwright-report/
-          retention-days: 7
-
-  a11y:
-    name: A11y
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    needs: [lint, unit]
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: npm
-
-      - uses: actions/cache@v4
-        id: node-cache
-        with:
-          path: node_modules
-          key: node-modules-${{ runner.os }}-node24-${{ hashFiles('package-lock.json') }}
-
-      - name: Install dependencies
-        if: steps.node-cache.outputs.cache-hit != 'true'
-        run: npm ci
-
-      - uses: supabase/setup-cli@v1
-        with:
-          version: 2.95.4
-
-      - uses: actions/cache@v4
-        with:
-          path: ~/.supabase
-          key: supabase-${{ runner.os }}-${{ hashFiles('supabase/config.toml') }}
-
-      # setup-cli points the CLI at ghcr.io, whose pulls from shared runners get
-      # throttled (toomanyrequests) even when authenticated. Supabase publishes
-      # the same images to public.ecr.aws, so pull from there instead.
-      - name: Start Supabase
-        run: supabase start
-        env:
-          SUPABASE_INTERNAL_IMAGE_REGISTRY: public.ecr.aws
-
-      - name: Export Supabase env vars
-        run: |
-          source <(supabase status -o env)
-          echo "NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321" >> $GITHUB_ENV
-          echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$ANON_KEY"         >> $GITHUB_ENV
-          echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY"      >> $GITHUB_ENV
-          echo "E2E_SUPABASE_SERVICE_KEY=$SERVICE_ROLE_KEY"       >> $GITHUB_ENV
-
-      - name: Create E2E test user
-        run: |
-          curl -sf -X POST http://127.0.0.1:54321/auth/v1/admin/users \
-            -H "apikey: ${{ env.E2E_SUPABASE_SERVICE_KEY }}" \
-            -H "Authorization: Bearer ${{ env.E2E_SUPABASE_SERVICE_KEY }}" \
-            -H "Content-Type: application/json" \
-            -d '{"email":"test@gastospareja.local","password":"Test1234!","email_confirm":true}'
-
-      - uses: actions/cache@v4
-        id: playwright-cache
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-
-      - name: Install Playwright browsers
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps chromium
-
-      - name: Run a11y checks
-        run: npm run test:a11y
-        env:
-          NODE_ENV: development
-
-      - name: Upload Playwright report
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-report-a11y
           path: playwright-report/
           retention-days: 7
