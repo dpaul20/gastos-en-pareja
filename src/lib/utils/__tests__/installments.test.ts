@@ -112,6 +112,18 @@ describe("isInstallmentActiveInMonth", () => {
     expect(isInstallmentActiveInMonth(purchase, "2027-05-01")).toBe(true); // idx=11, último mes
   });
 
+  it("la última cuota sigue activa en su mes aunque figure como pagada", () => {
+    const purchase = makePurchase({
+      first_payment_date: "2026-06-10",
+      installments: 6,
+      paid_installments: 6,
+      auto_renew: false,
+    });
+
+    expect(isInstallmentActiveInMonth(purchase, "2026-11-01")).toBe(true);
+    expect(isInstallmentActiveInMonth(purchase, "2026-12-01")).toBe(false);
+  });
+
   it("está inactiva una vez terminado el plazo (sin auto_renew)", () => {
     const purchase = makePurchase({
       first_payment_date: "2026-06-10",

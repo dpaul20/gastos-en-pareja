@@ -140,7 +140,7 @@ describe("buildMonthSummaryLines", () => {
     });
   });
 
-  it("excluye cuotas terminadas (no auto_renew, paid_installments >= installments) — igual que balance.ts", () => {
+  it("incluye la cuota final pagada cuando la compra sigue activa en el mes", () => {
     const result = buildMonthSummaryLines({
       incomes: [],
       installmentPurchases: [
@@ -155,7 +155,8 @@ describe("buildMonthSummaryLines", () => {
       variableExpenses: [],
     });
 
-    expect(result.cuotas).toHaveLength(0);
+    expect(result.cuotas).toHaveLength(1);
+    expect(result.cuotas[0]).toMatchObject({ id: "p1", amount: 20_000 });
   });
 
   it("incluye cuotas auto_renew aunque paid_installments >= installments", () => {
