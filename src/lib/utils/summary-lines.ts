@@ -9,11 +9,17 @@ type FixedExpenseInstance =
     fixed_expense_templates: Database["public"]["Tables"]["fixed_expense_templates"]["Row"];
   };
 type VariableExpense = Database["public"]["Tables"]["variable_expenses"]["Row"];
+export type CoupleMemberProfile =
+  Database["public"]["Functions"]["get_couple_member_profiles"]["Returns"][number];
 
 export interface SummaryLineItem {
   id: string;
   label: string;
   amount: number;
+  attribution: {
+    label: string;
+    name: string;
+  } | null;
 }
 
 export interface MonthSummaryLines {
@@ -41,6 +47,7 @@ export function buildMonthSummaryLines(params: {
   installmentPurchases: InstallmentPurchase[];
   fixedExpenseInstances: FixedExpenseInstance[];
   variableExpenses: VariableExpense[];
+  members?: CoupleMemberProfile[];
 }): MonthSummaryLines {
   const {
     incomes,
@@ -48,6 +55,11 @@ export function buildMonthSummaryLines(params: {
     fixedExpenseInstances,
     variableExpenses,
   } = params;
+  const members = params.members ?? [];
+  const memberName = (userId: string | null) =>
+    members
+      .find((member) => member.user_id === userId)
+      ?.full_name.split(" ")[0] ?? null;
 
   // Same partition balance.ts's fixedTotal uses — AWAITING_BILL instances
   // are excluded (not rendered at $0), so `Σ fijos === calculateMonthlyBalance().fixedTotal`
@@ -59,8 +71,9 @@ export function buildMonthSummaryLines(params: {
   return {
     ingresos: incomes.map((income, i) => ({
       id: income.id,
-      label: `Ingreso ${i + 1}`,
+      label: `Ingreso de ${memberName(income.user_id) ?? `persona ${i + 1}`}`,
       amount: Number(income.amount),
+      attribution: null,
     })),
     // Callers pass the same month-gated purchases used by calculateMonthlyBalance.
     // Keep the final scheduled installment visible in that month's expense lines.
@@ -68,16 +81,30 @@ export function buildMonthSummaryLines(params: {
       id: p.id,
       label: p.description,
       amount: Math.round(Number(p.total_amount) / p.installments),
+      attribution: {
+        label: "Paga",
+        name: memberName(p.paid_by_user_id) ?? "Pagador sin registrar",
+      },
     })),
     fijos: billedFixedInstances.map((fi) => ({
       id: fi.id,
       label: fi.fixed_expense_templates.description,
       amount: billedFixedAmount(fi),
+      attribution: fi.paid
+        ? {
+            label: "Pagó",
+            name: memberName(fi.paid_by_user_id) ?? "Pagador sin registrar",
+          }
+        : { label: "Estado", name: "Pendiente de pago" },
     })),
     variables: variableExpenses.map((v) => ({
       id: v.id,
       label: v.description,
       amount: Number(v.amount),
+      attribution: {
+        label: v.paid_by_user_id ? "Pagó" : "Pagador",
+        name: memberName(v.paid_by_user_id) ?? "Sin registrar",
+      },
     })),
   };
 }

@@ -4,16 +4,22 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { MonthSummaryCard } from "@/components/shared/month-summary-card";
 import { formatARS, formatMonth } from "@/lib/utils";
 import { calculateMonthlyBalance } from "@/lib/utils/balance";
+import {
+  buildMonthSummaryLines,
+  type CoupleMemberProfile,
+} from "@/lib/utils/summary-lines";
 import type { MonthlyData } from "@/lib/queries/use-monthly-data";
 
 export function MonthDetail({
   month,
   data,
+  members,
   isLoading = false,
   onBack,
 }: {
   readonly month: string;
   readonly data: MonthlyData | undefined;
+  readonly members: CoupleMemberProfile[];
   readonly isLoading?: boolean;
   readonly onBack: () => void;
 }) {
@@ -25,6 +31,17 @@ export function MonthDetail({
         variableExpenses: data.variableExpenses,
       })
     : null;
+  const lines = data
+    ? buildMonthSummaryLines({
+        incomes: data.incomes,
+        installmentPurchases: data.activeInstallmentPurchases,
+        fixedExpenseInstances: data.fixedExpenseInstances as Parameters<
+          typeof buildMonthSummaryLines
+        >[0]["fixedExpenseInstances"],
+        variableExpenses: data.variableExpenses,
+        members,
+      })
+    : undefined;
 
   return (
     <div className="flex min-h-full flex-col [background-color:var(--bg-base)]">
@@ -91,7 +108,11 @@ export function MonthDetail({
                 ))}
               </div>
             </div>
-            <MonthSummaryCard balance={balance} isLoading={false} />
+            <MonthSummaryCard
+              balance={balance}
+              lines={lines}
+              isLoading={false}
+            />
           </>
         )}
       </div>

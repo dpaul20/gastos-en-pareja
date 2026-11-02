@@ -90,6 +90,7 @@ export function useExpenseSave(tab: Tab) {
               date: fields.date || undefined,
               category_id: categoryId ?? undefined,
               is_shared: isShared,
+              paid_by_user_id: payerId ?? null,
             });
           } else {
             await createVariableExpense({
@@ -98,6 +99,7 @@ export function useExpenseSave(tab: Tab) {
               date: fields.date || getTodayBADate(),
               category_id: categoryId ?? undefined,
               is_shared: isShared,
+              paid_by_user_id: payerId ?? undefined,
             });
           }
         }
