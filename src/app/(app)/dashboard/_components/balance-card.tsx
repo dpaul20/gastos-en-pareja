@@ -293,7 +293,7 @@ export function BalanceCard({
         }}
       >
         <h2 className="m-0 text-center [font-family:var(--font-sans)] text-[12px] font-semibold tracking-[0.08em] [color:var(--fg-2)] uppercase">
-          {formatMonth(month)}
+          Balance {formatMonth(month)}
         </h2>
         {hasDebt ? (
           <div className="mt-5 flex flex-col items-center">
