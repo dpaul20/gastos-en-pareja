@@ -122,10 +122,6 @@ export function BalanceCard({
   /** Opens the edit sheet for a ledger row. */
   readonly onEditSettlement: (settlement: SettlementRow) => void;
 }) {
-  const myInitials = myProfile ? getInitials(myProfile.full_name) : "?";
-  const partnerInitials = partnerProfile
-    ? getInitials(partnerProfile.full_name)
-    : "?";
   const myFirstName = myProfile?.full_name.split(" ")[0] ?? "Vos";
   const partnerFirstName =
     partnerProfile?.full_name.split(" ")[0] ?? "Tu pareja";
@@ -230,63 +226,58 @@ export function BalanceCard({
           onEdit={onEditSettlement}
         />
       </div>
-      <div className="px-5 py-4">
-        <div className="mb-2.5 flex gap-2">
+      <details
+        data-testid="balance-breakdown"
+        className="group px-5 py-3 [font-family:var(--font-sans)]"
+      >
+        <summary className="flex cursor-pointer list-none items-center justify-between text-[13px] font-semibold [color:var(--accent)] [&::-webkit-details-marker]:hidden">
+          Ver detalle
+          <span
+            aria-hidden
+            className="transition-transform group-open:rotate-180"
+          >
+            ▾
+          </span>
+        </summary>
+        <div className="mt-3 flex flex-col gap-3 text-[13px] [color:var(--fg-2)]">
+          <p className="m-0">
+            Cada uno aporta a los gastos compartidos según lo que gana:{" "}
+            {myFirstName} {myPct}% y {partnerFirstName} {100 - myPct}%.
+          </p>
           {[
             {
-              initials: myInitials,
               person: "a" as const,
               name: myFirstName,
-              pct: myPct,
-              amt: myBalance?.obligation ?? 0,
-              color: "var(--person-a)",
-              bg: "var(--person-a-subtle)",
+              owed: myBalance?.obligation ?? 0,
+              paid: myBalance?.actualPaid ?? 0,
             },
             {
-              initials: partnerInitials,
               person: "b" as const,
               name: partnerFirstName,
-              pct: 100 - myPct,
-              amt: partnerBalance?.obligation ?? 0,
-              color: "var(--person-b)",
-              bg: "var(--person-b-subtle)",
+              owed: partnerBalance?.obligation ?? 0,
+              paid: partnerBalance?.actualPaid ?? 0,
             },
           ].map((p) => (
             <div
               key={p.person}
-              className="flex-1 rounded-[var(--radius-md)] px-3 py-[10px]"
-              style={{ backgroundColor: p.bg }}
+              data-testid={`balance-person-${p.person}`}
+              className="flex flex-col gap-1"
             >
-              <div className="mb-1 flex items-center gap-1.5">
-                <PersonAvatar
-                  initials={p.initials}
-                  person={p.person}
-                  size="sm"
-                />
-                <span
-                  className="[font-family:var(--font-sans)] text-[12px] font-semibold"
-                  style={{ color: p.color }}
-                >
-                  {p.name} · {p.pct}%
-                </span>
+              <span className="font-semibold [color:var(--fg-1)]">
+                {p.name}
+              </span>
+              <div className="flex justify-between">
+                <span>Le corresponde pagar</span>
+                <span className="ds-amount">{formatARS(p.owed)}</span>
               </div>
-              <div
-                className="ds-amount text-[18px] font-bold"
-                style={{ color: p.color }}
-              >
-                {formatARS(p.amt)}
+              <div className="flex justify-between">
+                <span>Pagó</span>
+                <span className="ds-amount">{formatARS(p.paid)}</span>
               </div>
             </div>
           ))}
         </div>
-        <div className="flex h-1.5 overflow-hidden rounded-full [background-color:var(--border-default)]">
-          <div
-            className="[background-color:var(--person-a)] transition-[width] duration-[400ms]"
-            style={{ width: `${myPct}%` }}
-          />
-          <div className="flex-1 [background-color:var(--person-b)]" />
-        </div>
-      </div>
+      </details>
     </Card>
   );
 }
