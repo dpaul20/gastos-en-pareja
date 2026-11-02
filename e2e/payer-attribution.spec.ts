@@ -1,8 +1,9 @@
 /**
- * Payer Attribution E2E — SCEN-01 through SCEN-07
+ * Payer Attribution E2E — SCEN-01 through SCEN-08
  *
  * These tests verify that paid_by_user_id is correctly recorded and displayed
- * for both installment purchases (cuotas) and fixed expense instances (fijos).
+ * for installment purchases (cuotas), fixed expense instances (fijos), and
+ * variable purchases (compras).
  *
  * Each test:
  * - Uses a unique description to avoid cross-test contamination
@@ -281,7 +282,9 @@ test.describe("SCEN-04: monto por cuota = round(total/installments)", () => {
       createdId = data.id;
       expect(data.paid_by_user_id).toBe(userId);
       // round(12000 / 12) = 1000
-      expect(Math.round(Number(data.total_amount) / data.installments)).toBe(1000);
+      expect(Math.round(Number(data.total_amount) / data.installments)).toBe(
+        1000,
+      );
     }
   });
 });
@@ -477,5 +480,77 @@ test.describe("SCEN-07: cuota auto_renew atribuida acredita cada mes", () => {
       expect(data.auto_renew).toBe(true);
       // round(120000 / 12) = 10000 — verified in unit tests
     }
+  });
+});
+
+// ── SCEN-08: Variable purchases record and display their actual payer ──────────
+
+test.describe("SCEN-08: compras variables guardan y muestran quién pagó", () => {
+  const description = `SCEN-08 Compra ${TS}`;
+
+  test.afterEach(async ({ adminClient, coupleId }) => {
+    await adminClient
+      .from("variable_expenses")
+      .delete()
+      .eq("couple_id", coupleId)
+      .eq("description", description);
+  });
+
+  test("permite atribuir una compra a la pareja y mostrarlo en el desglose", async ({
+    authenticatedPage: page,
+    coupleId,
+    adminClient,
+  }) => {
+    const userId = await getTestUserId(adminClient);
+    const { data: otherMember, error: memberError } = await adminClient
+      .from("couple_members")
+      .select("user_id")
+      .eq("couple_id", coupleId)
+      .neq("user_id", userId)
+      .maybeSingle();
+
+    expect(memberError).toBeNull();
+    test.skip(!otherMember, "Requiere dos miembros en la pareja");
+    if (!otherMember) return;
+
+    await page.goto("/expenses");
+    await page.getByTestId("tab-compras").click();
+    await page.getByLabel("Agregar gasto").click();
+    await page.getByTestId("type-option-compra").click();
+
+    const dialog = page.getByTestId("add-sheet-dialog");
+    await expect(dialog).toBeVisible();
+    await dialog.getByLabel("Descripción").fill(description);
+    await dialog.getByLabel("Monto").fill("12500");
+    const payer = dialog.getByTestId(`payer-option-${otherMember.user_id}`);
+    await expect(payer).toBeVisible();
+    await payer.click();
+    await expect(payer).toHaveAttribute("aria-pressed", "true");
+    await dialog.getByRole("button", { name: "Guardar compra" }).click();
+    await expect(dialog).not.toBeVisible({ timeout: 5_000 });
+
+    const { data: expense } = await adminClient
+      .from("variable_expenses")
+      .select("id, paid_by_user_id")
+      .eq("couple_id", coupleId)
+      .eq("description", description)
+      .single();
+
+    expect(expense).not.toBeNull();
+    if (!expense) return;
+    expect(expense.paid_by_user_id).toBe(otherMember.user_id);
+
+    await page.goto("/dashboard");
+    const variablesRow = page.getByRole("button", { name: /Variables/ });
+    await expect(variablesRow).toBeVisible({ timeout: 10_000 });
+    await variablesRow.click();
+    const detail = page.getByRole("region", {
+      name: "Desglose de Variables",
+    });
+    await expect(detail.getByText(description)).toBeVisible();
+    await expect(detail.getByText("Pagó:", { exact: true })).toBeVisible();
+    await expect(
+      detail.getByText("Sin registrar", { exact: true }),
+    ).toHaveCount(0);
   });
 });

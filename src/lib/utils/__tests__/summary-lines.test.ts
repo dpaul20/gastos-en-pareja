@@ -102,6 +102,7 @@ function makeVariable(
     amount: 15_000,
     date: "2026-07-05",
     is_shared: true,
+    paid_by_user_id: null,
     created_at: "",
     ...overrides,
   };
@@ -300,6 +301,61 @@ describe("buildMonthSummaryLines", () => {
       id: "v1",
       label: "Supermercado",
       amount: 15_000,
+    });
+  });
+
+  it("muestra el pagador conocido y no confunde quién cargó el gasto con quién pagó", () => {
+    const result = buildMonthSummaryLines({
+      incomes: [],
+      installmentPurchases: [makePurchase({ paid_by_user_id: "user-a" })],
+      fixedExpenseInstances: [
+        makeInstance(
+          { paid: true, paid_by_user_id: "user-b" },
+          makeTemplate({ description: "Luz" }),
+        ),
+      ],
+      variableExpenses: [
+        makeVariable({
+          user_id: "user-a",
+          paid_by_user_id: "user-b",
+        }),
+        makeVariable({
+          id: "legacy",
+          user_id: "user-a",
+          paid_by_user_id: null,
+        }),
+      ],
+      members: [
+        {
+          user_id: "user-a",
+          full_name: "Deivy Perez",
+          email: "deivy@example.test",
+          role: "OWNER",
+        },
+        {
+          user_id: "user-b",
+          full_name: "Analía Gomez",
+          email: "analia@example.test",
+          role: "MEMBER",
+        },
+      ],
+    });
+
+    expect(result.cuotas[0].attribution).toEqual({
+      label: "Paga",
+      name: "Deivy",
+    });
+    expect(result.fijos[0].attribution).toEqual({
+      label: "Pagó",
+      name: "Analía",
+    });
+    expect(result.variables[0].attribution).toEqual({
+      label: "Pagó",
+      name: "Analía",
+    });
+    expect(result.variables[1].attribution).toEqual({
+      label: "Pagador",
+      name: "Sin registrar",
     });
   });
 

@@ -101,6 +101,7 @@ export interface EditingVariable {
   readonly date: string;
   readonly category_id: string | null;
   readonly is_shared: boolean;
+  readonly paid_by_user_id: string | null;
 }
 
 const labelCss: React.CSSProperties = {
@@ -308,7 +309,11 @@ export function AddSheet({
   const [autoRenew, setAutoRenew] = useState(editingCuota?.auto_renew ?? false);
   const [isShared, setIsShared] = useState(editingVariable?.is_shared ?? true);
   const [payerId, setPayerId] = useState<string | null>(
-    editingCuota?.paid_by_user_id ?? currentUserId ?? null,
+    editingCuota
+      ? editingCuota.paid_by_user_id
+      : editingVariable
+        ? editingVariable.paid_by_user_id
+        : (currentUserId ?? null),
   );
   const [cardId, setCardId] = useState<string | null>(
     editingCuota?.card_id ?? null,
@@ -377,7 +382,9 @@ export function AddSheet({
       categoryId,
       autoRenew,
       isShared,
-      tab === "cuotas" || (tab === "fijos" && !isShared) ? payerId : undefined,
+      tab === "cuotas" || tab === "variables" || (tab === "fijos" && !isShared)
+        ? payerId
+        : undefined,
       tab === "cuotas" ? cardId : undefined,
     );
   }
@@ -569,14 +576,22 @@ export function AddSheet({
             </div>
           )}
 
-          {(tab === "cuotas" || (tab === "fijos" && !isShared)) &&
+          {(tab === "cuotas" ||
+            tab === "variables" ||
+            (tab === "fijos" && !isShared)) &&
             members &&
             members.length >= 2 && (
               <div style={{ marginBottom: 14 }}>
-                <div style={{ ...labelCss, marginBottom: 8 }}>¿Quién paga?</div>
+                <div style={{ ...labelCss, marginBottom: 8 }}>
+                  {tab === "variables"
+                    ? "¿Quién pagó?"
+                    : tab === "cuotas"
+                      ? "¿Quién la paga?"
+                      : "Responsable del gasto"}
+                </div>
                 <div
                   data-testid="payer-selector"
-                  style={{ display: "flex", gap: 8 }}
+                  style={{ display: "flex", flexWrap: "wrap", gap: 8 }}
                 >
                   {members.map((m, idx) => {
                     const person: "a" | "b" = idx === 0 ? "a" : "b";
@@ -626,6 +641,23 @@ export function AddSheet({
                       </button>
                     );
                   })}
+                  {tab === "variables" &&
+                    editingVariable &&
+                    !editingVariable.paid_by_user_id && (
+                      <button
+                        type="button"
+                        aria-pressed={payerId === null}
+                        onClick={() => setPayerId(null)}
+                        className={cn(
+                          "min-h-10 rounded-[var(--radius-md)] px-3 text-[12px] transition-colors duration-150",
+                          payerId === null
+                            ? "border-2 [border-color:var(--border-strong)] [background-color:var(--bg-sunken)] font-semibold [color:var(--fg-1)]"
+                            : "border [border-color:var(--border-default)] [background-color:var(--bg-elevated)] [color:var(--fg-2)]",
+                        )}
+                      >
+                        Sin registrar
+                      </button>
+                    )}
                 </div>
               </div>
             )}

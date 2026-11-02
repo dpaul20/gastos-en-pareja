@@ -233,9 +233,10 @@ function DashboardView() {
               typeof buildMonthSummaryLines
             >[0]["fixedExpenseInstances"],
             variableExpenses: data.variableExpenses,
+            members: profiles,
           })
         : undefined,
-    [data],
+    [data, profiles],
   );
 
   const categoryBreakdown = useMemo(() => {

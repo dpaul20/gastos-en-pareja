@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { ChevronRight } from "lucide-react";
+import { Fragment, useState } from "react";
+import { ChevronRight, UserRound } from "lucide-react";
 import { cn, formatARS } from "@/lib/utils";
 import type { MonthlyBalance } from "@/lib/utils/balance";
 import type { MonthSummaryLines } from "@/lib/utils/summary-lines";
@@ -24,21 +24,64 @@ function Chevron({ open }: { readonly open: boolean }) {
 
 function DetailLines({
   lines,
+  categoryTotal,
+  categoryName,
+  panelId,
 }: {
   readonly lines: MonthSummaryLines[keyof MonthSummaryLines];
+  readonly categoryTotal: number;
+  readonly categoryName: string;
+  readonly panelId: string;
 }) {
   return (
-    <div className="flex flex-col gap-2 border-b [border-color:var(--border-subtle)] pt-0 pr-4 pb-3.5 pl-[34px]">
-      {lines.map((line) => (
-        <div key={line.id} className="flex items-center justify-between">
-          <span className="[font-family:var(--font-sans)] text-[13px] [color:var(--fg-2)]">
-            {line.label}
-          </span>
-          <span className="ds-amount text-[13px] font-semibold [color:var(--fg-1)]">
-            {formatARS(line.amount)}
-          </span>
+    <div
+      id={panelId}
+      role="region"
+      aria-label={`Desglose de ${categoryName}`}
+      className="mx-3 mb-3 rounded-[var(--radius-md)] border [border-color:var(--border-subtle)] [background-color:var(--bg-sunken)] px-3 py-3"
+    >
+      <div className="mb-2 flex items-center justify-between">
+        <span className="text-[11px] font-semibold tracking-[0.04em] [color:var(--fg-3)] uppercase">
+          Desglose
+        </span>
+        <span className="text-[11px] [color:var(--fg-3)]">
+          {lines.length} {lines.length === 1 ? "concepto" : "conceptos"}
+        </span>
+      </div>
+      <dl className="m-0 flex flex-col gap-2">
+        {lines.map((line) => (
+          <div
+            key={line.id}
+            className="flex items-center justify-between gap-3"
+          >
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
+              <dt className="[font-family:var(--font-sans)] text-[13px] break-words [color:var(--fg-2)]">
+                {line.label}
+              </dt>
+              {line.attribution && (
+                <div className="flex items-center gap-1 text-[11px] [color:var(--fg-3)]">
+                  <UserRound aria-hidden size={12} strokeWidth={1.8} />
+                  <span>{line.attribution.label}:</span>
+                  <span className="font-medium [color:var(--fg-2)]">
+                    {line.attribution.name}
+                  </span>
+                </div>
+              )}
+            </div>
+            <dd className="ds-amount m-0 shrink-0 text-[13px] font-medium [color:var(--fg-1)]">
+              {formatARS(line.amount)}
+            </dd>
+          </div>
+        ))}
+        <div className="mt-1 flex items-baseline justify-between gap-3 border-t [border-color:var(--border-default)] pt-2">
+          <dt className="text-[12px] font-semibold [color:var(--fg-1)]">
+            Total de la categoría
+          </dt>
+          <dd className="ds-amount m-0 shrink-0 text-[13px] font-bold [color:var(--fg-1)]">
+            {formatARS(categoryTotal)}
+          </dd>
         </div>
-      ))}
+      </dl>
     </div>
   );
 }
@@ -52,6 +95,7 @@ interface SummaryRow {
   amt: number;
   color: string;
   linesKey?: LinesKey;
+  section?: string;
 }
 
 export function MonthSummaryCard({
@@ -105,6 +149,7 @@ export function MonthSummaryCard({
       amt: balance.installmentTotal,
       color: "var(--person-a)",
       linesKey: "cuotas",
+      section: "Gastos del mes",
     },
     {
       label: "Gastos fijos",
@@ -121,7 +166,6 @@ export function MonthSummaryCard({
   ];
 
   const savingsRow = {
-    label: "Capacidad de ahorro",
     amt: balance.savingsCapacity,
     color:
       balance.savingsCapacity >= 0
@@ -142,6 +186,7 @@ export function MonthSummaryCard({
           const rowLines = row.linesKey ? lines?.[row.linesKey] : undefined;
           const expandable = !!rowLines && rowLines.length > 0;
           const open = expandable && openKey === row.linesKey;
+          const panelId = `summary-detail-${row.linesKey}`;
           const dot = (
             <div
               className="h-2 w-2 rounded-full"
@@ -167,73 +212,103 @@ export function MonthSummaryCard({
           );
 
           return (
-            <div key={row.label}>
-              {expandable ? (
-                <button
-                  type="button"
-                  aria-expanded={open}
-                  onClick={() =>
-                    setOpenKey((k) =>
-                      k === row.linesKey ? null : (row.linesKey ?? null),
-                    )
-                  }
-                  className={cn(
-                    "flex w-full cursor-pointer items-center justify-between border-none bg-transparent px-4 py-3.5 text-left",
-                    !open && "border-b [border-color:var(--border-subtle)]",
-                  )}
-                >
-                  <div className="flex items-center gap-2">
-                    {dot}
-                    {label}
-                    <Chevron open={open} />
-                  </div>
-                  {amount}
-                </button>
-              ) : (
-                <div className="flex items-center justify-between border-b [border-color:var(--border-subtle)] px-4 py-3.5">
-                  <div className="flex items-center gap-2">
-                    {dot}
-                    {label}
-                  </div>
-                  {amount}
+            <Fragment key={row.label}>
+              {row.section && (
+                <div className="border-t [border-color:var(--border-subtle)] px-4 pt-4 pb-1">
+                  <span className="text-[11px] font-semibold tracking-[0.06em] [color:var(--fg-3)] uppercase">
+                    {row.section}
+                  </span>
                 </div>
               )}
-              {open && rowLines && <DetailLines lines={rowLines} />}
-            </div>
+              <div>
+                {expandable ? (
+                  <button
+                    type="button"
+                    aria-expanded={open}
+                    aria-controls={panelId}
+                    onClick={() =>
+                      setOpenKey((k) =>
+                        k === row.linesKey ? null : (row.linesKey ?? null),
+                      )
+                    }
+                    className={cn(
+                      "flex w-full cursor-pointer items-center justify-between border-none bg-transparent px-4 py-3 text-left transition-colors duration-150 hover:bg-[var(--bg-sunken)]",
+                      !open && "border-b [border-color:var(--border-subtle)]",
+                    )}
+                  >
+                    <div className="flex items-center gap-2">
+                      {dot}
+                      {label}
+                      <Chevron open={open} />
+                    </div>
+                    {amount}
+                  </button>
+                ) : (
+                  <div className="flex items-center justify-between border-b [border-color:var(--border-subtle)] px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      {dot}
+                      <div className="flex min-w-0 flex-col items-start">
+                        {label}
+                        {row.amt === 0 && (
+                          <span className="text-[11px] [color:var(--fg-3)]">
+                            {row.label === "Variables"
+                              ? "Sin gastos este mes"
+                              : "Sin movimientos este mes"}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {amount}
+                  </div>
+                )}
+                {open && rowLines && (
+                  <DetailLines
+                    lines={rowLines}
+                    categoryTotal={row.amt}
+                    categoryName={row.label}
+                    panelId={panelId}
+                  />
+                )}
+              </div>
+            </Fragment>
           );
         })}
 
-        {/* Capacidad de ahorro — computed row, does not expand (shows formula) */}
-        <div className="flex flex-col gap-1 px-4 py-3.5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div
-                className="h-2 w-2 rounded-full"
-                style={{ backgroundColor: savingsRow.color }}
-              />
+        <div className="flex items-center justify-between border-t [border-color:var(--border-subtle)] [background-color:var(--bg-sunken)] px-4 py-3.5">
+          <span className="[font-family:var(--font-sans)] text-[14px] font-semibold [color:var(--fg-1)]">
+            Gastos totales
+          </span>
+          <span className="ds-amount text-[16px] font-bold [color:var(--fg-1)]">
+            {formatARS(balance.totalExpenses)}
+          </span>
+        </div>
+
+        {/* Savings capacity is the takeaway: income minus all monthly expenses. */}
+        <div
+          className="m-3 rounded-[var(--radius-lg)] p-4"
+          style={{
+            backgroundColor:
+              balance.savingsCapacity >= 0
+                ? "var(--status-success-subtle)"
+                : "var(--status-danger-subtle)",
+          }}
+        >
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex min-w-0 flex-col gap-1">
               <span className="[font-family:var(--font-sans)] text-[14px] font-semibold [color:var(--fg-1)]">
-                {savingsRow.label}
+                Capacidad de ahorro
+              </span>
+              <span className="text-[12px] leading-snug [color:var(--fg-2)]">
+                Ingresos menos gastos totales
               </span>
             </div>
             <span
-              className="ds-amount text-[14px] font-semibold"
+              className="ds-amount shrink-0 text-[18px] font-bold"
               style={{ color: savingsRow.color }}
             >
               {formatARS(savingsRow.amt)}
             </span>
           </div>
-          <span className="pl-4 [font-family:var(--font-mono)] text-[12px] [color:var(--fg-3)]">
-            = Ingresos − (Cuotas + Fijos + Variables)
-          </span>
-        </div>
-
-        <div className="flex items-center justify-between [background-color:var(--bg-sunken)] px-4 py-3.5">
-          <span className="[font-family:var(--font-sans)] text-[14px] font-semibold [color:var(--fg-1)]">
-            Total
-          </span>
-          <span className="ds-amount text-[16px] font-bold [color:var(--fg-1)]">
-            {formatARS(balance.totalExpenses)}
-          </span>
         </div>
       </CardContent>
     </Card>

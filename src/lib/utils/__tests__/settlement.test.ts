@@ -437,6 +437,7 @@ describe("previewBillImpact", () => {
         category_id: null,
         is_shared: true,
         created_at: "",
+        paid_by_user_id: null,
       },
     ];
     const awaitingInstance = {
@@ -503,6 +504,7 @@ describe("previewBillImpact", () => {
         category_id: null,
         is_shared: true,
         created_at: "",
+        paid_by_user_id: null,
       },
     ];
     const awaitingInstance = {

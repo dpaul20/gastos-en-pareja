@@ -519,6 +519,7 @@ export type Database = {
           description: string;
           id: string;
           is_shared: boolean;
+          paid_by_user_id: string | null;
           user_id: string;
         };
         Insert: {
@@ -530,6 +531,7 @@ export type Database = {
           description: string;
           id?: string;
           is_shared?: boolean;
+          paid_by_user_id?: string | null;
           user_id: string;
         };
         Update: {
@@ -541,6 +543,7 @@ export type Database = {
           description?: string;
           id?: string;
           is_shared?: boolean;
+          paid_by_user_id?: string | null;
           user_id?: string;
         };
         Relationships: [

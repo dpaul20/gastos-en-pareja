@@ -270,6 +270,7 @@ describe("calculateMonthlyBalance", () => {
           is_shared: true,
           date: "2026-04-15",
           created_at: "",
+          paid_by_user_id: null,
         },
       ];
       const result = calculateMonthlyBalance({
@@ -297,6 +298,7 @@ describe("calculateMonthlyBalance", () => {
           is_shared: true,
           date: "2026-04-15",
           created_at: "",
+          paid_by_user_id: null,
         },
       ];
       const result = calculateMonthlyBalance({
@@ -320,6 +322,7 @@ describe("calculateMonthlyBalance", () => {
           is_shared: true,
           date: "2026-04-15",
           created_at: "",
+          paid_by_user_id: null,
         },
       ];
       const result = calculateMonthlyBalance({
@@ -344,6 +347,7 @@ describe("calculateMonthlyBalance", () => {
           is_shared: false,
           date: "2026-04-15",
           created_at: "",
+          paid_by_user_id: null,
         },
       ];
       const result = calculateMonthlyBalance({
@@ -860,6 +864,7 @@ describe("calculateMonthlyBalance — payer attribution (payer-attribution)", ()
       is_shared: true,
       date: "2026-04-10",
       created_at: "",
+      paid_by_user_id: null,
     };
     const result = calculateMonthlyBalance({
       incomes: twoIncomes,
@@ -1073,6 +1078,7 @@ describe("calculateMonthlyBalance — la deuda solo cubre plata realmente pagada
         is_shared: true,
         date: "2026-08-01",
         created_at: "",
+        paid_by_user_id: null,
       },
     ];
 

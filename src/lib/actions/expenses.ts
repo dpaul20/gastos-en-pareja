@@ -793,17 +793,34 @@ export async function createVariableExpense(data: {
   date: string;
   category_id?: string;
   is_shared?: boolean;
+  paid_by_user_id?: string;
 }) {
   const { supabase, user, coupleId } = await getCouple();
 
-  await supabase.from("variable_expenses").insert({
+  const payerId = data.paid_by_user_id ?? user.id;
+  if (payerId !== user.id) {
+    const { data: member, error: memberError } = await supabase
+      .from("couple_members")
+      .select("user_id")
+      .eq("couple_id", coupleId)
+      .eq("user_id", payerId)
+      .maybeSingle();
+    if (memberError) throw new Error("No se pudo validar quién pagó el gasto");
+    if (!member)
+      throw new Error("La persona seleccionada no pertenece a la pareja");
+  }
+
+  const { error } = await supabase.from("variable_expenses").insert({
     ...data,
     couple_id: coupleId,
     user_id: user.id,
+    paid_by_user_id: payerId,
   });
+  if (error) throw new Error("No se pudo guardar la compra");
 
   revalidatePath("/expenses");
   revalidatePath("/dashboard");
+  revalidatePath("/history");
 }
 
 export async function updateVariableExpense(
@@ -814,6 +831,7 @@ export async function updateVariableExpense(
     date?: string;
     category_id?: string | null;
     is_shared?: boolean;
+    paid_by_user_id?: string | null;
   },
 ): Promise<void> {
   if (data.description !== undefined && data.description.trim().length === 0) {
@@ -828,6 +846,18 @@ export async function updateVariableExpense(
 
   const { supabase, coupleId } = await getCouple();
 
+  if (data.paid_by_user_id) {
+    const { data: member, error: memberError } = await supabase
+      .from("couple_members")
+      .select("user_id")
+      .eq("couple_id", coupleId)
+      .eq("user_id", data.paid_by_user_id)
+      .maybeSingle();
+    if (memberError) throw new Error("No se pudo validar quién pagó el gasto");
+    if (!member)
+      throw new Error("La persona seleccionada no pertenece a la pareja");
+  }
+
   const { error } = await supabase
     .from("variable_expenses")
     .update(data)
@@ -838,6 +868,7 @@ export async function updateVariableExpense(
 
   revalidatePath("/expenses");
   revalidatePath("/dashboard");
+  revalidatePath("/history");
 }
 
 export async function deleteVariableExpense(
@@ -852,6 +883,7 @@ export async function deleteVariableExpense(
   await supabase.from("variable_expenses").delete().eq("id", id);
   revalidatePath("/expenses");
   revalidatePath("/dashboard");
+  revalidatePath("/history");
   return row;
 }
 
@@ -860,4 +892,5 @@ export async function restoreVariableExpense(row: VariableRow): Promise<void> {
   await supabase.from("variable_expenses").insert(row);
   revalidatePath("/expenses");
   revalidatePath("/dashboard");
+  revalidatePath("/history");
 }
