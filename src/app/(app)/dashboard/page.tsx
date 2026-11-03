@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { MonthHeader } from "@/components/shared/month-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
+import { Plus, History } from "lucide-react";
 import { formatMonth, getMonthDate, formatARS } from "@/lib/utils";
 import {
   useCoupleMember,
@@ -60,31 +61,51 @@ function MonthlyFixedSummary({
 
   return (
     <Card>
-      <CardContent className="flex items-center justify-between gap-2 p-3">
-        <div style={{ fontSize: 13, color: "var(--fg-2)", fontWeight: 500 }}>
-          {paid} de {total} servicios pagados
-        </div>
-        <div style={{ display: "flex", gap: 12 }}>
-          <span
-            style={{
-              fontSize: 12,
-              color: "var(--status-success-text)",
-              fontWeight: 600,
-            }}
-          >
-            {formatARS(paidAmount)}
-          </span>
-          {pendingAmount > 0 && (
+      <CardContent className="flex flex-col gap-2.5 p-3.5">
+        <div className="flex items-center justify-between gap-2">
+          <div style={{ fontSize: 13, color: "var(--fg-2)", fontWeight: 500 }}>
+            {paid} de {total} servicios pagados
+          </div>
+          <div style={{ display: "flex", gap: 12 }}>
             <span
               style={{
                 fontSize: 12,
-                color: "var(--status-danger-text)",
+                color: "var(--status-success-text)",
                 fontWeight: 600,
               }}
             >
-              {formatARS(pendingAmount)} pendiente
+              {formatARS(paidAmount)}
             </span>
-          )}
+            {pendingAmount > 0 && (
+              <span
+                style={{
+                  fontSize: 12,
+                  color: "var(--status-danger-text)",
+                  fontWeight: 600,
+                }}
+              >
+                {formatARS(pendingAmount)} pendiente
+              </span>
+            )}
+          </div>
+        </div>
+        <div
+          role="progressbar"
+          aria-label="Servicios pagados"
+          aria-valuemin={0}
+          aria-valuemax={total}
+          aria-valuenow={paid}
+          className="h-2 overflow-hidden rounded-full"
+          style={{ background: "var(--bg-sunken)" }}
+        >
+          <div
+            className="h-full rounded-full transition-[width] duration-700 [transition-timing-function:var(--ease-spring)]"
+            style={{
+              width: `${total ? (paid / total) * 100 : 0}%`,
+              background:
+                "linear-gradient(90deg, var(--color-teal-400), var(--color-teal-500))",
+            }}
+          />
         </div>
       </CardContent>
     </Card>
@@ -268,6 +289,8 @@ function DashboardView() {
   const currentUserId = member?.user_id;
   const myProfile = profiles.find((p) => p.user_id === currentUserId);
   const partnerProfile = profiles.find((p) => p.user_id !== currentUserId);
+  const firstName = myProfile?.full_name?.trim().split(/\s+/)[0];
+  const greeting = firstName ? `Hola, ${firstName} 👋` : undefined;
 
   if (loadingMember) {
     return null;
@@ -283,13 +306,18 @@ function DashboardView() {
   }
 
   return (
-    <div style={{ minHeight: "100%", background: "var(--bg-base)" }}>
+    <div
+      className="app-ambient"
+      style={{ minHeight: "100%", background: "var(--bg-base)" }}
+    >
       <h1 className="sr-only">Inicio</h1>
       <MonthHeader
         month={formatMonth(month)}
         onPrev={() => setCurrentDate((d) => subMonths(d, 1))}
         onNext={() => setCurrentDate((d) => addMonths(d, 1))}
         canGoNext={!isCurrentMonth}
+        eyebrow={greeting}
+        onToday={isCurrentMonth ? undefined : () => setCurrentDate(new Date())}
       />
 
       {loadingMember || loadingData ? (
@@ -308,7 +336,7 @@ function DashboardView() {
           {/* Desktop: 2-col grid | Mobile: single column */}
           <div className="flex flex-col gap-3 lg:grid lg:grid-cols-2 lg:items-start lg:gap-5">
             {/* Left column */}
-            <div className="flex flex-col gap-3 lg:gap-4">
+            <div className="stagger flex flex-col gap-3 lg:gap-4">
               {isCurrentMonth && data?.fixedExpenseInstances && coupleId && (
                 <UpcomingDuesWidget
                   instances={
@@ -346,33 +374,43 @@ function DashboardView() {
             </div>
 
             {/* Right column */}
-            <div className="flex flex-col gap-3 lg:gap-4">
+            <div className="stagger flex flex-col gap-3 lg:gap-4">
               {balance && (
                 <MonthSummaryCard balance={balance} lines={summaryLines} />
               )}
               <CategoryBreakdownCard breakdown={categoryBreakdown} />
-              <Link
-                href="/expenses"
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 8,
-                  background: "var(--accent)",
-                  borderRadius: 14,
-                  padding: "15px 20px",
-                  color: "white",
-                  fontSize: 15,
-                  fontWeight: 600,
-                  fontFamily: "var(--font-sans)",
-                  textDecoration: "none",
-                  boxShadow: "0 4px 16px rgba(108,92,231,0.35)",
-                  marginBottom: 8,
-                }}
-              >
-                <span style={{ fontSize: 20, fontWeight: 300 }}>+</span> Agregar
-                gasto
-              </Link>
+              <div className="mb-2 grid grid-cols-2 gap-3">
+                <Link
+                  href="/expenses"
+                  className="press lift flex items-center gap-2.5 rounded-2xl px-4 py-3.5 no-underline"
+                  style={{
+                    backgroundImage:
+                      "linear-gradient(135deg, var(--color-violet-500), var(--color-violet-700))",
+                    boxShadow: "var(--shadow-accent)",
+                    color: "var(--accent-foreground)",
+                  }}
+                >
+                  <Plus size={20} strokeWidth={2.4} aria-hidden />
+                  <span className="text-sm font-semibold">Agregar gasto</span>
+                </Link>
+                <Link
+                  href="/history"
+                  className="press lift flex items-center gap-2.5 rounded-2xl border px-4 py-3.5 no-underline"
+                  style={{
+                    background: "var(--bg-elevated)",
+                    borderColor: "var(--border-subtle)",
+                    color: "var(--fg-1)",
+                  }}
+                >
+                  <History
+                    size={20}
+                    strokeWidth={2}
+                    aria-hidden
+                    style={{ color: "var(--accent)" }}
+                  />
+                  <span className="text-sm font-semibold">Ver historial</span>
+                </Link>
+              </div>
             </div>
           </div>
         </div>

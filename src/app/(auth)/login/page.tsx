@@ -78,20 +78,44 @@ function FeatureList() {
   return (
     <ul
       aria-label="Características"
-      className="m-0 flex w-full list-none flex-col gap-2.5 p-0"
+      className="stagger m-0 flex w-full list-none flex-col gap-2.5 p-0"
     >
       {FEATURES.map((f) => (
         <li
           key={f.text}
-          className="flex items-center gap-3 rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--bg-elevated)] px-4 py-3 shadow-[var(--shadow-sm)]"
+          className="glass flex items-center gap-3 rounded-2xl px-4 py-3"
         >
-          <span className="text-[18px]">{f.icon}</span>
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-xl [background-color:var(--accent-subtle)] text-[18px]">
+            {f.icon}
+          </span>
           <span className="[font-family:var(--font-sans)] text-sm font-medium [color:var(--fg-2)]">
             {f.text}
           </span>
         </li>
       ))}
     </ul>
+  );
+}
+
+function Aurora() {
+  return (
+    <div
+      aria-hidden
+      className="pointer-events-none absolute inset-0 overflow-hidden"
+    >
+      <span
+        className="drift absolute -top-24 -left-20 size-72 rounded-full opacity-40 blur-3xl"
+        style={{ background: "var(--color-violet-400)" }}
+      />
+      <span
+        className="drift absolute top-1/3 -right-24 size-64 rounded-full opacity-30 blur-3xl [animation-delay:-6s]"
+        style={{ background: "var(--color-teal-400)" }}
+      />
+      <span
+        className="drift absolute -bottom-24 left-1/4 size-64 rounded-full opacity-25 blur-3xl [animation-delay:-12s]"
+        style={{ background: "var(--color-coral-400)" }}
+      />
+    </div>
   );
 }
 
@@ -133,10 +157,11 @@ function LoginContent() {
   }
 
   return (
-    <div className="flex min-h-dvh flex-col bg-[var(--bg-base)] md:flex-row">
+    <div className="relative flex min-h-dvh flex-col bg-[var(--bg-base)] md:flex-row">
+      <Aurora />
       {/* ── Branding panel — desktop left side ──────────────── */}
       <div
-        className="hidden flex-1 flex-col items-center justify-center gap-10 border-r border-[var(--border-subtle)] p-16 md:flex"
+        className="relative hidden flex-1 flex-col items-center justify-center gap-10 border-r border-[var(--border-subtle)] p-16 md:flex"
         style={{
           background:
             "linear-gradient(160deg, color-mix(in srgb, var(--accent) 6%, var(--bg-elevated)) 0%, var(--bg-elevated) 65%)",
@@ -159,10 +184,12 @@ function LoginContent() {
       </div>
 
       {/* ── Login panel ──────────────────────────────────────── */}
-      <main className="flex flex-col items-center px-8 pt-[60px] pb-12 md:w-120 md:shrink-0 md:justify-center">
+      <main className="relative flex flex-col items-center px-8 pt-[60px] pb-12 md:w-120 md:shrink-0 md:justify-center">
         {/* Mobile only: logo + tagline + features */}
         <div className="flex w-full max-w-[390px] flex-1 flex-col items-center justify-center gap-5 md:hidden">
-          <AppLogo size={80} />
+          <div className="float-y">
+            <AppLogo size={88} />
+          </div>
           <div className="text-center">
             <h1 className="[font-family:var(--font-sans)] text-[28px] leading-[1.2] font-bold tracking-[-0.02em] [color:var(--fg-1)]">
               Gastos en Pareja
@@ -187,12 +214,12 @@ function LoginContent() {
         </div>
 
         {/* CTA — always visible */}
-        <div className="w-full max-w-[360px]">
+        <div className="w-full max-w-[360px] pt-6">
           <Button
             type="button"
             variant="outline"
             onClick={signInWithGoogle}
-            className="h-auto w-full gap-3 rounded-[14px] border-[1.5px] border-[var(--border-default)] bg-[var(--bg-elevated)] px-5 py-4 [font-family:var(--font-sans)] text-base font-semibold [color:var(--fg-1)] shadow-[var(--shadow-sm)] hover:bg-[var(--bg-elevated)] hover:[color:var(--fg-1)]"
+            className="press h-auto w-full gap-3 rounded-2xl border-[1.5px] border-[var(--border-default)] bg-[var(--bg-elevated)] px-5 py-4 [font-family:var(--font-sans)] text-base font-semibold [color:var(--fg-1)] shadow-[var(--shadow-md)] hover:bg-[var(--bg-elevated)] hover:[color:var(--fg-1)]"
           >
             <GoogleIcon />
             Continuar con Google
