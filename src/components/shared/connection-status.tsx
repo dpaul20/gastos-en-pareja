@@ -39,7 +39,9 @@ export function ConnectionStatus() {
     };
   }, [queryClient]);
 
-  const phase: Phase = !online ? "offline" : restored ? "restored" : "hidden";
+  let phase: Phase = "hidden";
+  if (!online) phase = "offline";
+  else if (restored) phase = "restored";
   if (phase === "hidden") return null;
 
   const isOffline = phase === "offline";

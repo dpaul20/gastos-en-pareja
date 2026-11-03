@@ -486,8 +486,8 @@ export function AddSheet({
     if (first) form.setFocus(first);
   }
 
-  function onSubmit(data: Fields) {
-    onSave(
+  async function onSubmit(data: Fields) {
+    await onSave(
       Object.fromEntries(
         Object.entries(data).filter(([, v]) => v !== undefined),
       ) as Record<string, string>,
@@ -500,6 +500,8 @@ export function AddSheet({
       tab === "cuotas" ? cardId : undefined,
     );
   }
+
+  const saveLabel = isEditing ? "Guardar cambios" : SAVE_LABEL[tab];
 
   return (
     <ResponsiveModal
@@ -838,10 +840,8 @@ export function AddSheet({
                 />
                 Guardando…
               </>
-            ) : isEditing ? (
-              "Guardar cambios"
             ) : (
-              SAVE_LABEL[tab]
+              saveLabel
             )}
           </Button>
         </form>
