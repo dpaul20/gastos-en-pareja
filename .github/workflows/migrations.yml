@@ -1,4 +1,4 @@
-name: migrations
+﻿name: migrations
 
 # Production migrations run on every push to master (the app itself deploys
 # via Vercel's native Git integration on the same push). supabase db push is
@@ -7,9 +7,11 @@ on:
   push:
     branches:
       - master
+  workflow_dispatch:
 
 permissions:
   contents: read
+  issues: write
 
 concurrency:
   group: migrations-master
@@ -33,3 +35,30 @@ jobs:
           supabase db push
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      # A failed push leaves prod without the schema the freshly deployed code
+      # expects, so make the failure loud instead of a silent red check.
+      - name: Open or update alert issue on failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          title="🚨 Production migrations are failing"
+          body="Migrations failed on \`${GITHUB_SHA::7}\` (${RUN_URL}). Prod may be missing schema the deployed code needs. Check SUPABASE_ACCESS_TOKEN / SUPABASE_PROJECT_REF secrets, fix, then re-run the workflow."
+          existing=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "\"$title\" in:title" --json number --jq '.[0].number')
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --repo "$GITHUB_REPOSITORY" --body "$body"
+          else
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --body "$body" --assignee "${GITHUB_REPOSITORY_OWNER}"
+          fi
+
+      - name: Close alert issue on success
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          title="🚨 Production migrations are failing"
+          for n in $(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "\"$title\" in:title" --json number --jq '.[].number'); do
+            gh issue close "$n" --repo "$GITHUB_REPOSITORY" --comment "Migrations applied successfully in ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}."
+          done
