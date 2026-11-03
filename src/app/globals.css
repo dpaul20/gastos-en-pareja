@@ -645,6 +645,23 @@ body {
   }
 }
 
+@keyframes fx-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .fx-rise {
+    animation: fx-rise 0.4s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+  }
+}
+
 @keyframes fx-shake {
   0%,
   100% {
