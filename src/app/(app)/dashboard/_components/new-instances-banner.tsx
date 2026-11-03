@@ -1,6 +1,6 @@
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
+import { CheckCircle2, X } from "lucide-react";
 
 export function NewInstancesBanner({
   count,
@@ -12,15 +12,19 @@ export function NewInstancesBanner({
   if (count === 0) return null;
   const plural = count > 1;
   return (
-    <Alert className="mb-3 flex items-center justify-between gap-2 border-(--status-success-subtle) bg-(--status-success-subtle) py-2.5">
-      <AlertDescription className="text-[13px] font-medium [color:var(--status-success-text)]">
-        ✓ {count} gasto{plural ? "s" : ""} fijo{plural ? "s" : ""} generado
+    <Alert className="rise-in mb-3 flex items-center justify-between gap-2 rounded-2xl border-(--status-success-subtle) bg-(--status-success-subtle) py-2.5">
+      <CheckCircle2
+        aria-hidden
+        className="pop-in size-4 shrink-0 [color:var(--status-success-text)]"
+      />
+      <AlertDescription className="flex-1 text-[13px] font-medium [color:var(--status-success-text)]">
+        {count} gasto{plural ? "s" : ""} fijo{plural ? "s" : ""} generado
         {plural ? "s" : ""} para este mes
       </AlertDescription>
       <Button
         variant="ghost"
         size="icon"
-        className="size-6 shrink-0 [color:var(--status-success-text)]"
+        className="press size-9 shrink-0 rounded-full [color:var(--status-success-text)]"
         onClick={onDismiss}
         aria-label="Cerrar"
       >

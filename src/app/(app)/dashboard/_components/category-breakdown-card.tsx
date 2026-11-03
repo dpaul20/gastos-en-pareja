@@ -167,7 +167,7 @@ export function CategoryBreakdownCard({
   const chartHeight = breakdown.length * rowHeight + 16;
 
   return (
-    <div className="overflow-hidden rounded-[var(--radius-lg)] border [border-color:var(--border-subtle)] [background-color:var(--bg-elevated)] shadow-[var(--shadow-sm)]">
+    <div className="rise-in overflow-hidden rounded-[var(--radius-lg)] border [border-color:var(--border-subtle)] [background-color:var(--bg-elevated)] shadow-[var(--shadow-sm)]">
       <div className="border-b [border-color:var(--border-subtle)] px-4 py-3.5">
         <div className="[font-family:var(--font-sans)] text-[11px] font-semibold tracking-[0.05em] [color:var(--fg-3)] uppercase">
           Por categoría

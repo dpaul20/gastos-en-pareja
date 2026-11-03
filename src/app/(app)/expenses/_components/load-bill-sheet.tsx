@@ -250,7 +250,7 @@ export function LoadBillSheet({
           type="submit"
           data-testid="load-bill-submit"
           disabled={mutation.isPending}
-          className={`w-full ${mutation.isPending ? "opacity-70" : ""}`}
+          className={`press h-12 w-full rounded-full text-[15px] font-semibold shadow-[var(--shadow-accent)] ${mutation.isPending ? "opacity-70" : ""}`}
         >
           Cargar factura
         </Button>
@@ -258,7 +258,7 @@ export function LoadBillSheet({
           type="button"
           onClick={onClose}
           disabled={mutation.isPending}
-          className={`mt-2.5 w-full cursor-pointer rounded-md border-none [background-color:var(--bg-sunken)] px-1 py-2.5 [font-family:var(--font-sans)] text-[13px] font-semibold [color:var(--fg-1)] ${
+          className={`press mt-2.5 min-h-11 w-full cursor-pointer rounded-full border-none [background-color:var(--bg-sunken)] px-1 py-2.5 [font-family:var(--font-sans)] text-[13px] font-semibold [color:var(--fg-1)] ${
             mutation.isPending ? "opacity-50" : ""
           }`}
         >

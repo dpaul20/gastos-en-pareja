@@ -829,6 +829,7 @@ export function AddSheet({
             type="submit"
             disabled={isSaving}
             aria-busy={isSaving}
+            className="press h-12 rounded-full text-[15px] font-semibold shadow-[var(--shadow-accent)]"
             style={{ width: "100%" }}
           >
             {isSaving ? (
