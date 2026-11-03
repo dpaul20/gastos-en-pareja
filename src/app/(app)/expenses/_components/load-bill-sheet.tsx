@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { PersonAvatar } from "@/components/shared/avatar";
 import { ResponsiveModal } from "@/components/shared/responsive-modal";
 import { formatARS, getInitials } from "@/lib/utils";
+import { notify, haptic } from "@/lib/feedback/notify";
+import { describeError, inlineMessage } from "@/lib/utils/describe-error";
 import {
   parseAmount,
   formatAmountInput,
@@ -104,10 +106,21 @@ export function LoadBillSheet({
           queryKey: ["last-billed-amounts", coupleId, month],
         }),
       ]);
+      notify.success("Factura cargada", {
+        description: `${name} · ${formatARS(mutation.variables?.amount ?? 0)}`,
+      });
       onClose();
     },
     onError: (err: Error) => {
-      setFieldError(err.message ?? "No se pudo cargar la factura");
+      haptic("error");
+      setFieldError(
+        inlineMessage(
+          describeError(err, {
+            online: navigator.onLine,
+            fallbackTitle: "No pudimos cargar la factura",
+          }),
+        ),
+      );
     },
   });
 

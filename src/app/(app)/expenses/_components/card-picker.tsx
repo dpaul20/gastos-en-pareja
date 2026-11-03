@@ -19,6 +19,8 @@ import {
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { cn } from "@/lib/utils";
 import { createCard } from "@/lib/actions/cards";
+import { notify, haptic } from "@/lib/feedback/notify";
+import { describeError, inlineMessage } from "@/lib/utils/describe-error";
 import { useCards } from "@/lib/queries/use-cards";
 import { DueDayPicker } from "./due-day-picker";
 import type { Database } from "@/types/database";
@@ -124,10 +126,17 @@ function NewCardForm({
         payment_day: paymentDay,
       });
       await queryClient.invalidateQueries({ queryKey: ["cards", coupleId] });
+      notify.success("Tarjeta creada", { description: card.name });
       onCreated(card);
     } catch (err) {
+      haptic("error");
       setSaveError(
-        err instanceof Error ? err.message : "No se pudo crear la tarjeta",
+        inlineMessage(
+          describeError(err, {
+            online: navigator.onLine,
+            fallbackTitle: "No pudimos crear la tarjeta",
+          }),
+        ),
       );
     } finally {
       setIsSaving(false);

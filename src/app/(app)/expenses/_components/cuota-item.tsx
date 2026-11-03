@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { Check, Minus, Pencil, Plus, RefreshCw } from "lucide-react";
+import { useAction } from "@/lib/hooks/use-action";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -52,10 +52,18 @@ function InstallmentNumberCorrection({
   installments: number;
   currentNumber: number;
 }>) {
-  const [, startTransition] = useTransition();
-  const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(currentNumber);
+  const { run: saveOverride, pending } = useAction(
+    (purchase: string, forMonth: string, number: number) =>
+      upsertInstallmentMonthOverride(purchase, forMonth, number),
+    {
+      errorTitle: "No pudimos corregir el número de cuota",
+      invalidate: [["monthly-data"]],
+      success: "Número de cuota corregido",
+      onSuccess: () => setOpen(false),
+    },
+  );
 
   if (!open) {
     return (
@@ -101,16 +109,13 @@ function InstallmentNumberCorrection({
       <button
         type="button"
         aria-label="Guardar número de cuota"
-        onClick={() =>
-          startTransition(async () => {
-            await upsertInstallmentMonthOverride(purchaseId, month, draft);
-            await queryClient.invalidateQueries({
-              queryKey: ["monthly-data"],
-            });
-            setOpen(false);
-          })
-        }
-        className={cn(stepperButtonClass, "[color:var(--accent)]")}
+        disabled={pending}
+        onClick={() => void saveOverride(purchaseId, month, draft)}
+        className={cn(
+          stepperButtonClass,
+          "[color:var(--accent)]",
+          pending && "opacity-50",
+        )}
       >
         <Check size={12} aria-hidden="true" />
       </button>
@@ -137,8 +142,13 @@ export function CuotaItem({
   readonly getPerson?: (id: string) => "a" | "b";
   readonly onEdit?: (id: string) => void;
 }) {
-  const [, startTransition] = useTransition();
-  const queryClient = useQueryClient();
+  const { run: incrementPaid, pending: incrementing } = useAction(
+    (id: string) => incrementPaidInstallments(id),
+    {
+      errorTitle: "No pudimos sumar la cuota",
+      invalidate: [["monthly-data"]],
+    },
+  );
 
   const card = c.card_id
     ? (cards.find((cd) => cd.id === c.card_id) ?? null)
@@ -215,14 +225,8 @@ export function CuotaItem({
                 <Button
                   size="sm"
                   className="h-auto px-2 py-0.5 text-[11px] font-semibold"
-                  onClick={() =>
-                    startTransition(async () => {
-                      await incrementPaidInstallments(c.id);
-                      await queryClient.invalidateQueries({
-                        queryKey: ["monthly-data"],
-                      });
-                    })
-                  }
+                  disabled={incrementing}
+                  onClick={() => void incrementPaid(c.id)}
                 >
                   +1
                 </Button>

@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { useState } from "react";
 import { Trash2 } from "lucide-react";
+import { useAction } from "@/lib/hooks/use-action";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 
 interface DeleteExpenseButtonProps {
@@ -30,27 +29,26 @@ export function DeleteExpenseButton({
   iconOnly = false,
 }: DeleteExpenseButtonProps) {
   const [open, setOpen] = useState(false);
-  const [isPending, startTransition] = useTransition();
-  const queryClient = useQueryClient();
 
-  function runUndo(undo: () => Promise<void>) {
-    startTransition(async () => {
-      await undo();
-      await queryClient.invalidateQueries({ queryKey: ["monthly-data"] });
-    });
-  }
+  const { run: runUndo } = useAction((undo: () => Promise<void>) => undo(), {
+    errorTitle: "No pudimos deshacer",
+    invalidate: [["monthly-data"]],
+    success: "Listo, lo restauramos",
+  });
+
+  const { run: runDelete, pending: isPending } = useAction(onConfirm, {
+    errorTitle: "No pudimos eliminarlo",
+    invalidate: [["monthly-data"]],
+    success: (undo) => ({
+      title: successMessage,
+      action: undo
+        ? { label: "Deshacer", onClick: () => void runUndo(undo) }
+        : undefined,
+    }),
+  });
 
   function handleConfirm() {
-    startTransition(async () => {
-      const undo = await onConfirm();
-      await queryClient.invalidateQueries({ queryKey: ["monthly-data"] });
-      toast.success(
-        successMessage,
-        undo
-          ? { action: { label: "Deshacer", onClick: () => runUndo(undo) } }
-          : undefined,
-      );
-    });
+    void runDelete();
   }
 
   return (

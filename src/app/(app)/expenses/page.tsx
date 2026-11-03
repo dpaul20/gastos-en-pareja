@@ -61,7 +61,8 @@ import {
   type EditingVariable,
 } from "./_components/add-sheet";
 import { DueDayPicker } from "./_components/due-day-picker";
-import { toast } from "sonner";
+import { notify } from "@/lib/feedback/notify";
+import { describeError } from "@/lib/utils/describe-error";
 import { ResponsiveModal } from "@/components/shared/responsive-modal";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { CategoryPicker } from "@/components/shared/category-picker";
@@ -609,14 +610,24 @@ function EditServiceSheet({
       deactivateFixedExpenseTemplate(templateId),
     onSuccess: async (_data, templateId) => {
       await queryClient.invalidateQueries({ queryKey: ["monthly-data"] });
-      toast.success("Servicio eliminado", {
+      notify.success("Servicio eliminado", {
         action: {
           label: "Deshacer",
           onClick: async () => {
-            await reactivateFixedExpenseTemplate(templateId);
-            await queryClient.invalidateQueries({
-              queryKey: ["monthly-data"],
-            });
+            try {
+              await reactivateFixedExpenseTemplate(templateId);
+              await queryClient.invalidateQueries({
+                queryKey: ["monthly-data"],
+              });
+              notify.success("Listo, lo restauramos");
+            } catch (err) {
+              notify.error(
+                describeError(err, {
+                  online: navigator.onLine,
+                  fallbackTitle: "No pudimos deshacer",
+                }),
+              );
+            }
           },
         },
       });
@@ -1052,9 +1063,12 @@ function ExpensesView() {
   // Map flow steps to AddSheet tab — must be computed before useExpenseSave
   const addSheetTab: Tab | null = flowStepToAddTab(flow.step);
 
-  const { save, saveError } = useExpenseSave(
-    addSheetTab ?? (filter === "todo" ? "cuotas" : filter),
-  );
+  const {
+    save,
+    saveError,
+    isPending: isSaving,
+    clearError: clearSaveError,
+  } = useExpenseSave(addSheetTab ?? (filter === "todo" ? "cuotas" : filter));
 
   function handleFilterChange(newFilter: ExpenseFilter) {
     setFilter(newFilter);
@@ -1082,7 +1096,7 @@ function ExpensesView() {
   const getPerson = (userId: string): "a" | "b" =>
     userId === member?.user_id ? "a" : "b";
 
-  function handleSave(
+  async function handleSave(
     fields: Record<string, string>,
     categoryId: string | null,
     autoRenew: boolean,
@@ -1090,16 +1104,31 @@ function ExpensesView() {
     payerId?: string | null,
     cardId?: string | null,
   ) {
-    // Commit 6: resolve the edit target BEFORE resetting flow to "idle" —
-    // once reset, the step/id info needed to route create vs. update is gone.
+    // Commit 6: resolve the edit target BEFORE the flow changes — once reset,
+    // the step/id info needed to route create vs. update is gone.
     const editId =
       flow.step === "edit-cuota"
         ? flow.purchaseId
         : flow.step === "edit-variable"
           ? flow.expenseId
           : null;
+    // The sheet stays open until the save really succeeded, so a failure
+    // never costs the user what they typed.
+    const saved = await save(
+      fields,
+      categoryId,
+      autoRenew,
+      isShared,
+      payerId,
+      cardId,
+      editId,
+    );
+    if (saved) setFlow({ step: "idle" });
+  }
+
+  function closeAddSheet() {
+    clearSaveError();
     setFlow({ step: "idle" });
-    save(fields, categoryId, autoRenew, isShared, payerId, cardId, editId);
   }
 
   const allCuotas = data?.installmentPurchases ?? [];
@@ -1513,9 +1542,10 @@ function ExpensesView() {
             key={flowKey(flow)}
             tab={addSheetTab}
             categories={categories}
-            onClose={() => setFlow({ step: "idle" })}
+            onClose={closeAddSheet}
             onSave={handleSave}
             saveError={saveError}
+            isSaving={isSaving}
             members={profiles}
             currentUserId={member?.user_id ?? undefined}
             coupleId={coupleId}

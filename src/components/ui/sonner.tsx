@@ -17,21 +17,32 @@ const Toaster = ({ ...props }: ToasterProps) => {
     <Sonner
       theme={theme as ToasterProps["theme"]}
       className="toaster group"
-      icons={{
-        success: <CircleCheckIcon className="size-4" />,
-        info: <InfoIcon className="size-4" />,
-        warning: <TriangleAlertIcon className="size-4" />,
-        error: <OctagonXIcon className="size-4" />,
-        loading: <Loader2Icon className="size-4 animate-spin" />,
+      position="top-center"
+      offset={{ top: "calc(env(safe-area-inset-top) + 12px)" }}
+      mobileOffset={{
+        top: "calc(env(safe-area-inset-top) + 10px)",
+        left: 12,
+        right: 12,
       }}
-      style={
-        {
-          "--normal-bg": "var(--popover)",
-          "--normal-text": "var(--popover-foreground)",
-          "--normal-border": "var(--border)",
-          "--border-radius": "var(--radius)",
-        } as React.CSSProperties
-      }
+      visibleToasts={3}
+      gap={10}
+      icons={{
+        success: <CircleCheckIcon className="size-[18px]" />,
+        info: <InfoIcon className="size-[18px]" />,
+        warning: <TriangleAlertIcon className="size-[18px]" />,
+        error: <OctagonXIcon className="size-[18px]" />,
+        loading: <Loader2Icon className="size-[18px] animate-spin" />,
+      }}
+      toastOptions={{
+        classNames: {
+          toast: "fx-toast",
+          title: "fx-toast-title",
+          description: "fx-toast-description",
+          icon: "fx-toast-icon",
+          actionButton: "fx-toast-action",
+          cancelButton: "fx-toast-cancel",
+        },
+      }}
       {...props}
     />
   );
