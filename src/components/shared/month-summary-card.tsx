@@ -306,7 +306,8 @@ export function MonthSummaryCard({
               className="ds-amount shrink-0 text-[18px] font-bold"
               style={{ color: savingsRow.color }}
             >
-              {formatARS(savingsRow.amt)}
+              {savingsRow.amt < 0 ? "-" : ""}
+              {formatARS(Math.abs(savingsRow.amt))}
             </span>
           </div>
         </div>
