@@ -9,6 +9,8 @@ import { PersonAvatar } from "@/components/shared/avatar";
 import { ResponsiveModal } from "@/components/shared/responsive-modal";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { formatARS, getInitials, getTodayBADate } from "@/lib/utils";
+import { notify, haptic } from "@/lib/feedback/notify";
+import { describeError, inlineMessage } from "@/lib/utils/describe-error";
 import {
   parseAmount,
   formatAmountInput,
@@ -136,11 +138,21 @@ export function SettleSheet({
     setToId(fromId);
   }
 
+  function failWith(fallbackTitle: string) {
+    return (err: Error) => {
+      haptic("error");
+      setSubmitError(
+        inlineMessage(
+          describeError(err, { online: navigator.onLine, fallbackTitle }),
+        ),
+      );
+    };
+  }
+
   function onValid(values: SettlementForm) {
     setSubmitError(null);
-    const onError = (err: Error) =>
-      setSubmitError(err.message ?? "No se pudo registrar el pago");
-    const onSuccess = () => onClose();
+    const onError = failWith("No pudimos registrar el pago");
+    const amount = parseAmount(values.amount);
 
     if (editing) {
       updateSettlement.mutate(
@@ -149,12 +161,20 @@ export function SettleSheet({
           data: {
             from_user_id: fromId,
             to_user_id: toId,
-            amount: parseAmount(values.amount),
+            amount,
             paid_on: values.paid_on,
             note: values.note?.trim() ? values.note.trim() : null,
           },
         },
-        { onSuccess, onError },
+        {
+          onSuccess: () => {
+            notify.success("Pago actualizado", {
+              description: `${nameOf(fromId)} → ${nameOf(toId)} · ${formatARS(amount)}`,
+            });
+            onClose();
+          },
+          onError,
+        },
       );
       return;
     }
@@ -164,20 +184,30 @@ export function SettleSheet({
         month,
         from_user_id: fromId,
         to_user_id: toId,
-        amount: parseAmount(values.amount),
+        amount,
         paid_on: values.paid_on,
         note: values.note?.trim() ? values.note.trim() : null,
       },
-      { onSuccess, onError },
+      {
+        onSuccess: () => {
+          notify.celebrate("Pago registrado", {
+            description: `${nameOf(fromId)} → ${nameOf(toId)} · ${formatARS(amount)}`,
+          });
+          onClose();
+        },
+        onError,
+      },
     );
   }
 
   function handleDelete() {
     if (!editing) return;
     deleteSettlement.mutate(editing.id, {
-      onSuccess: () => onClose(),
-      onError: (err: Error) =>
-        setSubmitError(err.message ?? "No se pudo eliminar el pago"),
+      onSuccess: () => {
+        notify.success("Pago eliminado");
+        onClose();
+      },
+      onError: failWith("No pudimos eliminar el pago"),
     });
   }
 

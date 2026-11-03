@@ -23,6 +23,9 @@ import {
   createCouple,
   createInvitationLink,
 } from "@/lib/actions/couple";
+import { useAction } from "@/lib/hooks/use-action";
+import { notify, haptic } from "@/lib/feedback/notify";
+import { describeError, inlineMessage } from "@/lib/utils/describe-error";
 import { getMonthDate, getInitials, formatARS } from "@/lib/utils";
 import {
   parseAmount,
@@ -106,16 +109,28 @@ export default function SettingsPage() {
 
   const inviteExpiresAt = pendingInvitation?.expires_at ?? null;
 
-  async function handleSaveIncome() {
+  const { run: saveIncome, pending: incomeSaving } = useAction(
+    (amount: number) => upsertIncome(amount, getMonthDate()),
+    {
+      errorTitle: "No pudimos guardar tu ingreso",
+      invalidate: [["income-with-carry"], ["monthly-data"]],
+      success: "Ingreso guardado",
+    },
+  );
+
+  function handleSaveIncome() {
     const amount = parseAmount(displayIncome);
     if (!amount || !member) return;
-    startTransition(async () => {
-      await upsertIncome(amount, getMonthDate());
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["income-with-carry"] }),
-        queryClient.invalidateQueries({ queryKey: ["monthly-data"] }),
-      ]);
+    void saveIncome(amount);
+  }
+
+  function failInline(err: unknown, fallbackTitle: string): string {
+    const description = describeError(err, {
+      online: navigator.onLine,
+      fallbackTitle,
     });
+    haptic("error");
+    return inlineMessage(description);
   }
 
   async function handleCreateCouple() {
@@ -125,10 +140,11 @@ export default function SettingsPage() {
         await createCouple();
         queryClient.invalidateQueries({ queryKey: ["couple-member"] });
         queryClient.invalidateQueries({ queryKey: ["my-pending-invitations"] });
+        notify.success("¡Pareja creada!", {
+          description: "Ahora invitá a tu pareja para empezar a repartir.",
+        });
       } catch (err) {
-        setCoupleMsg(
-          err instanceof Error ? err.message : "No se pudo crear la pareja",
-        );
+        setCoupleMsg(failInline(err, "No se pudo crear la pareja"));
       }
     });
   }
@@ -138,15 +154,16 @@ export default function SettingsPage() {
     if (!member || !inviteEmail) return;
     startTransition(async () => {
       try {
+        setInviteMsg("");
         await sendInvitation(member.couple_id, inviteEmail);
         queryClient.invalidateQueries({
           queryKey: ["pending-invitation", member.couple_id],
         });
         queryClient.invalidateQueries({ queryKey: ["my-pending-invitations"] });
-        setInviteMsg("Invitación enviada ✓");
+        notify.success("Invitación enviada", { description: inviteEmail });
         setInviteEmail("");
       } catch (err) {
-        setInviteMsg(err instanceof Error ? err.message : "Error al enviar");
+        setInviteMsg(failInline(err, "No pudimos enviar la invitación"));
       }
     });
   }
@@ -161,24 +178,36 @@ export default function SettingsPage() {
           token: result.token,
           expires_at: result.expiresAt,
         });
+        notify.success("Link listo para compartir");
       } catch (err) {
-        setLinkError(
-          err instanceof Error ? err.message : "Error al generar el link",
-        );
+        setLinkError(failInline(err, "No pudimos generar el link"));
       }
     });
   }
 
   async function handleCopyLink() {
     if (!inviteUrl) return;
-    await navigator.clipboard.writeText(inviteUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(inviteUrl);
+      haptic("success");
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      notify.warning("No pudimos copiar el link", {
+        description: "Mantené apretado el campo para copiarlo a mano.",
+      });
+    }
   }
 
   async function handleShareLink() {
     if (!inviteUrl) return;
-    await navigator.share({ title: "Gastos en Pareja", url: inviteUrl });
+    try {
+      await navigator.share({ title: "Gastos en Pareja", url: inviteUrl });
+    } catch (err) {
+      // Dismissing the native share sheet rejects with AbortError — not a failure.
+      if (err instanceof DOMException && err.name === "AbortError") return;
+      notify.warning("No pudimos abrir el menú de compartir");
+    }
   }
 
   async function handleSignOut() {
@@ -292,13 +321,8 @@ export default function SettingsPage() {
                           </form>
                           {inviteMsg && (
                             <div
-                              aria-live="polite"
-                              className="mt-1.5 [font-family:var(--font-sans)] text-xs"
-                              style={{
-                                color: inviteMsg.includes("✓")
-                                  ? "var(--status-success-text)"
-                                  : "var(--status-danger-text)",
-                              }}
+                              role="alert"
+                              className="mt-1.5 [font-family:var(--font-sans)] text-xs [color:var(--status-danger-text)]"
                             >
                               {inviteMsg}
                             </div>
@@ -444,11 +468,11 @@ export default function SettingsPage() {
               <div className="px-4 pb-3.5">
                 <Button
                   onClick={handleSaveIncome}
-                  disabled={isPending || !myIncome || parsedIncome <= 0}
-                  aria-busy={isPending}
+                  disabled={incomeSaving || !myIncome || parsedIncome <= 0}
+                  aria-busy={incomeSaving}
                   className="w-full [font-family:var(--font-sans)]"
                 >
-                  {isPending ? "Guardando…" : "Guardar ingreso"}
+                  {incomeSaving ? "Guardando…" : "Guardar ingreso"}
                 </Button>
               </div>
             </Card>

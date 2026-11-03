@@ -1,10 +1,13 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
+import { Loader2 } from "lucide-react";
+import type { ErrorDescription } from "@/lib/utils/describe-error";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import type { Control, FieldPath } from "react-hook-form";
+import type { Control, FieldErrors, FieldPath } from "react-hook-form";
+import { haptic } from "@/lib/feedback/notify";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -269,6 +272,105 @@ function InputField({
   );
 }
 
+// ── SUB-COMPONENTS ────────────────────────────────────────────────────────────
+
+function SaveErrorBanner({
+  error,
+  isSaving,
+  onRetry,
+}: {
+  readonly error: ErrorDescription;
+  readonly isSaving: boolean;
+  readonly onRetry: () => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [copied, setCopied] = useState(false);
+
+  // Bring the failure into view: on a short phone the submit button (and the
+  // message above it) can be below the fold of the scrolling sheet.
+  useEffect(() => {
+    ref.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [error]);
+
+  async function copyCode() {
+    if (!error.code) return;
+    try {
+      await navigator.clipboard.writeText(error.code);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard can be blocked; the code is still printed in the banner.
+    }
+  }
+
+  const buttonCss: React.CSSProperties = {
+    height: 32,
+    padding: "0 12px",
+    borderRadius: "var(--radius-full)",
+    border: "1px solid var(--status-danger-text)",
+    background: "transparent",
+    color: "var(--status-danger-text)",
+    fontSize: 13,
+    fontWeight: 600,
+    fontFamily: "var(--font-sans)",
+    cursor: "pointer",
+  };
+
+  return (
+    <div
+      ref={ref}
+      role="alert"
+      data-testid="save-error"
+      className="fx-shake"
+      style={{
+        marginBottom: 12,
+        padding: "12px 14px",
+        background: "var(--status-danger-subtle)",
+        borderRadius: "var(--radius-md)",
+        border: "1px solid var(--status-danger)",
+        fontFamily: "var(--font-sans)",
+      }}
+    >
+      <div
+        style={{
+          fontSize: 14,
+          fontWeight: 600,
+          color: "var(--status-danger-text)",
+        }}
+      >
+        {error.title}
+      </div>
+      {error.message && (
+        <div style={{ fontSize: 13, color: "var(--fg-2)", marginTop: 2 }}>
+          {error.message}
+        </div>
+      )}
+      <div style={{ fontSize: 12, color: "var(--fg-3)", marginTop: 4 }}>
+        Lo que escribiste sigue acá, no se perdió.
+      </div>
+      {(error.retryable || error.code) && (
+        <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+          {error.retryable && (
+            <button
+              type="button"
+              onClick={onRetry}
+              disabled={isSaving}
+              style={{ ...buttonCss, opacity: isSaving ? 0.5 : 1 }}
+            >
+              Reintentar
+            </button>
+          )}
+          {error.code && (
+            <button type="button" onClick={copyCode} style={buttonCss}>
+              {copied ? "Código copiado ✓" : "Copiar código"}
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── MAIN COMPONENT ────────────────────────────────────────────────────────────
 export function AddSheet({
   tab,
@@ -276,6 +378,7 @@ export function AddSheet({
   onClose,
   onSave,
   saveError,
+  isSaving = false,
   members,
   currentUserId,
   coupleId,
@@ -292,10 +395,11 @@ export function AddSheet({
     isShared: boolean,
     payerId?: string | null,
     cardId?: string | null,
-  ) => void;
+  ) => void | Promise<void>;
   readonly members?: { user_id: string; full_name: string }[];
   readonly currentUserId?: string;
-  readonly saveError?: string | null;
+  readonly saveError?: ErrorDescription | null;
+  readonly isSaving?: boolean;
   readonly coupleId?: string | null;
   /** Commit 6: when set, the sheet edits this cuota instead of creating one. */
   readonly editingCuota?: EditingCuota | null;
@@ -374,8 +478,16 @@ export function AddSheet({
     return computeMonthlyInstallment(total, count);
   }, [totalAmountRaw, installmentsRaw]);
 
-  function onSubmit(data: Fields) {
-    onSave(
+  // Land the user on the first broken field: on a phone the keyboard hides
+  // everything below, so a silent "nothing happened" submit is the worst case.
+  function onInvalid(errors: FieldErrors<Fields>) {
+    haptic("error");
+    const first = Object.keys(errors)[0] as FieldPath<Fields> | undefined;
+    if (first) form.setFocus(first);
+  }
+
+  async function onSubmit(data: Fields) {
+    await onSave(
       Object.fromEntries(
         Object.entries(data).filter(([, v]) => v !== undefined),
       ) as Record<string, string>,
@@ -389,6 +501,8 @@ export function AddSheet({
     );
   }
 
+  const saveLabel = isEditing ? "Guardar cambios" : SAVE_LABEL[tab];
+
   return (
     <ResponsiveModal
       open
@@ -401,7 +515,7 @@ export function AddSheet({
       data-testid="add-sheet-dialog"
     >
       <Form {...form}>
-        <form onSubmit={handleSubmit(onSubmit)}>
+        <form onSubmit={handleSubmit(onSubmit, onInvalid)}>
           <InputField
             label="Descripción"
             id="field-description"
@@ -704,24 +818,31 @@ export function AddSheet({
           )}
 
           {saveError && (
-            <div
-              role="alert"
-              style={{
-                ...errorCss,
-                marginBottom: 12,
-                padding: "8px 12px",
-                background:
-                  "color-mix(in srgb, var(--status-danger) 10%, transparent)",
-                borderRadius: 8,
-                border: "1px solid var(--status-danger-text)",
-              }}
-            >
-              {saveError}
-            </div>
+            <SaveErrorBanner
+              error={saveError}
+              isSaving={isSaving}
+              onRetry={() => void handleSubmit(onSubmit)()}
+            />
           )}
 
-          <Button type="submit" style={{ width: "100%" }}>
-            {isEditing ? "Guardar cambios" : SAVE_LABEL[tab]}
+          <Button
+            type="submit"
+            disabled={isSaving}
+            aria-busy={isSaving}
+            style={{ width: "100%" }}
+          >
+            {isSaving ? (
+              <>
+                <Loader2
+                  size={16}
+                  className="animate-spin"
+                  aria-hidden="true"
+                />
+                Guardando…
+              </>
+            ) : (
+              saveLabel
+            )}
           </Button>
         </form>
       </Form>

@@ -1,7 +1,10 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
+import { useAction } from "@/lib/hooks/use-action";
+import { haptic } from "@/lib/feedback/notify";
+import { describeError, inlineMessage } from "@/lib/utils/describe-error";
 import { Check, Pencil, RotateCcw, X } from "lucide-react";
 import { PersonAvatar } from "@/components/shared/avatar";
 import { Button } from "@/components/ui/button";
@@ -46,7 +49,6 @@ export function FijoItem({
    * instance to compare (brand-new service or previous month was AWAITING_BILL). */
   readonly referenceAmount?: number | null;
 }) {
-  const [, startTransition] = useTransition();
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
@@ -83,9 +85,22 @@ export function FijoItem({
       setMutationError(null);
     },
     onError: (err: Error) => {
-      setMutationError(err.message ?? "No se pudo actualizar el monto");
+      const d = describeError(err, {
+        online: navigator.onLine,
+        fallbackTitle: "No se pudo actualizar el monto",
+      });
+      setMutationError(inlineMessage(d));
+      haptic("error");
     },
   });
+
+  const { run: togglePaid, pending: togglePending } = useAction(
+    (checked: boolean) => toggleFixedExpenseInstance(fi.id, checked),
+    {
+      errorTitle: "No pudimos cambiar el estado de pago",
+      invalidate: [["monthly-data"]],
+    },
+  );
 
   function handleSave() {
     const parsed = parseAmount(draft);
@@ -351,15 +366,11 @@ export function FijoItem({
         </span>
         <Switch
           checked={fi.paid}
-          onCheckedChange={(checked) =>
-            startTransition(async () => {
-              await toggleFixedExpenseInstance(fi.id, checked);
-              await queryClient.invalidateQueries({
-                queryKey: ["monthly-data"],
-              });
-            })
-          }
-          disabled={editing || amountMutation.isPending}
+          onCheckedChange={(checked) => {
+            haptic("success");
+            void togglePaid(checked);
+          }}
+          disabled={editing || amountMutation.isPending || togglePending}
           aria-label={fi.paid ? "Marcar como no pagado" : "Marcar como pagado"}
         />
       </div>
