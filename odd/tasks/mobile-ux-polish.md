@@ -30,7 +30,7 @@ Decisiones de diseño tomadas (S3/S4, no especificadas):
 - [x] T5 · S1,S2,S4 · inline · hojas (`add-sheet`, `settle-sheet`, `load-bill-sheet`, selector de tipo) y listas (`cuota-item`, `fijo-item`, `variable-item`): entrada escalonada, feedback al tocar
 - [x] T6 · S1,S2 · inline · Configuración a fondo (tarjeta de pareja, ingreso, cuenta), `MonthDetail`, widgets del dashboard, sidebar de escritorio
 - [x] T7 · S2,S4 · inline · celebración al saldar: `Confetti` + `haptic("celebrate")`, todo con reduced-motion
-- [ ] T8 · S5 · inline · validar con Playwright `--headed` en Pixel 5 + iPhone SE/14/Pro Max, claro/oscuro; suite e2e completa; actualizar snapshots visuales si corresponde
+- [x] T8 · S5 · inline · validar con Playwright `--headed` en Pixel 5 + iPhone SE/14/Pro Max, claro/oscuro; suite e2e completa; actualizar snapshots visuales si corresponde
 
 ## Log
 
