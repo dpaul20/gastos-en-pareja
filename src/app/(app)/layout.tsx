@@ -14,7 +14,7 @@ export default function AppLayout({
       </div>
 
       <SidebarInset className="bg-(--bg-base)">
-        <div className="flex-1 pb-16 lg:pb-0">
+        <div className="flex-1 pb-28 lg:pb-0">
           <div className="mx-auto w-full max-w-97.5 md:mx-0 md:max-w-none">
             <AppShell>{children}</AppShell>
           </div>
