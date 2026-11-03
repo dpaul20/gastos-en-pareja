@@ -1,98 +1,80 @@
 "use client";
 
+import { ChevronLeft, ChevronRight, CalendarCheck } from "lucide-react";
+import { cn } from "@/lib/utils";
+
 interface MonthHeaderProps {
   month: string;
   onPrev: () => void;
   onNext: () => void;
   canGoNext?: boolean;
+  /** Small line above the month, e.g. a greeting. */
+  eyebrow?: string;
+  /** Shown as a "Hoy" shortcut when browsing a month other than the current one. */
+  onToday?: () => void;
 }
+
+const ARROW_CLASS =
+  "press flex size-11 items-center justify-center rounded-full border-none bg-transparent [color:var(--fg-2)] hover:[background-color:var(--bg-sunken)] disabled:pointer-events-none disabled:opacity-30";
 
 export function MonthHeader({
   month,
   onPrev,
   onNext,
   canGoNext = true,
+  eyebrow,
+  onToday,
 }: Readonly<MonthHeaderProps>) {
   return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        padding: "14px 20px 10px",
-        background: "var(--bg-elevated)",
-        borderBottom: "1px solid var(--border-subtle)",
-      }}
-    >
-      <button
-        onClick={onPrev}
-        style={{
-          background: "none",
-          border: "none",
-          padding: 6,
-          cursor: "pointer",
-          borderRadius: 8,
-          minWidth: 44,
-          minHeight: 44,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-        aria-label="Mes anterior"
-      >
-        <svg
-          aria-hidden="true"
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="var(--fg-2)"
-          strokeWidth="2"
-        >
-          <polyline points="15 18 9 12 15 6" />
-        </svg>
-      </button>
-      <span
-        data-testid="current-month"
-        style={{
-          fontSize: 17,
-          fontWeight: 600,
-          color: "var(--fg-1)",
-          fontFamily: "var(--font-sans)",
-        }}
-      >
-        {month}
-      </span>
-      <button
-        onClick={onNext}
-        disabled={!canGoNext}
-        style={{
-          background: "none",
-          border: "none",
-          padding: 6,
-          cursor: canGoNext ? "pointer" : "default",
-          borderRadius: 8,
-          minWidth: 44,
-          minHeight: 44,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          opacity: canGoNext ? 1 : 0.3,
-        }}
-        aria-label="Mes siguiente"
-      >
-        <svg
-          aria-hidden="true"
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="var(--fg-2)"
-          strokeWidth="2"
-        >
-          <polyline points="9 18 15 12 9 6" />
-        </svg>
-      </button>
+    <div className="page-header">
+      <div className="mx-auto w-full max-w-3xl px-3 pt-3 pb-2.5">
+        {eyebrow && (
+          <div className="eyebrow rise-in px-3 pb-1 text-center normal-case">
+            {eyebrow}
+          </div>
+        )}
+        <div className="flex items-center justify-between">
+          <button
+            type="button"
+            onClick={onPrev}
+            className={ARROW_CLASS}
+            aria-label="Mes anterior"
+          >
+            <ChevronLeft size={22} strokeWidth={2.2} aria-hidden />
+          </button>
+          <div className="flex min-w-0 flex-col items-center">
+            <span
+              key={month}
+              data-testid="current-month"
+              className="rise-in [font-family:var(--font-sans)] text-[20px] leading-tight font-bold tracking-[-0.015em] [color:var(--fg-1)]"
+            >
+              {month}
+            </span>
+            {onToday && (
+              <button
+                type="button"
+                onClick={onToday}
+                className={cn(
+                  "pop-in press mt-1 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 [font-family:var(--font-sans)] text-[11px] font-semibold",
+                  "[background-color:var(--accent-subtle)] [color:var(--accent)]",
+                )}
+              >
+                <CalendarCheck size={12} aria-hidden />
+                Volver a hoy
+              </button>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={onNext}
+            disabled={!canGoNext}
+            className={ARROW_CLASS}
+            aria-label="Mes siguiente"
+          >
+            <ChevronRight size={22} strokeWidth={2.2} aria-hidden />
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

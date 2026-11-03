@@ -14,16 +14,24 @@ const items = [
 
 export function BottomNav() {
   const pathname = usePathname();
+  const activeIndex = items.findIndex(
+    (item) => pathname === item.href || pathname.startsWith(item.href + "/"),
+  );
 
   return (
     <nav
       aria-label="Navegación principal"
-      className="fixed right-0 bottom-0 left-0 z-50 border-t [border-color:var(--border-subtle)] [background-color:var(--bg-elevated)] pb-[env(safe-area-inset-bottom)] lg:hidden"
+      className="dock glass lg:hidden"
+      style={
+        {
+          "--dock-index": Math.max(activeIndex, 0),
+        } as React.CSSProperties
+      }
     >
-      <div className="flex h-16 items-stretch">
+      <div className="relative flex h-16 items-stretch p-1.5">
+        {activeIndex >= 0 && <span aria-hidden className="dock-pill" />}
         {items.map((item) => {
-          const isActive =
-            pathname === item.href || pathname.startsWith(item.href + "/");
+          const isActive = items[activeIndex]?.id === item.id;
           return (
             <Link
               key={item.id}
@@ -32,15 +40,22 @@ export function BottomNav() {
               // "Config" fits the tab width; accessible name stays
               // "Configuración" to match the desktop sidebar nav.
               aria-label={item.id === "settings" ? "Configuración" : undefined}
+              onClick={() => {
+                if (!isActive && "vibrate" in navigator) navigator.vibrate(8);
+              }}
               className={cn(
-                "flex flex-1 flex-col items-center justify-center gap-1 [font-family:var(--font-sans)] text-[10px] font-semibold transition-colors",
+                "press relative z-10 flex flex-1 flex-col items-center justify-center gap-0.5 rounded-[20px] [font-family:var(--font-sans)] text-[10.5px] font-semibold transition-colors",
                 isActive
                   ? "text-(--accent)"
                   : "text-(--fg-3) hover:text-(--fg-1)",
               )}
             >
               <item.icon
-                className={cn("size-5 shrink-0", isActive && "stroke-[2.2]")}
+                aria-hidden
+                className={cn(
+                  "size-[22px] shrink-0 transition-transform duration-300 [transition-timing-function:var(--ease-spring)]",
+                  isActive && "-translate-y-px scale-110 stroke-[2.2]",
+                )}
               />
               {item.label}
             </Link>

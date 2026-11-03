@@ -26,13 +26,13 @@ export function ErrorPanel({ digest, onRetry }: ErrorPanelProps) {
     <div
       role="alert"
       data-testid="error-panel"
-      className="fx-rise w-full max-w-[420px] rounded-[var(--radius-lg)] border [border-color:var(--border-subtle)] [background-color:var(--bg-elevated)] p-6 text-center [font-family:var(--font-sans)] shadow-[var(--shadow-sm)]"
+      className="rise-in glass w-full max-w-[420px] rounded-3xl p-6 text-center [font-family:var(--font-sans)]"
     >
       <div
-        className="mx-auto mb-4 flex size-14 items-center justify-center rounded-full [background-color:var(--status-danger-subtle)] [color:var(--status-danger-text)]"
+        className="float-y mx-auto mb-4 flex size-16 items-center justify-center rounded-2xl [background-color:var(--status-danger-subtle)] [color:var(--status-danger-text)]"
         aria-hidden="true"
       >
-        <TriangleAlert size={26} />
+        <TriangleAlert size={30} />
       </div>
       <h2 className="m-0 mb-2 text-lg font-semibold [color:var(--fg-1)]">
         Algo no salió como esperábamos
@@ -45,7 +45,7 @@ export function ErrorPanel({ digest, onRetry }: ErrorPanelProps) {
       <button
         type="button"
         onClick={onRetry}
-        className="inline-flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-[var(--radius-md)] border-none [background-color:var(--accent)] px-4 font-semibold text-white"
+        className="press inline-flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border-none [background-color:var(--accent)] px-4 font-semibold [color:var(--accent-foreground)] shadow-[var(--shadow-accent)]"
       >
         <RefreshCw size={16} aria-hidden="true" />
         Reintentar

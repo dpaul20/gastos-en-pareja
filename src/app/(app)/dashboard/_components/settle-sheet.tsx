@@ -361,7 +361,7 @@ export function SettleSheet({
           type="submit"
           data-testid="settle-submit"
           disabled={isBusy}
-          className={`w-full ${isBusy ? "opacity-70" : ""}`}
+          className={`press h-12 w-full rounded-full text-[15px] font-semibold shadow-[var(--shadow-accent)] ${isBusy ? "opacity-70" : ""}`}
         >
           {isEditing ? "Guardar cambios" : "Registrar pago"}
         </Button>
@@ -369,7 +369,7 @@ export function SettleSheet({
           type="button"
           onClick={onClose}
           disabled={isBusy}
-          className={`mt-2.5 w-full cursor-pointer rounded-md border-none [background-color:var(--bg-sunken)] px-1 py-2.5 [font-family:var(--font-sans)] text-[13px] font-semibold [color:var(--fg-1)] ${isBusy ? "opacity-50" : ""}`}
+          className={`press mt-2.5 min-h-11 w-full cursor-pointer rounded-full border-none [background-color:var(--bg-sunken)] px-1 py-2.5 [font-family:var(--font-sans)] text-[13px] font-semibold [color:var(--fg-1)] ${isBusy ? "opacity-50" : ""}`}
         >
           Cancelar
         </button>

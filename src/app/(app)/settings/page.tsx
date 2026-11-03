@@ -38,6 +38,8 @@ import { ModeToggle } from "@/components/shared/mode-toggle";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { PageHeader } from "@/components/shared/page-header";
 
 export default function SettingsPage() {
   const { data: member, isLoading } = useCoupleMember();
@@ -217,23 +219,22 @@ export default function SettingsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-full items-center justify-center">
-        <span className="[font-family:var(--font-sans)] text-sm [color:var(--fg-3)]">
-          Cargando…
-        </span>
+      <div className="flex min-h-full flex-col [background-color:var(--bg-base)]">
+        <PageHeader title="Configuración" eyebrow="Tu cuenta y tu pareja" />
+        <div className="mx-auto flex w-full max-w-xl flex-col gap-4 p-4">
+          <Skeleton className="h-24 w-full rounded-2xl" />
+          <Skeleton className="h-40 w-full rounded-2xl" />
+          <Skeleton className="h-20 w-full rounded-2xl" />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-full flex-col [background-color:var(--bg-base)]">
-      <div className="border-b [border-color:var(--border-subtle)] bg-[var(--bg-elevated)] px-5 py-3.5">
-        <h1 className="m-0 [font-family:var(--font-sans)] text-xl font-bold [color:var(--fg-1)]">
-          Configuración
-        </h1>
-      </div>
+    <div className="app-ambient flex min-h-full flex-col [background-color:var(--bg-base)]">
+      <PageHeader title="Configuración" eyebrow="Tu cuenta y tu pareja" />
 
-      <div className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-4 p-4">
+      <div className="stagger mx-auto flex w-full max-w-xl flex-1 flex-col gap-4 p-4">
         {/* Pareja */}
         <section>
           <h2 className="mb-2 [font-family:var(--font-sans)] text-xs font-semibold tracking-wider [color:var(--fg-3)] uppercase">

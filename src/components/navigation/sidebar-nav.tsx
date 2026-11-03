@@ -29,7 +29,7 @@ export function AppSidebar() {
       <SidebarHeader>
         <div className="flex items-center gap-2.5 px-2 py-1">
           <div
-            className="flex size-8 shrink-0 items-center justify-center rounded-xl"
+            className="flex size-9 shrink-0 items-center justify-center rounded-xl shadow-[var(--shadow-accent)]"
             style={{
               background:
                 "linear-gradient(135deg, var(--color-violet-500) 0%, var(--color-violet-400) 100%)",
@@ -61,26 +61,30 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <nav aria-label="Navegación principal">
-            <SidebarMenu>
-              {items.map((item) => {
-                const isActive =
-                  pathname === item.href ||
-                  pathname.startsWith(item.href + "/");
-                return (
-                  <SidebarMenuItem key={item.id}>
-                    <SidebarMenuButton asChild isActive={isActive}>
-                      <Link
-                        href={item.href}
-                        aria-current={isActive ? "page" : undefined}
+              <SidebarMenu>
+                {items.map((item) => {
+                  const isActive =
+                    pathname === item.href ||
+                    pathname.startsWith(item.href + "/");
+                  return (
+                    <SidebarMenuItem key={item.id}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={isActive}
+                        className="press h-10 rounded-xl"
                       >
-                        <item.icon />
-                        <span>{item.label}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
+                        <Link
+                          href={item.href}
+                          aria-current={isActive ? "page" : undefined}
+                        >
+                          <item.icon />
+                          <span>{item.label}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
+              </SidebarMenu>
             </nav>
           </SidebarGroupContent>
         </SidebarGroup>

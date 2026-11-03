@@ -60,17 +60,19 @@ export function MonthCard({
     <button
       data-testid="month-card"
       onClick={onClick}
-      className="w-full cursor-pointer rounded-[14px] border [border-color:var(--border-subtle)] [background-color:var(--bg-elevated)] p-4 text-left shadow-[var(--shadow-sm)]"
+      className="press lift w-full cursor-pointer rounded-[18px] border [border-color:var(--border-subtle)] [background-color:var(--bg-elevated)] p-4 text-left shadow-[var(--shadow-sm)]"
     >
       <div className="mb-2.5 flex items-start justify-between">
-        <div className="[font-family:var(--font-sans)] text-[15px] font-semibold [color:var(--fg-1)]">
+        <div className="[font-family:var(--font-sans)] text-[16px] font-bold tracking-tight [color:var(--fg-1)]">
           {formatMonth(month)}
         </div>
-        <ChevronRight
-          size={16}
-          strokeWidth={2}
-          className="[color:var(--fg-3)]"
-        />
+        <span className="flex size-6 items-center justify-center rounded-full [background-color:var(--bg-sunken)]">
+          <ChevronRight
+            size={14}
+            strokeWidth={2.4}
+            className="[color:var(--fg-2)]"
+          />
+        </span>
       </div>
       <div className="mb-2 flex items-center justify-between">
         <span className="[font-family:var(--font-sans)] text-xs [color:var(--fg-2)]">
@@ -90,7 +92,7 @@ export function MonthCard({
           {formatARS(balance.totalExpenses)}
         </span>
       </div>
-      <div className="flex h-1 overflow-hidden rounded-full [background-color:var(--border-default)]">
+      <div className="flex h-2 overflow-hidden rounded-full [background-color:var(--border-default)]">
         <div style={{ width: `${myPct}%`, background: "var(--person-a)" }} />
         <div className="flex-1" style={{ background: "var(--person-b)" }} />
       </div>

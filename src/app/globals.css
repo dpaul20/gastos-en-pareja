@@ -191,7 +191,7 @@
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
 
-  --bottom-nav-height: 68px;
+  --bottom-nav-height: 92px;
   --screen-width: 390px;
   --screen-padding: 16px;
   --sidebar-width: 240px;
@@ -729,4 +729,243 @@ body {
   .fx-shake {
     animation: fx-shake 0.4s ease-out;
   }
+}
+
+/* ── POLISH LAYER: ambient, motion, glass ─────────────────────
+   Shared building blocks for the mobile-first UX pass. All motion is
+   gated behind prefers-reduced-motion: no-preference. */
+
+:root {
+  --glass-bg: color-mix(in srgb, var(--bg-elevated) 78%, transparent);
+  --glass-border: color-mix(in srgb, var(--fg-1) 8%, transparent);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.dark {
+  --glass-bg: color-mix(in srgb, var(--bg-elevated) 72%, transparent);
+  --glass-border: rgba(255, 255, 255, 0.09);
+}
+
+/* Soft colour wash behind app screens so pages never feel like flat paper. */
+.app-ambient {
+  position: relative;
+  isolation: isolate;
+  background-color: var(--bg-base);
+}
+.app-ambient::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 320px;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      60% 100% at 12% 0%,
+      color-mix(in srgb, var(--person-a) 16%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      55% 90% at 95% 0%,
+      color-mix(in srgb, var(--color-teal-400) 14%, transparent),
+      transparent 70%
+    );
+}
+
+.glass {
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: saturate(180%) blur(18px);
+  backdrop-filter: saturate(180%) blur(18px);
+  border: 1px solid var(--glass-border);
+}
+
+/* Sticky page header (large title that sits on the ambient wash). */
+.page-header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  padding-top: env(safe-area-inset-top);
+  background: color-mix(in srgb, var(--bg-base) 82%, transparent);
+  -webkit-backdrop-filter: saturate(180%) blur(16px);
+  backdrop-filter: saturate(180%) blur(16px);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+/* Tactile press feedback for anything tappable. */
+.press {
+  transition:
+    transform var(--duration-normal) var(--ease-out),
+    box-shadow var(--duration-normal) var(--ease-out),
+    background-color var(--duration-normal) var(--ease-out);
+  -webkit-tap-highlight-color: transparent;
+}
+.press:active {
+  transform: scale(0.97);
+}
+
+/* Cards that lift slightly when they can be opened. */
+.lift {
+  transition:
+    transform var(--duration-slow) var(--ease-out),
+    box-shadow var(--duration-slow) var(--ease-out);
+}
+@media (hover: hover) {
+  .lift:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+}
+
+/* Staggered entrance: set --i on each child. */
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes pop-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  70% {
+    transform: scale(1.08);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes float-y {
+  0%,
+  100% {
+    transform: translateY(0) rotate(var(--r, 0deg));
+  }
+  50% {
+    transform: translateY(-10px) rotate(var(--r, 0deg));
+  }
+}
+@keyframes drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(24px, -18px, 0) scale(1.12);
+  }
+}
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+@keyframes confetti-fall {
+  0% {
+    opacity: 1;
+    transform: translate3d(0, -10px, 0) rotate(0deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--dx, 0px), var(--dy, 220px), 0)
+      rotate(var(--rot, 360deg));
+  }
+}
+@keyframes ring-pulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 45%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 16px transparent;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .stagger > * {
+    animation: rise-in 0.5s var(--ease-out) both;
+    animation-delay: calc(var(--i, 0) * 60ms);
+  }
+  .rise-in {
+    animation: rise-in 0.5s var(--ease-out) both;
+    animation-delay: calc(var(--i, 0) * 60ms);
+  }
+  .pop-in {
+    animation: pop-in 0.55s var(--ease-spring) both;
+    animation-delay: calc(var(--i, 0) * 60ms);
+  }
+  .float-y {
+    animation: float-y 6s ease-in-out infinite;
+    animation-delay: calc(var(--i, 0) * -1.1s);
+  }
+  .drift {
+    animation: drift 14s ease-in-out infinite;
+  }
+  .confetti-bit {
+    animation: confetti-fall 1.6s var(--ease-out) both;
+    animation-delay: calc(var(--i, 0) * 18ms);
+  }
+  .ring-pulse {
+    animation: ring-pulse 2.4s ease-out infinite;
+  }
+  .skeleton-shimmer {
+    background-image: linear-gradient(
+      100deg,
+      transparent 30%,
+      color-mix(in srgb, var(--fg-1) 7%, transparent) 50%,
+      transparent 70%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.6s linear infinite;
+  }
+}
+
+/* Bottom nav: floating glass dock with a sliding active pill. */
+.dock {
+  position: fixed;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom) + 12px);
+  transform: translateX(-50%);
+  width: min(calc(100vw - 24px), 380px);
+  z-index: 50;
+  border-radius: 26px;
+  box-shadow: var(--shadow-xl);
+}
+.dock-pill {
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  left: 6px;
+  width: calc((100% - 12px) / 4);
+  border-radius: 20px;
+  background: var(--accent-subtle);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent);
+  transition: transform 0.42s var(--ease-spring);
+  transform: translateX(calc(var(--dock-index, 0) * 100%));
+}
+@media (prefers-reduced-motion: reduce) {
+  .dock-pill {
+    transition: none;
+  }
+}
+
+/* Money amounts that read as the hero of a screen. */
+.hero-amount {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.eyebrow {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--fg-3);
 }

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
@@ -11,8 +11,11 @@ import {
   CreditCard,
   ShoppingCart,
   Info,
+  Wallet,
   type LucideIcon,
 } from "lucide-react";
+import { EmptyState } from "@/components/shared/empty-state";
+import { PageHeader } from "@/components/shared/page-header";
 import { FAB as Fab } from "@/components/shared/fab";
 import { getCategoryIcon } from "@/lib/category-icons";
 import { formatARS, getMonthDate, getInitials } from "@/lib/utils";
@@ -1213,80 +1216,63 @@ function ExpensesView() {
 
   return (
     <div
-      className="flex flex-col"
-      style={{
-        minHeight: "100%",
-        background: "var(--bg-base)",
-      }}
+      className="app-ambient flex flex-col"
+      style={{ minHeight: "100%", background: "var(--bg-base)" }}
     >
-      <div
-        style={{
-          background: "var(--bg-elevated)",
-          borderBottom: "1px solid var(--border-subtle)",
-          paddingTop: 14,
-        }}
-      >
-        <div className="mx-auto w-full max-w-3xl">
-          <h1
-            className="m-0 px-5 pb-2.5 text-lg font-bold"
-            style={{
-              color: "var(--fg-1)",
-              fontFamily: "var(--font-sans)",
-            }}
-          >
-            Gastos
-          </h1>
-          <div className="flex items-center gap-2 px-4 pb-2.5">
-            <div className="flex-1">
-              <SegmentedControl active={filter} onChange={handleFilterChange} />
-            </div>
-            {categories.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setFilterSheetOpen(true)}
-                aria-label="Más filtros"
-                data-testid="expenses-filters-button"
-                className="relative flex shrink-0 cursor-pointer items-center justify-center rounded-xl"
-                style={{
-                  width: 40,
-                  height: 40,
-                  background: "var(--bg-sunken)",
-                  border: "1px solid var(--border-subtle)",
-                }}
-              >
-                <FilterFunnelIcon />
-                {filterCategory !== null && (
-                  <span
-                    className="absolute flex items-center justify-center rounded-full text-[10px] font-bold"
-                    style={{
-                      top: -4,
-                      right: -4,
-                      width: 16,
-                      height: 16,
-                      background: "var(--accent)",
-                      color: "var(--accent-foreground)",
-                      fontFamily: "var(--font-sans)",
-                    }}
-                  >
-                    1
-                  </span>
-                )}
-              </button>
-            )}
+      <PageHeader title="Gastos" eyebrow="Tu mes en detalle">
+        <div className="flex items-center gap-2 px-4 pb-2.5">
+          <div className="flex-1">
+            <SegmentedControl active={filter} onChange={handleFilterChange} />
           </div>
-          {!showTodo && <TabDescription tab={filter} />}
+          {categories.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setFilterSheetOpen(true)}
+              aria-label="Más filtros"
+              data-testid="expenses-filters-button"
+              className="press relative flex shrink-0 cursor-pointer items-center justify-center rounded-xl"
+              style={{
+                width: 40,
+                height: 40,
+                background: "var(--bg-sunken)",
+                border: "1px solid var(--border-subtle)",
+              }}
+            >
+              <FilterFunnelIcon />
+              {filterCategory !== null && (
+                <span
+                  className="pop-in absolute flex items-center justify-center rounded-full text-[10px] font-bold"
+                  style={{
+                    top: -4,
+                    right: -4,
+                    width: 16,
+                    height: 16,
+                    background: "var(--accent)",
+                    color: "var(--accent-foreground)",
+                    fontFamily: "var(--font-sans)",
+                  }}
+                >
+                  1
+                </span>
+              )}
+            </button>
+          )}
         </div>
-      </div>
+        {!showTodo && <TabDescription tab={filter} />}
+      </PageHeader>
 
       <div style={{ flex: 1, overflowY: "auto" }}>
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-4 py-3">
           {showTodo && allEmpty && (
-            <div
-              className="py-12 text-center text-sm"
-              style={{ color: "var(--fg-3)", fontFamily: "var(--font-sans)" }}
-            >
-              Sin gastos este mes. Usá el + para agregar.
-            </div>
+            <EmptyState
+              icon={Wallet}
+              title="Mes en blanco"
+              description="Sin gastos este mes. Usá el + para agregar."
+              action={{
+                label: "Cargar el primero",
+                onClick: () => setFlow({ step: "type-selector" }),
+              }}
+            />
           )}
 
           {/* CUOTAS */}
@@ -1294,15 +1280,15 @@ function ExpensesView() {
             <div>
               {showTodo && <SectionLabel>Cuotas</SectionLabel>}
               {filter === "cuotas" && cuotas.length === 0 && (
-                <div
-                  className="py-12 text-center text-sm"
-                  style={{
-                    color: "var(--fg-3)",
-                    fontFamily: "var(--font-sans)",
+                <EmptyState
+                  icon={CreditCard}
+                  title="Sin compras en cuotas"
+                  description="Las compras financiadas aparecen acá con su avance. Usá el + para agregar."
+                  action={{
+                    label: "Cargar el primero",
+                    onClick: () => setFlow({ step: "type-selector" }),
                   }}
-                >
-                  Sin compras en cuotas. Usá el + para agregar.
-                </div>
+                />
               )}
               <ul className="m-0 flex list-none flex-col gap-2 p-0">
                 {cuotas.map((c) => (
@@ -1329,16 +1315,15 @@ function ExpensesView() {
             <div>
               {showTodo && <SectionLabel>Servicios</SectionLabel>}
               {filter === "fijos" && fijos.length === 0 && (
-                <div
-                  className="text-center text-sm"
-                  style={{
-                    padding: "48px 0",
-                    color: "var(--fg-3)",
-                    fontFamily: "var(--font-sans)",
+                <EmptyState
+                  icon={Home}
+                  title="Sin gastos fijos"
+                  description="Alquiler, servicios, suscripciones: cargalos una vez y se repiten cada mes. Usá el + para agregar."
+                  action={{
+                    label: "Cargar el primero",
+                    onClick: () => setFlow({ step: "type-selector" }),
                   }}
-                >
-                  Sin gastos fijos. Usá el + para agregar.
-                </div>
+                />
               )}
               {fijos.length > 0 && (
                 <>
@@ -1434,16 +1419,15 @@ function ExpensesView() {
             <div>
               {showTodo && <SectionLabel>Compras</SectionLabel>}
               {filter === "variables" && variables.length === 0 && (
-                <div
-                  className="text-center text-sm"
-                  style={{
-                    padding: "48px 0",
-                    color: "var(--fg-3)",
-                    fontFamily: "var(--font-sans)",
+                <EmptyState
+                  icon={ShoppingCart}
+                  title="Sin gastos variables"
+                  description="Las compras del día a día se suman acá. Usá el + para agregar."
+                  action={{
+                    label: "Cargar el primero",
+                    onClick: () => setFlow({ step: "type-selector" }),
                   }}
-                >
-                  Sin gastos variables. Usá el + para agregar.
-                </div>
+                />
               )}
               <ul className="m-0 flex list-none flex-col gap-2 p-0">
                 {variables.map((v) => (

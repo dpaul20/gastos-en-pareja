@@ -1,4 +1,6 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
+import { MailX } from "lucide-react";
 import { acceptInvitation } from "@/lib/actions/couple";
 import { createClient } from "@/lib/supabase/server";
 
@@ -30,19 +32,24 @@ export default async function InvitePage({ params }: Readonly<Props>) {
   }
 
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center [background-color:var(--bg-base)] p-8 [font-family:var(--font-sans)]">
-      <div className="w-full max-w-[360px] rounded-[var(--radius-xl)] border [border-color:var(--border-subtle)] [background-color:var(--bg-elevated)] px-6 py-8 text-center shadow-[var(--shadow-md)]">
-        <div className="mb-4 text-[40px]">⚠️</div>
+    <div className="app-ambient flex min-h-dvh flex-col items-center justify-center [background-color:var(--bg-base)] p-8 [font-family:var(--font-sans)]">
+      <div className="rise-in glass w-full max-w-[360px] rounded-3xl px-6 py-8 text-center">
+        <div
+          aria-hidden
+          className="float-y mx-auto mb-4 flex size-16 items-center justify-center rounded-2xl [background-color:var(--status-danger-subtle)] [color:var(--status-danger-text)]"
+        >
+          <MailX size={30} />
+        </div>
         <div className="mb-2 text-lg font-bold [color:var(--fg-1)]">
           Invitación inválida
         </div>
         <div className="mb-6 text-sm [color:var(--fg-2)]">{error}</div>
-        <a
+        <Link
           href="/dashboard"
-          className="inline-block rounded-[var(--radius-md)] [background-color:var(--accent)] px-6 py-3 text-sm font-semibold text-white no-underline"
+          className="press inline-flex h-12 w-full items-center justify-center rounded-2xl [background-color:var(--accent)] px-6 text-sm font-semibold [color:var(--accent-foreground)] no-underline shadow-[var(--shadow-accent)]"
         >
           Ir al inicio
-        </a>
+        </Link>
       </div>
     </div>
   );
