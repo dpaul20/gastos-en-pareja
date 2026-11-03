@@ -31,7 +31,7 @@ Decisiones de diseño tomadas por el parent (S3/S4, no especificadas):
 - [x] T5 · S2,D5 · inline · validación en formularios: foco/scroll al primer error, mensajes con voz propia, botón Guardar con estados · commit T5 (tsc/eslint OK)
 - [x] T6 · S2,S4 · inline · `error.tsx` / `global-error.tsx` con identidad, digest copiable, reintentar; estados vacíos y skeletons de carga · commit T6 (ErrorPanel, global-error, not-found; tsc/eslint OK)
 - [x] T7 · S2,S4,D6 · inline · microinteracciones: check animado, háptica, celebración sutil al saldar; todo con reduced-motion · commit T7 (notify.celebrate, icon pop; tsc/eslint OK)
-- [ ] T8 · S5 · inline · specs Playwright `--headed`: Pixel 5 + iPhone SE/14/Pro Max, claro/oscuro, offline simulado, error de servidor simulado; a11y
+- [x] T8 · S5 · inline · specs Playwright `--headed`: Pixel 5 + iPhone SE/14/Pro Max, claro/oscuro, offline simulado, error de servidor simulado; a11y · commit T8 (headed 3 viewports x light/dark: 19/19; full e2e 146 pass; vitest 616)
 
 ## Log
 

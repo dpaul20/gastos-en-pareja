@@ -30,7 +30,8 @@ const NETWORK_RE =
 const SESSION_RE = /no autenticado|unauthorized|jwt expired|not authenticated/i;
 // Next.js replaces any error thrown by a Server Action with this generic text
 // in production, so the specific "No se pudo guardar la compra" never arrives.
-const MASKED_RE = /server components render|omitted in production builds/i;
+const MASKED_RE =
+  /server components render|omitted in production builds|unexpected response was received from the server/i;
 
 const DEFAULT_TITLE = "No pudimos completar la acción";
 

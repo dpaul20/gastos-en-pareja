@@ -57,6 +57,17 @@ describe("describeError", () => {
     expect(describeError(err).title).toBe("No pudimos completar la acción");
   });
 
+  it("masks Next's English protocol error instead of leaking it", () => {
+    const d = describeError(
+      new Error("An unexpected response was received from the server."),
+      { fallbackTitle: "No se pudo guardar la compra" },
+    );
+    expect(d).toMatchObject({
+      kind: "server",
+      title: "No se pudo guardar la compra",
+    });
+  });
+
   it("passes through readable server messages in dev", () => {
     const d = describeError(new Error("No se pudo guardar la compra"));
     expect(d).toMatchObject({
