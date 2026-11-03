@@ -1,4 +1,4 @@
-﻿# feedback-ux
+# feedback-ux
 
 Rediseño de la UX/UI de validación, notificación y manejo de errores de toda la app, con criterio de diseño propio.
 Rama: `feat/feedback-ux` · Entrega: una sola rama, commits por etapa, un PR único.
@@ -25,9 +25,9 @@ Decisiones de diseño tomadas por el parent (S3/S4, no especificadas):
 ## Tasks
 
 - [x] T1 · S1,S7,D1 · inline+TDD · `describeError` + `UserFacingError` en `src/lib/utils/` con tests Vitest · commit `8f53829`
-- [x] T2 · S2,D3,D4 · inline · `notify`, Toaster estilizado (tokens, top-center, safe-area), `ConnectionStatus`, CSS en globals.css
-- [x] T3 · S1,D2 · inline · `useAction` y migrar mutaciones silenciosas: cuota +1, override de cuota, toggle de fijo, ingresos, saldar, eliminar/deshacer (tarjetas se cubre en T5) · commit T3
-- [ ] T4 · S7,D5 · inline · `useExpenseSave` + AddSheet: no cerrar antes de guardar, conservar datos al fallar, errores del servidor visibles y accionables
+- [x] T2 · S2,D3,D4 · inline · `notify`, Toaster estilizado (tokens, top-center, safe-area), `ConnectionStatus`, CSS en globals.css · commit `ec4896d`
+- [x] T3 · S1,D2 · inline · `useAction` y migrar mutaciones silenciosas: cuota +1, override de cuota, toggle de fijo, ingresos, saldar, eliminar/deshacer (tarjetas se cubre en T5) · commit `60e3089`
+- [x] T4 · S7,D5 · inline · `useExpenseSave` + AddSheet: no cerrar antes de guardar, conservar datos al fallar, errores del servidor visibles y accionables · commit T4 (tsc/eslint/vitest 615 OK)
 - [ ] T5 · S2,D5 · inline · validación en formularios: foco/scroll al primer error, mensajes con voz propia, botón Guardar con estados
 - [ ] T6 · S2,S4 · inline · `error.tsx` / `global-error.tsx` con identidad, digest copiable, reintentar; estados vacíos y skeletons de carga
 - [ ] T7 · S2,S4,D6 · inline · microinteracciones: check animado, háptica, celebración sutil al saldar; todo con reduced-motion

@@ -1063,9 +1063,12 @@ function ExpensesView() {
   // Map flow steps to AddSheet tab — must be computed before useExpenseSave
   const addSheetTab: Tab | null = flowStepToAddTab(flow.step);
 
-  const { save, saveError } = useExpenseSave(
-    addSheetTab ?? (filter === "todo" ? "cuotas" : filter),
-  );
+  const {
+    save,
+    saveError,
+    isPending: isSaving,
+    clearError: clearSaveError,
+  } = useExpenseSave(addSheetTab ?? (filter === "todo" ? "cuotas" : filter));
 
   function handleFilterChange(newFilter: ExpenseFilter) {
     setFilter(newFilter);
@@ -1093,7 +1096,7 @@ function ExpensesView() {
   const getPerson = (userId: string): "a" | "b" =>
     userId === member?.user_id ? "a" : "b";
 
-  function handleSave(
+  async function handleSave(
     fields: Record<string, string>,
     categoryId: string | null,
     autoRenew: boolean,
@@ -1101,16 +1104,31 @@ function ExpensesView() {
     payerId?: string | null,
     cardId?: string | null,
   ) {
-    // Commit 6: resolve the edit target BEFORE resetting flow to "idle" —
-    // once reset, the step/id info needed to route create vs. update is gone.
+    // Commit 6: resolve the edit target BEFORE the flow changes — once reset,
+    // the step/id info needed to route create vs. update is gone.
     const editId =
       flow.step === "edit-cuota"
         ? flow.purchaseId
         : flow.step === "edit-variable"
           ? flow.expenseId
           : null;
+    // The sheet stays open until the save really succeeded, so a failure
+    // never costs the user what they typed.
+    const saved = await save(
+      fields,
+      categoryId,
+      autoRenew,
+      isShared,
+      payerId,
+      cardId,
+      editId,
+    );
+    if (saved) setFlow({ step: "idle" });
+  }
+
+  function closeAddSheet() {
+    clearSaveError();
     setFlow({ step: "idle" });
-    save(fields, categoryId, autoRenew, isShared, payerId, cardId, editId);
   }
 
   const allCuotas = data?.installmentPurchases ?? [];
@@ -1524,9 +1542,10 @@ function ExpensesView() {
             key={flowKey(flow)}
             tab={addSheetTab}
             categories={categories}
-            onClose={() => setFlow({ step: "idle" })}
+            onClose={closeAddSheet}
             onSave={handleSave}
             saveError={saveError}
+            isSaving={isSaving}
             members={profiles}
             currentUserId={member?.user_id ?? undefined}
             coupleId={coupleId}
