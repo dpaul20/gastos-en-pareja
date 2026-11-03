@@ -3,12 +3,13 @@
 import { toast } from "sonner";
 import type { ErrorDescription } from "@/lib/utils/describe-error";
 
-type Haptic = "success" | "warning" | "error";
+type Haptic = "success" | "warning" | "error" | "celebrate";
 
 const HAPTIC_PATTERNS: Record<Haptic, number | number[]> = {
   success: 12,
   warning: [16, 40, 16],
   error: [28, 50, 28],
+  celebrate: [10, 30, 10, 30, 24],
 };
 
 export function haptic(kind: Haptic): void {
@@ -52,6 +53,17 @@ export const notify = {
       action: toAction(options.action),
       duration: options.duration ?? 4000,
       id: options.id,
+    });
+  },
+
+  /** Success with extra flourish — reserved for moments that close a loop. */
+  celebrate(title: string, options: NotifyOptions = {}) {
+    haptic("celebrate");
+    return toast.success(title, {
+      description: options.description,
+      duration: options.duration ?? 5000,
+      id: options.id,
+      className: "fx-toast-celebrate",
     });
   },
 

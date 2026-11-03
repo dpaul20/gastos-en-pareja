@@ -190,7 +190,7 @@ export function SettleSheet({
       },
       {
         onSuccess: () => {
-          notify.success("Pago registrado", {
+          notify.celebrate("Pago registrado", {
             description: `${nameOf(fromId)} → ${nameOf(toId)} · ${formatARS(amount)}`,
           });
           onClose();
