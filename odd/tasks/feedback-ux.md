@@ -26,7 +26,7 @@ Decisiones de diseño tomadas por el parent (S3/S4, no especificadas):
 
 - [x] T1 · S1,S7,D1 · inline+TDD · `describeError` + `UserFacingError` en `src/lib/utils/` con tests Vitest · commit `8f53829`
 - [x] T2 · S2,D3,D4 · inline · `notify`, Toaster estilizado (tokens, top-center, safe-area), `ConnectionStatus`, CSS en globals.css
-- [ ] T3 · S1,D2 · inline · `useAction` y migrar mutaciones silenciosas: cuota +1, override de cuota, toggle de fijo, ingresos, tarjetas, saldar, deshacer
+- [x] T3 · S1,D2 · inline · `useAction` y migrar mutaciones silenciosas: cuota +1, override de cuota, toggle de fijo, ingresos, saldar, eliminar/deshacer (tarjetas se cubre en T5) · commit T3
 - [ ] T4 · S7,D5 · inline · `useExpenseSave` + AddSheet: no cerrar antes de guardar, conservar datos al fallar, errores del servidor visibles y accionables
 - [ ] T5 · S2,D5 · inline · validación en formularios: foco/scroll al primer error, mensajes con voz propia, botón Guardar con estados
 - [ ] T6 · S2,S4 · inline · `error.tsx` / `global-error.tsx` con identidad, digest copiable, reintentar; estados vacíos y skeletons de carga

@@ -61,7 +61,8 @@ import {
   type EditingVariable,
 } from "./_components/add-sheet";
 import { DueDayPicker } from "./_components/due-day-picker";
-import { toast } from "sonner";
+import { notify } from "@/lib/feedback/notify";
+import { describeError } from "@/lib/utils/describe-error";
 import { ResponsiveModal } from "@/components/shared/responsive-modal";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { CategoryPicker } from "@/components/shared/category-picker";
@@ -609,14 +610,24 @@ function EditServiceSheet({
       deactivateFixedExpenseTemplate(templateId),
     onSuccess: async (_data, templateId) => {
       await queryClient.invalidateQueries({ queryKey: ["monthly-data"] });
-      toast.success("Servicio eliminado", {
+      notify.success("Servicio eliminado", {
         action: {
           label: "Deshacer",
           onClick: async () => {
-            await reactivateFixedExpenseTemplate(templateId);
-            await queryClient.invalidateQueries({
-              queryKey: ["monthly-data"],
-            });
+            try {
+              await reactivateFixedExpenseTemplate(templateId);
+              await queryClient.invalidateQueries({
+                queryKey: ["monthly-data"],
+              });
+              notify.success("Listo, lo restauramos");
+            } catch (err) {
+              notify.error(
+                describeError(err, {
+                  online: navigator.onLine,
+                  fallbackTitle: "No pudimos deshacer",
+                }),
+              );
+            }
           },
         },
       });

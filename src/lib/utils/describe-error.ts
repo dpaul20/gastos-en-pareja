@@ -99,3 +99,13 @@ export function describeError(
     retryable: true,
   };
 }
+
+/** One-line text for inline (field-adjacent) error messages. */
+export function inlineMessage(description: ErrorDescription): string {
+  if (description.kind === "validation" || description.kind === "known") {
+    return description.title;
+  }
+  return description.message
+    ? `${description.title}. ${description.message}`
+    : description.title;
+}

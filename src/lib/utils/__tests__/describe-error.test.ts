@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { describeError, UserFacingError } from "../describe-error";
+import {
+  describeError,
+  inlineMessage,
+  UserFacingError,
+} from "../describe-error";
 
 describe("describeError", () => {
   it("shows user-facing errors verbatim and never offers a retry", () => {
@@ -66,5 +70,22 @@ describe("describeError", () => {
     const d = describeError("nope");
     expect(d.kind).toBe("server");
     expect(d.retryable).toBe(true);
+  });
+});
+
+describe("inlineMessage", () => {
+  it("returns the title alone for validation and known errors", () => {
+    expect(
+      inlineMessage(describeError(new UserFacingError("Falta el monto"))),
+    ).toBe("Falta el monto");
+    expect(
+      inlineMessage(describeError(new Error("Ya existe una invitación"))),
+    ).toBe("Ya existe una invitación");
+  });
+
+  it("joins title and message for server and offline errors", () => {
+    const text = inlineMessage(describeError(new Error("Failed to fetch")));
+    expect(text).toContain("Sin conexión");
+    expect(text).toContain("Revisá tu internet");
   });
 });
