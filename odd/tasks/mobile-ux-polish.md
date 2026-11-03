@@ -26,7 +26,7 @@ Decisiones de diseño tomadas (S3/S4, no especificadas):
 - [x] T1 · S2,D1,D2 · inline · capa de pulido en globals.css + dock flotante + padding del layout
 - [x] T2 · S2,S4,D3 · inline · `PageHeader`, `EmptyState`, `Confetti`, `MonthHeader` con "Volver a hoy", FAB, skeleton shimmer
 - [x] T3 · S1,S2 · inline · Inicio (saludo, progreso de servicios, CTA de ingresos, accesos rápidos, "-$" bien formateado), Gastos, Historial (estado vacío), Configuración (cabecera y carga), Login (aurora), 404
-- [ ] T4 · S1,D3 · inline · Invitación, `ErrorPanel`, `NoCoupleState`, `NoCoupleCard`, invitaciones pendientes
+- [x] T4 · S1,D3 · inline · Invitación, `ErrorPanel`, `NoCoupleState`, `NoCoupleCard`, invitaciones pendientes
 - [ ] T5 · S1,S2,S4 · inline · hojas (`add-sheet`, `settle-sheet`, `load-bill-sheet`, selector de tipo) y listas (`cuota-item`, `fijo-item`, `variable-item`): entrada escalonada, feedback al tocar
 - [ ] T6 · S1,S2 · inline · Configuración a fondo (tarjeta de pareja, ingreso, cuenta), `MonthDetail`, widgets del dashboard, sidebar de escritorio
 - [ ] T7 · S2,S4 · inline · celebración al saldar: `Confetti` + `haptic("celebrate")`, todo con reduced-motion
