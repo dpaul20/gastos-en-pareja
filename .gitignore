@@ -64,6 +64,10 @@ next-env.d.ts
 # Agent Teams Lite skill registry cache (local, regenerated per machine)
 .atl/
 
+# gentle-ai local setup (persona instructions + shared skills), per machine
+.copilot/
+.github/instructions/gentle-ai.instructions.md
+
 # Audit screenshots dumped in root
 /*.png
 
