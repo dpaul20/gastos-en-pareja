@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { PersonAvatar } from "@/components/shared/avatar";
+import { SettledCelebration } from "@/components/shared/settled-celebration";
 import { formatARS, formatMonth, getInitials } from "@/lib/utils";
 import type { MonthlyBalance } from "@/lib/utils/balance";
 import type { SettlementSummary } from "@/lib/utils/settlement";
@@ -286,7 +287,8 @@ export function BalanceCard({
       : `Faltan ${awaitingBillCount} facturas. Cuando lleguen puede aparecer una diferencia.`;
 
   return (
-    <Card className="overflow-hidden rounded-[var(--radius-xl)] shadow-[var(--shadow-md)]">
+    <Card className="relative overflow-hidden rounded-[var(--radius-xl)] shadow-[var(--shadow-md)]">
+      <SettledCelebration settled={isSettled} />
       <div
         className="px-5 pt-6 pb-5"
         style={{

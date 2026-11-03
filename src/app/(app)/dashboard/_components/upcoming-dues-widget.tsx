@@ -41,7 +41,7 @@ function DueItem({ due, showPayButton, onPay, isPaying }: DueItemProps) {
         <button
           onClick={() => onPay(instance.id)}
           disabled={isPaying}
-          className={`shrink-0 rounded-[8px] border-none [background-color:var(--accent)] px-3 py-1.5 [font-family:var(--font-sans)] text-xs font-semibold text-white ${isPaying ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
+          className={`press min-h-9 shrink-0 rounded-full border-none [background-color:var(--accent)] px-4 py-1.5 [font-family:var(--font-sans)] text-xs font-semibold text-white ${isPaying ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
         >
           Pagar
         </button>

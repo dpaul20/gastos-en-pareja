@@ -45,11 +45,11 @@ export function MonthDetail({
 
   return (
     <div className="flex min-h-full flex-col [background-color:var(--bg-base)]">
-      <div className="flex items-center gap-3 border-b [border-color:var(--border-subtle)] [background-color:var(--bg-elevated)] px-4 py-3.5">
+      <div className="page-header flex items-center gap-3 border-b [border-color:var(--border-subtle)] px-4 py-3.5">
         <button
           onClick={onBack}
           aria-label="Volver"
-          className="flex min-h-11 min-w-11 cursor-pointer items-center border-none bg-transparent p-1"
+          className="press flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-full border-none bg-transparent p-1"
         >
           <ChevronLeft
             size={22}
