@@ -25,7 +25,7 @@ export function VariableItem({
   readonly onEdit?: (id: string) => void;
 }) {
   return (
-    <Card>
+    <Card className="rise-in lift">
       <CardContent className="flex items-center gap-3 p-[14px_16px]">
         <PersonAvatar
           initials={getPersonInitials(v.user_id)}
@@ -57,7 +57,7 @@ export function VariableItem({
                 type="button"
                 onClick={() => onEdit(v.id)}
                 aria-label="Editar compra"
-                className="inline-flex shrink-0 cursor-pointer items-center gap-1 border-none bg-transparent px-2 py-1 [font-family:var(--font-sans)] text-xs [color:var(--fg-3)]"
+                className="press inline-flex min-h-8 shrink-0 cursor-pointer items-center gap-1 rounded-lg border-none bg-transparent px-2 py-1 [font-family:var(--font-sans)] text-xs [color:var(--fg-3)]"
               >
                 <Pencil size={14} aria-hidden="true" />
                 Editar

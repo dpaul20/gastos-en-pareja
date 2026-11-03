@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
@@ -1269,7 +1269,7 @@ function ExpensesView() {
               title="Mes en blanco"
               description="Sin gastos este mes. Usá el + para agregar."
               action={{
-                label: "Agregar gasto",
+                label: "Cargar el primero",
                 onClick: () => setFlow({ step: "type-selector" }),
               }}
             />
@@ -1285,7 +1285,7 @@ function ExpensesView() {
                   title="Sin compras en cuotas"
                   description="Las compras financiadas aparecen acá con su avance. Usá el + para agregar."
                   action={{
-                    label: "Agregar gasto",
+                    label: "Cargar el primero",
                     onClick: () => setFlow({ step: "type-selector" }),
                   }}
                 />
@@ -1320,7 +1320,7 @@ function ExpensesView() {
                   title="Sin gastos fijos"
                   description="Alquiler, servicios, suscripciones: cargalos una vez y se repiten cada mes. Usá el + para agregar."
                   action={{
-                    label: "Agregar gasto",
+                    label: "Cargar el primero",
                     onClick: () => setFlow({ step: "type-selector" }),
                   }}
                 />
@@ -1424,7 +1424,7 @@ function ExpensesView() {
                   title="Sin gastos variables"
                   description="Las compras del día a día se suman acá. Usá el + para agregar."
                   action={{
-                    label: "Agregar gasto",
+                    label: "Cargar el primero",
                     onClick: () => setFlow({ step: "type-selector" }),
                   }}
                 />

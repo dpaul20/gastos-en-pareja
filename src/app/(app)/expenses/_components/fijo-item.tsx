@@ -190,7 +190,7 @@ export function FijoItem({
             onClick={() => onLoadBill?.(fi.id)}
             aria-label={`Cargar factura de ${fi.fixed_expense_templates.description}`}
             className={cn(
-              "flex shrink-0 items-center gap-2 border-none bg-transparent p-0",
+              "press flex min-h-11 shrink-0 items-center gap-2 rounded-lg border-none bg-transparent px-1",
               onLoadBill ? "cursor-pointer" : "cursor-default",
             )}
           >

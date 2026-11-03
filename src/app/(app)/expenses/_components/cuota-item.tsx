@@ -167,7 +167,7 @@ export function CuotaItem({
   const isFinished = isInstallmentFinished(c, displayNumber);
   const cuota = Math.round(c.total_amount / c.installments);
   return (
-    <Card>
+    <Card className="rise-in lift">
       <CardContent className="p-[14px_16px]">
         <div className="mb-2 flex items-start justify-between gap-3">
           <div className="min-w-0">
