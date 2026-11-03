@@ -6,7 +6,8 @@ import type { ErrorDescription } from "@/lib/utils/describe-error";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import type { Control, FieldPath } from "react-hook-form";
+import type { Control, FieldErrors, FieldPath } from "react-hook-form";
+import { haptic } from "@/lib/feedback/notify";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -477,6 +478,14 @@ export function AddSheet({
     return computeMonthlyInstallment(total, count);
   }, [totalAmountRaw, installmentsRaw]);
 
+  // Land the user on the first broken field: on a phone the keyboard hides
+  // everything below, so a silent "nothing happened" submit is the worst case.
+  function onInvalid(errors: FieldErrors<Fields>) {
+    haptic("error");
+    const first = Object.keys(errors)[0] as FieldPath<Fields> | undefined;
+    if (first) form.setFocus(first);
+  }
+
   function onSubmit(data: Fields) {
     onSave(
       Object.fromEntries(
@@ -504,7 +513,7 @@ export function AddSheet({
       data-testid="add-sheet-dialog"
     >
       <Form {...form}>
-        <form onSubmit={handleSubmit(onSubmit)}>
+        <form onSubmit={handleSubmit(onSubmit, onInvalid)}>
           <InputField
             label="Descripción"
             id="field-description"
